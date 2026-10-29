@@ -8,6 +8,9 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 const URL = (import.meta.env.VITE_SUPABASE_URL as string | undefined) ?? 'https://pzshrqbbovlqjerhdrzc.supabase.co';
 const ANON_KEY = (import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined) ?? 'sb_publishable_rusVrnk8EbhxwFB8KWxZBA_ROT1wNQA';
 
+/** The public website. Invite links point here even when the host plays from their own computer. */
+export const PUBLIC_SITE = (import.meta.env.VITE_PUBLIC_SITE as string | undefined) ?? 'https://vijaythemanofpower-netizen.github.io/anime-auction/';
+
 /** Online play is available only when the game was built with a Supabase project. */
 export const ONLINE_AVAILABLE = !!(URL && ANON_KEY);
 

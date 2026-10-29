@@ -368,3 +368,4 @@ kbd { font-family: ui-monospace, Consolas, monospace; font-size: 12px; padding: 
   .bidder-grid { grid-template-columns: 1fr; }
   .hide-phone { display: none; }
 }
+.invite-link { font-size: 12px; word-break: break-all; }
