@@ -32,8 +32,10 @@ export function PrepPhase() {
   const viewer = useApp((s) => s.viewer);
   const m = G.currentMatch(g)!;
   const players = m.players.map((id) => g.players.find((p) => p.id === id)!);
-  const humans = g.players.filter((p) => p.kind === 'human');
-  const pending = players.find((p) => p.kind === 'human' && !g.prep[p.id]?.locked);
+  const humans = g.players.filter((p) => store.isLocalPlayer(p));
+  const pending = players.find((p) => store.isLocalPlayer(p) && !g.prep[p.id]?.locked);
+  // Online, other players prepare on their own devices.
+  const waitingFor = players.filter((p) => !g.prep[p.id]?.locked);
   const stage = g.tournament!.stages[m.stageIndex];
 
   return (
@@ -52,12 +54,19 @@ export function PrepPhase() {
         <PrivacyGate player={pending} enabled={g.config.privacyScreens && humans.length > 1} viewer={viewer} reason="Battle preparation is secret. Your opponent should look away.">
           <PrepPanel g={g} player={pending} key={pending.id} />
         </PrivacyGate>
+      ) : waitingFor.length ? (
+        <div className="panel col" style={{ alignItems: 'center', textAlign: 'center', padding: 32 }}>
+          <div className="spinner" />
+          <h3>Waiting for {waitingFor.map((p) => p.name).join(' and ')} to lock in…</h3>
+          <p className="muted">They&apos;re choosing fighters and strategy on their own device.</p>
+        </div>
       ) : (
         <div className="panel col reveal-anim" style={{ alignItems: 'center', textAlign: 'center', padding: 32 }}>
           <div className="eyebrow">Both sides are locked in</div>
           <h2>Fighters, take your places!</h2>
           <p className="muted">Lineups, strategies and mental approaches will be revealed as the battle begins. The arena is chosen at random{g.config.tournament.specialEvents ? '' : ' (neutral arena only)'}.</p>
-          <button className="btn primary lg" onClick={() => { store.setViewer(null); store.runBattle(); }}>⚔ Enter the arena</button>
+          {store.isGuest() ? <p className="faint">Waiting for the host to start the fight…</p>
+            : <button className="btn primary lg" onClick={() => { store.setViewer(null); store.runBattle(); }}>⚔ Enter the arena</button>}
         </div>
       )}
     </div>
@@ -73,7 +82,7 @@ function PrepPanel({ g, player }: { g: GameState; player: Player }) {
   const [trainStat, setTrainStat] = useState<StatKey>('attack');
   const [actChar, setActChar] = useState(prep.fighters[0] ?? player.roster[0]);
   const [view, setView] = useState<string | null>(null);
-  const set = (patch: Parameters<typeof G.setPrep>[2]) => store.act((d) => G.setPrep(d, player.id, patch));
+  const set = (patch: Parameters<typeof G.setPrep>[2]) => store.move(player.id, { t: 'prep', patch });
   const toggleFighter = (id: string) => {
     if (prep.fighters.includes(id)) {
       if (size === 1) return;
@@ -175,11 +184,11 @@ function PrepPanel({ g, player }: { g: GameState; player: Player }) {
             <select className="input" style={{ flex: 1 }} value={trainStat} onChange={(e) => setTrainStat(e.target.value as StatKey)} aria-label="Stat to train">
               {TRAINABLE.map((k) => <option key={k} value={k}>{STAT_LABELS[k]} (+3, +5 fatigue)</option>)}
             </select>
-            <button className="btn sm" disabled={player.prepPoints <= 0} onClick={() => store.act((d) => G.prepAction(d, player.id, { kind: 'train', charId: actChar, stat: trainStat }))}>Train</button>
+            <button className="btn sm" disabled={player.prepPoints <= 0} onClick={() => store.move(player.id, { t: 'prepAction', act: { kind: 'train', charId: actChar, stat: trainStat } })}>Train</button>
           </div>
           <div className="row" style={{ gap: 6 }}>
-            <button className="btn sm" disabled={player.prepPoints <= 0 || !g.conditions[actChar]?.fatigue} onClick={() => store.act((d) => G.prepAction(d, player.id, { kind: 'recover', charId: actChar }))}>Recover stamina (−35 fatigue)</button>
-            <button className="btn sm" disabled={player.prepPoints <= 0 || !g.conditions[actChar]?.injuries.length} onClick={() => store.act((d) => G.prepAction(d, player.id, { kind: 'treat', charId: actChar }))}>Treat injury</button>
+            <button className="btn sm" disabled={player.prepPoints <= 0 || !g.conditions[actChar]?.fatigue} onClick={() => store.move(player.id, { t: 'prepAction', act: { kind: 'recover', charId: actChar } })}>Recover stamina (−35 fatigue)</button>
+            <button className="btn sm" disabled={player.prepPoints <= 0 || !g.conditions[actChar]?.injuries.length} onClick={() => store.move(player.id, { t: 'prepAction', act: { kind: 'treat', charId: actChar } })}>Treat injury</button>
           </div>
           <p className="faint">Training is permanent (max +6 per stat). Benched fighters recover 20 fatigue per match.</p>
         </div>
@@ -197,7 +206,7 @@ function PrepPanel({ g, player }: { g: GameState; player: Player }) {
                     <div style={{ width: 36, height: 36, borderRadius: 8, overflow: 'hidden', flexShrink: 0 }}><CharArt c={pc} /></div>
                     <div style={{ minWidth: 0 }}><strong style={{ fontSize: 14 }}>{pc.name}</strong><div className="faint">{pc.archetype} · {g.conditions[id]?.wins ?? 0}W–{g.conditions[id]?.losses ?? 0}L</div></div>
                   </div>
-                  {!known && <button className="btn sm" disabled={player.prepPoints <= 0} onClick={() => store.act((d) => G.prepAction(d, player.id, { kind: 'scout', charId: id }))}>Scout (1 pt)</button>}
+                  {!known && <button className="btn sm" disabled={player.prepPoints <= 0} onClick={() => store.move(player.id, { t: 'prepAction', act: { kind: 'scout', charId: id } })}>Scout (1 pt)</button>}
                 </div>
                 <ConditionBadges g={g} id={id} />
                 {h && <><StatBars stats={progressedStats(h, g.conditions[id])} base={h.stats} /><HiddenDetails h={h} /></>}
@@ -207,7 +216,7 @@ function PrepPanel({ g, player }: { g: GameState; player: Player }) {
           <p className="faint">You don&apos;t know which of their fighters they will field.</p>
         </div>
 
-        <button className="btn primary lg" disabled={prep.fighters.length !== size} onClick={() => { store.act((d) => G.lockPrep(d, player.id)); store.setViewer(null); }}>Lock in preparation</button>
+        <button className="btn primary lg" disabled={prep.fighters.length !== size} onClick={() => { store.move(player.id, { t: 'lock' }); store.setViewer(null); }}>Lock in preparation</button>
       </div>
     </div>
   );

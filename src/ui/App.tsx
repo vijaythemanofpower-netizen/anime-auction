@@ -9,6 +9,9 @@ import { GameScreen } from './screens/GameScreen';
 import { Hall } from './screens/Hall';
 import { HowTo, SettingsScreen } from './screens/Info';
 import { Saves } from './screens/Saves';
+import { OnlineScreen } from './screens/Online';
+import { ONLINE_AVAILABLE } from '../online/client';
+import { useAuth } from '../online/auth';
 
 export function App() {
   const screen = useApp((s) => s.screen);
@@ -22,6 +25,8 @@ export function App() {
   const saving = useApp((s) => s.saving);
   const lastSaved = useApp((s) => s.lastSaved);
   const durable = useApp((s) => s.durable);
+  const online = useApp((s) => s.online);
+  const account = useAuth();
 
   return (
     <div className={`app ${motion === 'on' ? 'reduce-motion' : motion === 'system' ? 'motion-system' : ''}`}>
@@ -32,8 +37,13 @@ export function App() {
         </button>
         <div className="spacer" />
         {game && screen !== 'game' && <button className="btn sm primary" onClick={() => store.go('game')}>Return to game</button>}
-        {game && <span className="save-indicator" aria-live="polite">{saving ? 'Saving…' : lastSaved ? `Saved ${new Date(lastSaved).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : ''}{!durable && ' (memory only)'}</span>}
+        {game && !online && <span className="save-indicator" aria-live="polite">{saving ? 'Saving…' : lastSaved ? `Saved ${new Date(lastSaved).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : ''}{!durable && ' (memory only)'}</span>}
         <nav className="row" style={{ gap: 6 }}>
+          {ONLINE_AVAILABLE && (
+            <button className={`btn sm ${screen === 'online' ? 'active' : 'ghost'}`} onClick={() => store.go('online')}>
+              {online ? `🌐 Room ${online.code}` : account.profile ? `👤 ${account.profile.display_name}` : '🌐 Play online'}
+            </button>
+          )}
           <button className={`btn sm ghost${screen === 'explorer' ? ' active' : ''}`} onClick={() => store.go('explorer')}>Characters</button>
           <button className={`btn sm ghost${screen === 'hall' ? ' active' : ''}`} onClick={() => store.go('hall')}>Hall</button>
           <button className={`btn sm ghost${screen === 'settings' ? ' active' : ''}`} onClick={() => store.go('settings')} aria-label="Settings">⚙</button>
@@ -50,6 +60,7 @@ export function App() {
             {screen === 'howto' && <HowTo />}
             {screen === 'settings' && <SettingsScreen />}
             {screen === 'saves' && <Saves />}
+            {screen === 'online' && <OnlineScreen />}
           </>
         )}
       </main>

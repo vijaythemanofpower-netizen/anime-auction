@@ -31,6 +31,16 @@ Battles play out as a comic that draws itself. `src/engine/comic.ts` picks each 
 
 Drawings come from **ComfyUI** running on this computer (`%USERPROFILE%\ComfyUI_windows_portable`) with the **Animagine XL 4.0** anime model and the **DMD2** speed add-on: about 6–7 seconds per drawing on an RTX 3060 laptop (the model runs in a compact 8-bit mode so it fits in 6 GB of graphics memory), free and offline. `Start Game.bat` starts it automatically, or run `Start Drawing AI.bat`. Finished drawings are kept in the browser (newest 400). Without ComfyUI, panels use comic-styled portraits. Switch between **Comic** and **Arena** views in battle or in Settings.
 
+## Online play (rooms and accounts)
+
+**🌐 Play Online with Friends** signs players in (as a guest with just a name, or by email link to keep the account on every device) and lets one player create a room with a 6-character code that friends join. The host's browser runs the game; everyone else's moves (bids, prep, corner calls) are sent to the host over a private Supabase Realtime channel, and each player receives only the hidden stats of their own fighters. Hosted games are saved to the host's account and can be resumed on any device with the same room code.
+
+- Backend: a free Supabase project. `supabase/schema.sql` creates profiles, rooms, members, cloud saves, the room functions and the rules for who can read and write what (run it once in the SQL Editor).
+- Sign-in settings in Supabase: anonymous sign-ins on (for guests); Site URL and Redirect URLs set to the website and `http://localhost:5173/`.
+- `src/online/client.ts` holds the project URL and publishable key (public by design). Override with `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY` to use another project.
+- Supabase's built-in email sender allows only a few sign-in emails per hour; add a custom SMTP provider (Authentication → Emails) before many people sign in by email.
+- Testing two players in one browser while developing: open a second tab at `http://localhost:5173/?tab-session`.
+
 ## Hosting publicly
 
 `npm run build` makes a static site in `dist/`. Upload that folder to any static host (Netlify, Vercel, Cloudflare Pages, GitHub Pages). There is no server: saves, settings and players' own sounds and music stay in each visitor's browser.

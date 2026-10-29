@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { store, useApp } from '../../store/store';
 import { LEGEND_CHARACTERS } from '../../engine/data/legends';
 import { CharArt } from '../components/Portrait';
+import { ONLINE_AVAILABLE } from '../../online/client';
 
 const TILES = [
   { left: '8%', top: '4%', w: 170, rot: -6, delay: 0 },
@@ -36,6 +37,7 @@ export function Home() {
         <div className="menu">
           {game && <button className="btn primary lg" onClick={() => store.go('game')}>▶ Return to “{game.config.name}”</button>}
           <button className={`btn lg ${game ? '' : 'primary'}`} onClick={() => store.go('setup')}>✦ Create New Game</button>
+          {ONLINE_AVAILABLE && <button className="btn lg" onClick={() => store.go('online')}>🌐 Play Online with Friends</button>}
           <button className="btn" onClick={() => store.go('saves')} disabled={!saves.length}>⟲ Continue Saved Game {resumable.length ? <span className="tag">{resumable.length}</span> : null}</button>
           <button className="btn" onClick={() => store.go('explorer')}>◎ Character Explorer</button>
           <button className="btn" onClick={() => store.go('howto')}>? How to Play</button>

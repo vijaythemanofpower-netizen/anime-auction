@@ -5,8 +5,12 @@ import './ui/arena.css';
 import './ui/comic.css';
 import { App } from './ui/App';
 import { store } from './store/store';
+import { initAuth } from './online/auth';
+import { codeFromLink } from './ui/screens/Online';
+import './online/room';
 
-void store.init();
+void store.init().then(() => { if (codeFromLink()) store.go('online'); });
+void initAuth();
 window.addEventListener('beforeunload', () => store.flushSave());
 
 createRoot(document.getElementById('root')!).render(

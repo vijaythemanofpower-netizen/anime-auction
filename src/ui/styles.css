@@ -353,3 +353,9 @@ kbd { font-family: ui-monospace, Consolas, monospace; font-size: 12px; padding: 
 .format-badge.solo { color: #67e8f9; border-color: #0e7490; }
 .format-badge.tag { color: #fbbf24; border-color: #a16207; }
 .format-badge.squad { color: #f472b6; border-color: #9d174d; }
+
+/* Online rooms */
+.room-code { font-family: 'Chakra Petch', monospace; letter-spacing: 0.18em; color: var(--gold); }
+.room-code-input { font-family: 'Chakra Petch', monospace; font-size: 26px; letter-spacing: 0.3em; text-align: center; text-transform: uppercase; }
+.presence { width: 9px; height: 9px; border-radius: 50%; background: var(--text-faint); display: inline-block; }
+.presence.on { background: var(--good); box-shadow: 0 0 6px var(--good); }

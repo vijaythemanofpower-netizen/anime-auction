@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { GameState, Player } from '../../engine/types';
 import * as G from '../../engine/game';
 import { describeFormat, matchOrder, rankedPlayers } from '../../engine/tournament';
@@ -21,6 +21,15 @@ import { coachIq, titlesFor } from '../../engine/titles';
 export function GameScreen() {
   const g = useApp((s) => s.game)!;
   const exhibition = useApp((s) => s.exhibition);
+  const online = useApp((s) => s.online);
+  const battles = useApp((s) => s.battles);
+  // Online players watch each fight at their own pace: if the host moves on
+  // first, the fight stays on screen until they're done with it.
+  const [watching, setWatching] = useState<string | null>(null);
+  useEffect(() => {
+    if (online?.role === 'guest' && g.lastBattleId && (g.phase === 'battle' || g.phase === 'results')) setWatching(g.lastBattleId);
+  }, [online?.role, g.lastBattleId, g.phase]);
+  const stillWatching = watching && !(g.phase === 'battle' || g.phase === 'results') ? battles[watching] : null;
   return (
     <div className="col" style={{ gap: 18 }}>
       <div className="row" style={{ justifyContent: 'space-between' }}>
@@ -29,12 +38,23 @@ export function GameScreen() {
           <h2>{g.config.name}</h2>
         </div>
         <div className="row">
-          <button className="btn sm" onClick={() => { store.flushSave(); store.toast('Game saved.', 'success'); }}>Save</button>
-          <button className="btn sm ghost" onClick={() => store.closeGame()}>Save &amp; exit</button>
+          {online && <span className="tag" title="Online room code">ROOM {online.code} · {online.role === 'host' ? 'you host' : 'online'}</span>}
+          {online?.role !== 'guest' && <button className="btn sm" onClick={() => { store.flushSave(); store.toast('Game saved.', 'success'); }}>Save</button>}
+          {online ? <button className="btn sm ghost" onClick={() => store.go('online')}>Room</button>
+            : <button className="btn sm ghost" onClick={() => store.closeGame()}>Save &amp; exit</button>}
         </div>
       </div>
       <PhaseBar phase={g.phase} />
-      {exhibition ? <BattleView record={exhibition} exhibition /> : <Phase g={g} />}
+      {exhibition ? <BattleView record={exhibition} exhibition />
+        : stillWatching ? (
+          <div className="col" style={{ gap: 12 }}>
+            <div className="panel row" style={{ justifyContent: 'space-between', borderColor: 'var(--cyan)' }}>
+              <span>The tournament has moved on. Finish watching, then head back.</span>
+              <button className="btn sm primary" onClick={() => setWatching(null)}>Back to the tournament</button>
+            </div>
+            <BattleView record={stillWatching} exhibition />
+          </div>
+        ) : <Phase g={g} />}
     </div>
   );
 }
@@ -56,6 +76,30 @@ function Phase({ g }: { g: GameState }) {
 // ------------------------------------------------------------------ pool
 
 function PoolPhase({ g }: { g: GameState }) {
+  if (store.isGuest()) return <GuestPool g={g} />;
+  return <HostPool g={g} />;
+}
+
+/** Online players watch the host build the pool. */
+function GuestPool({ g }: { g: GameState }) {
+  return (
+    <div className="panel col" style={{ gap: 12 }}>
+      <div><div className="eyebrow">Step 1</div><h3 style={{ marginTop: 4 }}>The host is choosing the fighters</h3>
+        <p className="muted">The auction starts when the pool is ready. {g.pool.length} fighter{g.pool.length === 1 ? '' : 's'} so far.</p></div>
+      <div className="cards" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))' }}>
+        {g.pool.map((id) => (
+          <div key={id} className="panel tight col" style={{ gap: 6 }}>
+            <div style={{ aspectRatio: '3 / 4', borderRadius: 10, overflow: 'hidden' }}><CharArt c={g.characters[id]} /></div>
+            <strong style={{ fontSize: 14 }}>{g.characters[id].name}</strong>
+            <span className="faint">{g.characters[id].series}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function HostPool({ g }: { g: GameState }) {
   const need = G.poolRequirement(g);
   const ok = g.pool.length >= need;
   const settings = useApp((s) => s.settings);
@@ -109,8 +153,17 @@ function PoolPhase({ g }: { g: GameState }) {
 
 function RevealPhase({ g }: { g: GameState }) {
   const viewer = useApp((s) => s.viewer);
-  const humans = g.players.filter((p) => p.kind === 'human');
+  const humans = g.players.filter((p) => store.isLocalPlayer(p));
   const next = humans.find((p) => !g.revealSeen.includes(p.id));
+  const waitingFor = g.players.filter((p) => p.kind === 'human' && !g.revealSeen.includes(p.id));
+  if (!next && waitingFor.length) {
+    return (
+      <div className="panel col" style={{ alignItems: 'center', textAlign: 'center', padding: 32 }}>
+        <div className="spinner" />
+        <h3>Waiting for {waitingFor.map((p) => p.name).join(', ')} to see their fighters…</h3>
+      </div>
+    );
+  }
   if (!next) {
     return (
       <div className="panel col reveal-anim" style={{ alignItems: 'center', textAlign: 'center', padding: 32 }}>
@@ -119,7 +172,8 @@ function RevealPhase({ g }: { g: GameState }) {
         <p style={{ maxWidth: 640, margin: '4px 0' }}><strong>Match order:</strong> {matchOrder(g.players.length, g.config.tournament, g.config.rosterSize)}</p>
         <p className="muted" style={{ maxWidth: 640 }}>{describeFormat(g.players.length, g.config.tournament)}</p>
         <div className="row" style={{ justifyContent: 'center' }}>{g.players.map((p) => <PlayerChip key={p.id} p={p} suffix={<span className="faint">· {p.roster.length} fighters</span>} />)}</div>
-        <button className="btn primary lg" onClick={() => { store.setViewer(null); store.act((d) => G.startTournament(d)); }}>Begin tournament</button>
+        {store.isGuest() ? <p className="faint">Waiting for the host to begin the tournament…</p>
+          : <button className="btn primary lg" onClick={() => { store.setViewer(null); store.act((d) => G.startTournament(d)); }}>Begin tournament</button>}
       </div>
     );
   }
@@ -165,7 +219,7 @@ function RevealSequence({ g, player }: { g: GameState; player: Player }) {
       )}
       <div className="row" style={{ justifyContent: 'flex-end' }}>
         {!done ? <button className="btn primary lg" onClick={() => setShown(shown + 1)}>Reveal next fighter</button>
-          : <button className="btn gold lg" onClick={() => { store.act((d) => G.markRevealed(d, player.id)); store.setViewer(null); }}>Done — hide my roster</button>}
+          : <button className="btn gold lg" onClick={() => { store.move(player.id, { t: 'revealed' }); store.setViewer(null); }}>Done — hide my roster</button>}
       </div>
     </div>
   );
@@ -191,7 +245,8 @@ function HubPhase({ g }: { g: GameState }) {
           <div style={{ marginTop: 6 }}><strong>Match order:</strong> {matchOrder(g.players.length, g.config.tournament, g.config.rosterSize)}</div>
           <div className="faint">{describeFormat(g.players.length, g.config.tournament)}</div>
         </div>
-        <button className="btn primary lg" disabled={!next} onClick={() => { store.setViewer(null); store.act((d, v) => G.startMatch(d, v)); }}>Prepare match</button>
+        {store.isGuest() ? <span className="faint">The host starts each match.</span>
+          : <button className="btn primary lg" disabled={!next} onClick={() => { store.setViewer(null); store.act((d, v) => G.startMatch(d, v)); }}>Prepare match</button>}
       </div>
       <Seg value={tab} onChange={setTab} label="Hub view" options={[{ v: 'bracket', label: 'Bracket & standings' }, { v: 'rosters', label: 'Rosters' }, { v: 'history', label: 'Battle history' }, { v: 'rivalries', label: 'Rivalries' }]} />
       {tab === 'bracket' && <Bracket g={g} />}
@@ -317,7 +372,7 @@ function CurrentBattle({ g }: { g: GameState }) {
     return (
       <div className="panel empty">
         <p>The battle record could not be found.</p>
-        {g.phase === 'results' && <button className="btn primary" onClick={() => store.act((d) => G.continueAfterResults(d))}>Continue</button>}
+        {g.phase === 'results' && !store.isGuest() && <button className="btn primary" onClick={() => store.act((d) => G.continueAfterResults(d))}>Continue</button>}
       </div>
     );
   }

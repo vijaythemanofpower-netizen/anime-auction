@@ -64,7 +64,8 @@ export function AuctionPhase() {
   const totalMs = a.config.mode === 'live' ? Math.max(a.config.timerSeconds, a.config.antiSnipeSeconds) * 1000 : a.config.timerSeconds * 1000;
   const urgent = remaining < 5000 && lot.status === 'open';
   const sold = lot.status !== 'open';
-  const humans = g.players.filter((p) => p.kind === 'human');
+  const humans = g.players.filter((p) => store.isLocalPlayer(p));
+  const guest = store.isGuest();
   const active = lot.activePlayerId ? g.players.find((p) => p.id === lot.activePlayerId) : null;
 
   return (
@@ -114,17 +115,18 @@ export function AuctionPhase() {
             {sold && (
               <div className="row" style={{ justifyContent: 'space-between' }}>
                 <strong>{lot.status === 'sold' && leadP ? `${c.name} goes to ${leadP.name} for ${lead!.amount.toLocaleString()}!` : lot.status === 'assigned' ? `${c.name} assigned by the Director.` : `No bids. ${c.name} ${a.queue.includes(c.id) ? 'will return later' : 'is withdrawn'}.`}</strong>
-                <button className="btn primary" onClick={() => store.act((d) => G.advanceLot(d, Date.now()))}>{a.complete || A.totalSlotsRemaining(g) === 0 ? 'Finish auction' : 'Next lot →'}</button>
+                {guest ? <span className="faint">Next lot coming up…</span>
+                  : <button className="btn primary" onClick={() => store.act((d) => G.advanceLot(d, Date.now()))}>{a.complete || A.totalSlotsRemaining(g) === 0 ? 'Finish auction' : 'Next lot →'}</button>}
               </div>
             )}
           </div>
 
           {a.config.mode === 'live' ? (
             <div className="bidder-grid">
-              {g.players.map((p) => <BidderCard key={p.id} g={g} p={p} onAdvice={() => setAdvisorFor(p.id)} />)}
+              {g.players.map((p) => <BidderCard key={p.id} g={g} p={p} onAdvice={store.isLocalPlayer(p) ? () => setAdvisorFor(p.id) : undefined} />)}
             </div>
           ) : active && !sold ? (
-            active.kind === 'npc' ? (
+            !store.isLocalPlayer(active) ? (
               <div className="panel row"><Emblem p={active} /> <strong>{active.name}</strong> <span className="muted">is deciding…</span></div>
             ) : (
               <PrivacyGate player={active} enabled={g.config.privacyScreens && humans.length > 1} viewer={viewer} reason="Your turn to bid. Your scout report is private.">
@@ -188,7 +190,7 @@ function BidderCard({ g, p, onAdvice, big }: { g: GameState; p: Player; onAdvice
   const passed = lot.passed.includes(p.id);
   const leading = lead?.playerId === p.id;
   const full = p.roster.length >= g.config.rosterSize;
-  const bid = (amt: number) => store.act((d) => A.placeBid(d, p.id, amt, Date.now()));
+  const bid = (amt: number) => store.move(p.id, { t: 'bid', amount: amt });
   const steps = [min, min + 250, min + 1000].filter((v, i, arr) => v <= max && arr.indexOf(v) === i);
   return (
     <div className={`bidder${leading ? ' leading' : ''}${passed && !leading ? ' passed' : ''}${lot.activePlayerId === p.id ? ' active' : ''}`} style={{ borderLeft: `3px solid ${p.color}` }}>
@@ -197,8 +199,8 @@ function BidderCard({ g, p, onAdvice, big }: { g: GameState; p: Player; onAdvice
         <Coins n={p.coins} />
       </div>
       <div className="faint">Roster {p.roster.length}/{g.config.rosterSize} · max bid {max.toLocaleString()}{full ? ' · FULL' : ''}{leading ? ' · LEADING' : passed ? ' · passed' : ''}</div>
-      {p.kind === 'npc' ? (
-        <div className="faint">{passed ? 'Out on this lot.' : leading ? 'Holding the lead.' : 'Watching the bidding…'}</div>
+      {!store.isLocalPlayer(p) ? (
+        <div className="faint">{passed ? 'Out on this lot.' : leading ? 'Holding the lead.' : p.kind === 'npc' ? 'Watching the bidding…' : 'Bidding from their own device…'}</div>
       ) : lot.status === 'open' && !passed && !full ? (
         <>
           <div className="row" style={{ gap: 6 }}>
@@ -209,7 +211,7 @@ function BidderCard({ g, p, onAdvice, big }: { g: GameState; p: Player; onAdvice
               onChange={(e) => setCustom(e.target.value)} aria-label={`Custom bid for ${p.name}`}
               onKeyDown={(e) => { if (e.key === 'Enter' && custom) { bid(Math.round(Number(custom))); setCustom(''); } }} />
             <button className="btn sm primary" disabled={!can || !custom} onClick={() => { bid(Math.round(Number(custom))); setCustom(''); }}>Bid</button>
-            <button className="btn sm" disabled={leading || (a.config.mode === 'turns' && lot.activePlayerId !== p.id)} onClick={() => store.act((d) => A.passLot(d, p.id, Date.now()))}>Pass</button>
+            <button className="btn sm" disabled={leading || (a.config.mode === 'turns' && lot.activePlayerId !== p.id)} onClick={() => store.move(p.id, { t: 'pass' })}>Pass</button>
           </div>
           <div className="row" style={{ gap: 6 }}>
             {onAdvice && <button className="btn sm ghost" onClick={onAdvice}>Scout advice</button>}
@@ -241,7 +243,7 @@ function ScoutPanel({ g, playerId }: { g: GameState; playerId: string }) {
       <div className="faint">The advisor uses only public information and your own scouting. It cannot see hidden stats or the future.</div>
       {obs.length > 0 && <div className="col" style={{ gap: 4 }}>{obs.map((o, i) => <div key={i} style={{ fontSize: 13 }}>🔍 {o.text}</div>)}</div>}
       <button className="btn sm" disabled={p.scoutTokens <= 0 || obs.length >= 2 || lot.status !== 'open'}
-        onClick={() => store.act((d, v) => G.useScoutToken(d, v, playerId))}>Send scouts ({p.scoutTokens} left)</button>
+        onClick={() => store.move(playerId, { t: 'scout' })}>Send scouts ({p.scoutTokens} left)</button>
     </div>
   );
 }

@@ -90,9 +90,20 @@ export function BattleView({ record, exhibition }: { record: BattleRecord; exhib
 
   // A corner moment for a person's side pauses the fight until they make a call.
   const cornerEvent = idx > 0 && !done ? events[idx - 1] : undefined;
-  const pendingCorner = cornerEvent?.type === 'corner' && record.kind !== 'replay' && !skipped.current
+  const online = useApp((s) => s.online);
+  const cornerOpen = cornerEvent?.type === 'corner' && record.kind !== 'replay' && !skipped.current
     && input.sides[Number(cornerEvent.context?.side)]?.coach === 'human'
-    && !(input.calls ?? []).some((c) => c.side === cornerEvent.context?.side && c.corner === cornerEvent.context?.corner) ? cornerEvent : null;
+    // Online exhibitions are watched locally, so their corners play out by themselves.
+    && !(online && record.kind !== 'tournament')
+    && !(input.calls ?? []).some((c) => c.side === cornerEvent.context?.side && c.corner === cornerEvent.context?.corner);
+  const cornerPlayer = cornerOpen ? g.players.find((p) => p.id === input.sides[Number(cornerEvent!.context?.side)].playerId) : undefined;
+  // Your corner: you choose. Someone else's (online): wait for their call to arrive.
+  const pendingCorner = cornerOpen && cornerPlayer && store.isLocalPlayer(cornerPlayer) ? cornerEvent! : null;
+  const remoteCorner = cornerOpen && cornerPlayer && !store.isLocalPlayer(cornerPlayer) ? cornerEvent! : null;
+  const [remoteWaitSince, setRemoteWaitSince] = useState<number | null>(null);
+  useEffect(() => { setRemoteWaitSince(remoteCorner ? Date.now() : null); }, [remoteCorner?.seq]); // eslint-disable-line react-hooks/exhaustive-deps
+  const [, forceTick] = useState(0);
+  useEffect(() => { if (!remoteCorner) return; const t = setInterval(() => forceTick((n) => n + 1), 1000); return () => clearInterval(t); }, [remoteCorner]);
 
   // Natural voices: generate this battle's lines ahead of playback.
   const voiced = useMemo(() => {
@@ -143,11 +154,11 @@ export function BattleView({ record, exhibition }: { record: BattleRecord; exhib
   }, [musicOn, done, prepping, playing, musicChoice]);
 
   useEffect(() => {
-    if (!playing || done || pendingCorner || waitingArt || prepping) return;
+    if (!playing || done || pendingCorner || remoteCorner || waitingArt || prepping) return;
     const e = events[idx];
     const t = setTimeout(() => setIdx((i) => i + 1), delayFor(e, linesBySeq.has(e.seq)) / speed);
     return () => clearTimeout(t);
-  }, [idx, playing, done, speed, events, linesBySeq, pendingCorner, waitingArt, prepping]);
+  }, [idx, playing, done, speed, events, linesBySeq, pendingCorner, remoteCorner, waitingArt, prepping]);
 
   // Apply consequences once the result is shown (tournament battles only).
   useEffect(() => {
@@ -225,6 +236,14 @@ export function BattleView({ record, exhibition }: { record: BattleRecord; exhib
       {comic
         ? <ComicStage record={record} script={script} cur={idx > 0 ? cur : null} done={done} characters={g.characters} waiting={waitingArt && !prepping} reduced={reduced} aiDrawings={aiDrawings} manga={comicStyle === 'manga'} prep={prepping ? prep : undefined} onStartNow={() => setStartEarly(true)} />
         : <ArenaStage record={record} cur={idx > 0 ? cur : null} done={done} fighters={state.fs} momentum={state.momentum} players={g.players} characters={g.characters} />}
+      {remoteCorner && cornerPlayer && (
+        <div className="panel row" style={{ justifyContent: 'space-between', borderColor: 'var(--warn)' }}>
+          <span><span className="spinner" style={{ display: 'inline-block', width: 14, height: 14, verticalAlign: 'middle', marginRight: 8 }} />Waiting for <strong>{cornerPlayer.name}</strong>&apos;s corner call…</span>
+          {!store.isGuest() && remoteWaitSince && Date.now() - remoteWaitSince > 20_000 && (
+            <button className="btn sm" onClick={() => store.makeCall(record, { side: Number(remoteCorner.context?.side) as 0 | 1, corner: Number(remoteCorner.context?.corner), kind: 'none' })}>Let them fight on</button>
+          )}
+        </div>
+      )}
       {pendingCorner && <CornerPanel e={pendingCorner} record={record} fighters={state.fs} players={g.players} characters={g.characters} onCall={(c) => store.makeCall(record, c)} />}
 
       <div className="row" style={{ justifyContent: 'space-between' }}>
@@ -299,7 +318,7 @@ function Verdict({ record, exhibition }: { record: BattleRecord; exhibition?: bo
   const explanation = result.decision === 'judges'
     ? `Nobody was finished within ${result.turns} actions; the judges scored clean hits (${hitsW} to ${hitsL}), knockdowns and injuries.`
     : `${pn(input.sides[w].playerId)}'s side landed ${hitsW} clean hits to ${hitsL}${loseDowns ? `, scored ${loseDowns} knockdown${loseDowns > 1 ? 's' : ''}` : ''} and the last opponent was ${finish}${winDowns ? `, despite being knocked down ${winDowns === 1 ? 'once' : `${winDowns} times`}` : ''}.`;
-  const showResults = g.phase === 'results' && !exhibition;
+  const showResults = g.phase === 'results' && !exhibition && !store.isGuest();
   return (
     <div className="panel reveal-anim col" style={{ gap: 14, borderColor: 'var(--gold)' }}>
       <div className="row" style={{ justifyContent: 'space-between' }}>
