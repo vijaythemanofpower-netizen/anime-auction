@@ -69,7 +69,7 @@ export function useComicHold(script: ComicScript, nextSeq: number | null, enable
   const since = useRef<{ seq: number; t: number } | null>(null);
   const [expired, setExpired] = useState<number | null>(null);
   const keys = nextSeq === null ? [] : script.panels.filter((p) => p.seq === nextSeq).flatMap((p) => p.drawings.map((d) => d.key));
-  const waiting = enabled && drawer.status === 'ready' && keys.some((k) => !drawer.url(k) && drawer.isPending(k)) && expired !== nextSeq;
+  const waiting = enabled && keys.some((k) => drawer.state(k) === 'pending') && expired !== nextSeq;
   useEffect(() => {
     if (!waiting || nextSeq === null) { since.current = null; return; }
     if (since.current?.seq !== nextSeq) since.current = { seq: nextSeq, t: Date.now() };
@@ -90,9 +90,11 @@ export function useComicPrep(script: ComicScript, enabled: boolean): { active: b
   return { active: enabled && live && done < keys.length, done, total: keys.length };
 }
 
-export function ComicStage({ record, script, cur, done, characters, waiting, reduced, aiDrawings, manga, prep, onStartNow }: {
+export function ComicStage({ record, script, cur, done, characters, waiting, reduced, aiDrawings, manga, prep, onStartNow, remoteArt }: {
   record: BattleRecord; script: ComicScript; cur: BattleEvent | null; done: boolean;
   characters: Record<string, PublicCharacter>; waiting: boolean; reduced: boolean; aiDrawings: boolean; manga?: boolean;
+  /** Online guest: the host draws the panels and shares them, so nothing is drawn here. */
+  remoteArt?: boolean;
   /** Set while the whole fight is being drawn before it plays. */
   prep?: { done: number; total: number }; onStartNow?: () => void;
 }) {
@@ -112,10 +114,10 @@ export function ComicStage({ record, script, cur, done, characters, waiting, red
     if (stale.length) void drawer.cancel(stale);
     let live = true;
     void drawer.restore(keys).then(async () => {
-      if (live && aiDrawings && (await drawer.check()) === 'ready' && live) drawer.request(script.panels.flatMap((p) => p.drawings));
+      if (live && aiDrawings && !remoteArt && (await drawer.check()) === 'ready' && live) drawer.request(script.panels.flatMap((p) => p.drawings));
     });
     return () => { live = false; };
-  }, [script, aiDrawings]);
+  }, [script, aiDrawings, remoteArt]);
   useEffect(() => () => { void drawer.cancel(asked.current); }, []);
 
   const pages = useMemo(() => paginate(script.panels), [script]);
@@ -140,7 +142,7 @@ export function ComicStage({ record, script, cur, done, characters, waiting, red
     <div className={`comic-wrap${manga ? ' manga' : ''}`}>
       <div className="comic-top">
         <span className="comic-title">{record.input.mode === 'solo' ? 'SOLO DUEL' : record.input.mode === 'tag' ? 'TAG TEAM' : 'SQUAD BATTLE'} · PAGE {pageIdx + 1}/{pages.length}</span>
-        <ArtistStatus />
+        <ArtistStatus remote={remoteArt} />
       </div>
       <div ref={pageRef} className={`comic-page${reduced ? ' still' : ''}`}>
         {page.map((pl) => {
@@ -149,7 +151,7 @@ export function ComicStage({ record, script, cur, done, characters, waiting, red
           if (i >= shown) return <div key={p.id} className="cpanel blank" style={at(pl)} />;
           return <Panel key={p.id} p={p} place={at(pl)} characters={characters} live={p === current && !done ? cur : null} current={p === current && !done} />;
         })}
-        {prep && <PrepScreen script={script} prep={prep} onStartNow={onStartNow} />}
+        {prep && <PrepScreen script={script} prep={prep} onStartNow={onStartNow} remote={remoteArt} />}
         {waiting && <div className="comic-waiting"><span className="pen" />The artist is drawing the next panel…</div>}
       </div>
       {done && (
@@ -173,7 +175,7 @@ export function ComicStage({ record, script, cur, done, characters, waiting, red
 const SECONDS_PER_DRAWING = 7;
 
 /** "Drawing your fight": the finished panels appear one by one until the comic is ready. */
-function PrepScreen({ script, prep, onStartNow }: { script: ComicScript; prep: { done: number; total: number }; onStartNow?: () => void }) {
+function PrepScreen({ script, prep, onStartNow, remote }: { script: ComicScript; prep: { done: number; total: number }; onStartNow?: () => void; remote?: boolean }) {
   const urls = script.panels.flatMap((p) => p.drawings.map((d) => drawer.url(d.key))).filter((u): u is string => !!u);
   const left = Math.max(0, prep.total - prep.done) * SECONDS_PER_DRAWING;
   const pct = prep.total ? Math.round((prep.done / prep.total) * 100) : 0;
@@ -183,7 +185,7 @@ function PrepScreen({ script, prep, onStartNow }: { script: ComicScript; prep: {
         {urls.map((u, i) => <img key={u} src={u} alt="" style={{ ['--r' as string]: `${((i * 37) % 13) - 6}deg` } as CSSProperties} />)}
       </div>
       <div className="prep-card">
-        <div className="prep-title">{drawer.status === 'ready' ? 'DRAWING YOUR FIGHT…' : 'FINDING THE ARTIST…'}</div>
+        <div className="prep-title">{remote ? 'THE HOST IS DRAWING YOUR FIGHT…' : drawer.status === 'ready' ? 'DRAWING YOUR FIGHT…' : 'FINDING THE ARTIST…'}</div>
         <div className="prep-sub">{prep.done} of {prep.total} drawings · about {left >= 60 ? `${Math.ceil(left / 60)} min` : `${left} s`} left</div>
         <div className="prep-bar"><span style={{ width: `${pct}%` }} /></div>
         {onStartNow && <button className="btn sm" onClick={onStartNow}>Start now (finish drawing during the fight)</button>}
@@ -192,7 +194,8 @@ function PrepScreen({ script, prep, onStartNow }: { script: ComicScript; prep: {
   );
 }
 
-function ArtistStatus() {
+function ArtistStatus({ remote }: { remote?: boolean }) {
+  if (remote) return <span className="artist ready" title="The host's computer draws this comic and shares it with the room">✒ Drawn live by the host</span>;
   const s = drawer.status;
   const label = s === 'ready' ? `✒ Drawing with ${drawer.model.replace(/\.safetensors$/, '')}` : s === 'checking' ? 'Looking for the drawing app…'
     : s === 'no-model' ? 'Drawing app found, but no anime model' : 'Comic style (start the drawing app for real drawings)';
@@ -214,7 +217,7 @@ function Panel({ p, place, characters, live, current }: { p: ComicPanel; place: 
           <div key={d.key} className={`cart${two ? (j === 0 ? ' half-a' : ' half-b') : ''}${url ? ' drawn' : ' sketch'}`}>
             {url ? <img src={url} alt="" draggable={false} /> : c ? <CharArt c={c} /> : null}
             {!url && <div className="halftone" />}
-            {!url && drawer.isPending(d.key) && <span className="drawing-tag">drawing…</span>}
+            {!url && drawer.state(d.key) === 'pending' && <span className="drawing-tag">drawing…</span>}
           </div>
         );
       })}

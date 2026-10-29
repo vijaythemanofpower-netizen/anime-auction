@@ -17,6 +17,7 @@ import { buildComic, COMIC_LENGTHS } from '../../engine/comic';
 import { ComicStage, useComicHold, useComicPrep } from '../comic/ComicStage';
 import { chooseMusic, music } from '../music';
 import { clipKeys, onClipsChanged } from '../../store/media';
+import { useRoom } from '../../online/room';
 
 
 function delayFor(e: BattleEvent, hasLine: boolean): number {
@@ -55,8 +56,11 @@ export function BattleView({ record, exhibition }: { record: BattleRecord; exhib
   const view = useApp((s) => s.settings.battleView);
   const aiDrawings = useApp((s) => s.settings.aiDrawings);
   const musicOn = useApp((s) => s.settings.music);
-  const comicLength = useApp((s) => s.settings.comicLength);
-  const comicStyle = useApp((s) => s.settings.comicStyle);
+  const room = useRoom();
+  // Online guests see the comic the host draws, so they use the host's comic settings.
+  const remoteArt = !!(room?.role === 'guest' && room.artist?.active);
+  const comicLength = useApp((s) => (remoteArt ? room!.artist!.length : s.settings.comicLength));
+  const comicStyle = useApp((s) => (remoteArt ? room!.artist!.style : s.settings.comicStyle));
   const motionSetting = useApp((s) => s.settings.reducedMotion);
   const reduced = motionSetting === 'on' || (motionSetting === 'system' && typeof window !== 'undefined' && !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches);
   const nv = useSyncExternalStore((f) => naturalVoices.subscribe(f), () => `${naturalVoices.status}:${naturalVoices.progress}`);
@@ -74,12 +78,12 @@ export function BattleView({ record, exhibition }: { record: BattleRecord; exhib
   const comic = view === 'comic';
   const script = useMemo(() => buildComic(record, g.characters, { max: COMIC_LENGTHS[comicLength], style: comicStyle }), [record, g.characters, comicLength, comicStyle]);
   // In comic view the whole fight is drawn before the bell, unless the player starts early.
-  const prep = useComicPrep(script, comic && aiDrawings);
+  const prep = useComicPrep(script, comic && (aiDrawings || remoteArt));
   const [startEarly, setStartEarly] = useState(false);
   useEffect(() => setStartEarly(false), [record.battleId]);
   const prepping = prep.active && !startEarly && idx === 0;
   // After that, a moment still waits briefly for its drawing (a corner call can change the rest of the fight).
-  const waitingArt = useComicHold(script, !done ? events[idx]?.seq ?? null : null, comic && aiDrawings && playing && !skipped.current);
+  const waitingArt = useComicHold(script, !done ? events[idx]?.seq ?? null : null, comic && (aiDrawings || remoteArt) && playing && !skipped.current);
   const linesBySeq = useMemo(() => {
     const m = new Map<number, typeof narration>();
     for (const l of narration) m.set(l.seq, [...(m.get(l.seq) ?? []), l]);
@@ -234,7 +238,7 @@ export function BattleView({ record, exhibition }: { record: BattleRecord; exhib
         })}
       </div>
       {comic
-        ? <ComicStage record={record} script={script} cur={idx > 0 ? cur : null} done={done} characters={g.characters} waiting={waitingArt && !prepping} reduced={reduced} aiDrawings={aiDrawings} manga={comicStyle === 'manga'} prep={prepping ? prep : undefined} onStartNow={() => setStartEarly(true)} />
+        ? <ComicStage record={record} script={script} cur={idx > 0 ? cur : null} done={done} characters={g.characters} waiting={waitingArt && !prepping} reduced={reduced} aiDrawings={aiDrawings} remoteArt={remoteArt} manga={comicStyle === 'manga'} prep={prepping ? prep : undefined} onStartNow={() => setStartEarly(true)} />
         : <ArenaStage record={record} cur={idx > 0 ? cur : null} done={done} fighters={state.fs} momentum={state.momentum} players={g.players} characters={g.characters} />}
       {remoteCorner && cornerPlayer && (
         <div className="panel row" style={{ justifyContent: 'space-between', borderColor: 'var(--warn)' }}>

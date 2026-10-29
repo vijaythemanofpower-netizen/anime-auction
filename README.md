@@ -39,6 +39,7 @@ Drawings come from **ComfyUI** running on this computer (`%USERPROFILE%\ComfyUI_
 - Sign-in settings in Supabase: anonymous sign-ins on (for guests); Site URL and Redirect URLs set to the website and `http://localhost:5173/`.
 - `src/online/client.ts` holds the project URL and publishable key (public by design). Override with `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY` to use another project.
 - Supabase's built-in email sender allows only a few sign-in emails per hour; add a custom SMTP provider (Authentication → Emails) before many people sign in by email.
+- Shared comics: when the host has the drawing app running, each finished panel is uploaded to the public `comics` storage bucket under the room's code and announced to the room, so every player sees the host's drawn comic (guests use the host's comic length and style). Only the room's host can upload or delete panels, and a room's panels are deleted when the host closes it.
 - Testing two players in one browser while developing: open a second tab at `http://localhost:5173/?tab-session`.
 
 ## Hosting publicly

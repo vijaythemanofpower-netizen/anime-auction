@@ -13,8 +13,12 @@ import { supabase } from './client';
 import { auth } from './auth';
 import { Reassembler, pack, split, unpack } from './wire';
 import { store } from '../store/store';
+import { drawer } from '../ui/comic/drawing';
+import type { ComicLength, ComicStyle } from '../engine/comic';
 
 export interface Member { userId: string; name: string; online: boolean }
+/** Whether the host is drawing comics for the room, and the comic settings everyone should use. */
+export interface ArtistInfo { active: boolean; length: ComicLength; style: ComicStyle }
 export interface LobbySettings { name: string; rosterSize: 3 | 4; npcs: number; timerSeconds: number; soloRounds: number; tagRound: boolean }
 export interface RoomState {
   code: string;
@@ -28,6 +32,8 @@ export interface RoomState {
   myPlayerId: string | null;
   started: boolean;
   connected: boolean;
+  /** Guests: the host's comic drawing, when they have the drawing app running. */
+  artist: ArtistInfo | null;
 }
 
 export const DEFAULT_LOBBY: LobbySettings = { name: 'Online Showdown', rosterSize: 3, npcs: 0, timerSeconds: 15, soloRounds: 1, tagRound: true };
@@ -45,6 +51,8 @@ type Msg =
   | { k: 'hidden'; profiles: Record<string, HiddenProfile> }
   | { k: 'move'; move: PlayerMove }
   | { k: 'call'; battleId: string; call: CoachCall }
+  | { k: 'artist'; artist: ArtistInfo }
+  | { k: 'art'; items: Array<{ key: string; url: string }> }
   | { k: 'error'; text: string }
   | { k: 'closed' };
 
@@ -99,6 +107,7 @@ export async function leaveRoom(): Promise<void> {
     const sb = await supabase();
     if (r.role === 'host') {
       await send({ k: 'closed' });
+      await removeSharedPanels(sb, r.code);
       if (!r.started) await sb.from('rooms').delete().eq('code', r.code);
     } else if (!r.started) {
       await sb.from('room_members').delete().eq('room_code', r.code).eq('user_id', r.userId);
@@ -109,6 +118,8 @@ export async function leaveRoom(): Promise<void> {
 
 async function disconnect() {
   unsubStore?.(); unsubStore = null;
+  unsubArt?.(); unsubArt = null;
+  drawer.expectRemote(false);
   if (channel) { const sb = await supabase(); await sb.removeChannel(channel); channel = null; }
   if (room?.role === 'guest') store.leaveOnlineGame();
   setRoom(null);
@@ -121,7 +132,7 @@ async function connect(code: string) {
   const { data: roomRow, error } = await sb.from('rooms').select('code, host_id, status').eq('code', code).single();
   if (error || !roomRow) throw new Error('Could not open that room.');
   const role = roomRow.host_id === userId ? 'host' : 'guest';
-  setRoom({ code, role, userId, hostId: roomRow.host_id, members: [], settings: DEFAULT_LOBBY, seats: {}, myPlayerId: null, started: roomRow.status !== 'lobby', connected: false });
+  setRoom({ code, role, userId, hostId: roomRow.host_id, members: [], settings: DEFAULT_LOBBY, seats: {}, myPlayerId: null, started: roomRow.status !== 'lobby', connected: false, artist: null });
   await refreshMembers();
 
   const { data: session } = await sb.auth.getSession();
@@ -188,11 +199,70 @@ let lastHidden: Record<string, string> = {};
 let syncTimer: ReturnType<typeof setTimeout> | null = null;
 
 function startHosting() {
-  lastGame = null; lastBattles = {}; lastHidden = {}; lastLobby = '';
-  unsubStore = store.subscribe(() => {
+  lastGame = null; lastBattles = {}; lastHidden = {}; lastLobby = ''; lastArtist = ''; shared.clear();
+  const unsubGame = store.subscribe(() => {
     const s = store.getState();
     if (s.game !== lastGame || s.battles !== lastBattles) scheduleSync();
+    void pushArtist(false);
   });
+  const unsubDrawer = drawer.subscribe(() => { void pushArtist(false); });
+  unsubStore = () => { unsubGame(); unsubDrawer(); };
+  unsubArt = drawer.onDrawn((key, blob) => { void sharePanel(key, blob); });
+  if (store.getState().settings.aiDrawings) void drawer.check();
+}
+
+// ------------------------------------------------- shared comic panels
+
+let unsubArt: (() => void) | null = null;
+let lastArtist = '';
+/** Panels already uploaded for this room: drawing key -> public link. */
+const shared = new Map<string, string>();
+let artBatch: Array<{ key: string; url: string }> = [];
+let artTimer: ReturnType<typeof setTimeout> | null = null;
+let uploads: Promise<void> = Promise.resolve();
+
+function artistInfo(): ArtistInfo {
+  const s = store.getState().settings;
+  return { active: s.aiDrawings && drawer.status === 'ready', length: s.comicLength, style: s.comicStyle };
+}
+
+async function pushArtist(force: boolean, onlyTo?: string) {
+  if (!room || room.role !== 'host') return;
+  const info = artistInfo();
+  const key = JSON.stringify(info);
+  if (!force && key === lastArtist) return;
+  if (!onlyTo) lastArtist = key;
+  await send({ k: 'artist', artist: info }, onlyTo);
+}
+
+const panelPath = (code: string, key: string) => `${code}/${key.replace(/[^A-Za-z0-9_-]/g, '_')}.jpg`;
+
+/** Host: uploads a finished panel (one at a time) and tells the room where it is. */
+function sharePanel(key: string, blob: Blob): Promise<void> {
+  uploads = uploads.then(async () => {
+    if (!room || room.role !== 'host' || !room.started || shared.has(key)) return;
+    try {
+      const sb = await supabase();
+      const path = panelPath(room.code, key);
+      const { error } = await sb.storage.from('comics').upload(path, blob, { upsert: true, contentType: 'image/jpeg', cacheControl: '31536000' });
+      if (error) throw error;
+      const url = sb.storage.from('comics').getPublicUrl(path).data.publicUrl;
+      shared.set(key, url);
+      artBatch.push({ key, url });
+      artTimer ??= setTimeout(() => { artTimer = null; const items = artBatch; artBatch = []; void send({ k: 'art', items }); }, 800);
+    } catch (e) {
+      console.warn('[room] could not share a comic panel', e);
+    }
+  });
+  return uploads;
+}
+
+/** Host: deletes the room's shared panels when the room closes, to keep storage free. */
+async function removeSharedPanels(sb: Awaited<ReturnType<typeof supabase>>, code: string) {
+  try {
+    const { data } = await sb.storage.from('comics').list(code, { limit: 1000 });
+    if (data?.length) await sb.storage.from('comics').remove(data.map((f) => `${code}/${f.name}`));
+  } catch { /* storage cleanup can wait */ }
 }
 
 /** Changes within a quarter of a second go out together. */
@@ -235,7 +305,11 @@ function hostReceive(from: string, msg: Msg) {
   const playerId = Object.entries(room.seats).find(([, u]) => u === from)?.[0];
   switch (msg.k) {
     case 'hello':
-      void refreshMembers().then(() => pushState(true, from));
+      void refreshMembers().then(async () => {
+        await pushState(true, from);
+        await pushArtist(true, from);
+        if (shared.size) await send({ k: 'art', items: [...shared].map(([key, url]) => ({ key, url })) }, from);
+      });
       return;
     case 'move': {
       if (!playerId || !isPlayerMove(msg.move)) return;
@@ -341,6 +415,8 @@ function guestReceive(msg: Msg) {
       if (room.myPlayerId) store.receiveGame(msg.game, msg.sentAt, room.myPlayerId);
       return;
     case 'battle': store.receiveBattle(msg.record); return;
+    case 'artist': patch({ artist: msg.artist }); drawer.expectRemote(msg.artist.active); return;
+    case 'art': drawer.setRemote(msg.items); return;
     case 'hidden': store.receiveHidden(msg.profiles); return;
     case 'error': store.toast(msg.text, 'error'); return;
     case 'closed':

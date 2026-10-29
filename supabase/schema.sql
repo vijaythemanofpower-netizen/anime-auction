@@ -132,3 +132,31 @@ create policy "room members receive" on realtime.messages for select to authenti
 drop policy if exists "room members send" on realtime.messages;
 create policy "room members send" on realtime.messages for insert to authenticated
   with check (realtime.messages.extension in ('broadcast', 'presence') and public.is_room_member(split_part(realtime.topic(), ':', 2)));
+
+-- ------------------------------------------------------------ shared comics
+-- When the host draws a fight's comic, the panels are uploaded here so every
+-- player in the room sees them. Files live under comics/<ROOM CODE>/; anyone
+-- with a panel's link can view it, and only that room's host can add or
+-- remove panels.
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values ('comics', 'comics', true, 2097152, array['image/jpeg'])
+on conflict (id) do nothing;
+
+create or replace function public.is_room_host(p_code text) returns boolean
+language sql stable security definer set search_path = public as $$
+  select exists (select 1 from public.rooms where code = p_code and host_id = auth.uid());
+$$;
+grant execute on function public.is_room_host(text) to authenticated;
+
+drop policy if exists "room hosts upload comic panels" on storage.objects;
+create policy "room hosts upload comic panels" on storage.objects for insert to authenticated
+  with check (bucket_id = 'comics' and public.is_room_host((storage.foldername(name))[1]));
+drop policy if exists "room hosts replace comic panels" on storage.objects;
+create policy "room hosts replace comic panels" on storage.objects for update to authenticated
+  using (bucket_id = 'comics' and public.is_room_host((storage.foldername(name))[1]));
+drop policy if exists "room hosts list comic panels" on storage.objects;
+create policy "room hosts list comic panels" on storage.objects for select to authenticated
+  using (bucket_id = 'comics' and public.is_room_host((storage.foldername(name))[1]));
+drop policy if exists "room hosts remove comic panels" on storage.objects;
+create policy "room hosts remove comic panels" on storage.objects for delete to authenticated
+  using (bucket_id = 'comics' and public.is_room_host((storage.foldername(name))[1]));

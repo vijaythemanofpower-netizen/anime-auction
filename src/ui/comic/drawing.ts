@@ -18,6 +18,11 @@ class Drawer {
   speedLora = '';
   /** Drawings finished this session: key -> object URL. */
   private urls = new Map<string, string>();
+  /** Panels drawn by the host of an online room, by key. */
+  private remote = new Map<string, string>();
+  /** Online: the host is drawing this fight, so missing panels are on their way. */
+  private remoteExpected = false;
+  private drawnHooks = new Set<(key: string, blob: Blob) => void>();
   private failed = new Set<string>();
   private pending = new Map<string, { promptId?: string; waiters: Array<(url: string | null) => void> }>();
   private listeners = new Set<Listener>();
@@ -45,7 +50,18 @@ class Drawer {
     return this.status;
   }
 
-  url(key: string): string | undefined { return this.urls.get(key); }
+  url(key: string): string | undefined { return this.urls.get(key) ?? this.remote.get(key); }
+
+  /** Called with every finished drawing (new or from the browser's store), e.g. to share it. */
+  onDrawn(fn: (key: string, blob: Blob) => void) { this.drawnHooks.add(fn); return () => { this.drawnHooks.delete(fn); }; }
+  private drawn(key: string, blob: Blob) { for (const f of this.drawnHooks) f(key, blob); }
+
+  /** Online guest: panels the host has drawn and shared. */
+  setRemote(items: Array<{ key: string; url: string }>) {
+    for (const { key, url } of items) this.remote.set(key, url);
+    if (items.length) this.emit();
+  }
+  expectRemote(on: boolean) { if (this.remoteExpected !== on) { this.remoteExpected = on; this.emit(); } }
 
   /** Loads finished drawings for these keys from the browser's store. */
   async restore(keys: string[]): Promise<void> {
@@ -53,7 +69,7 @@ class Drawer {
     for (const k of keys) {
       if (this.urls.has(k)) continue;
       const blob = await cacheGet(k);
-      if (blob) { this.urls.set(k, URL.createObjectURL(blob)); any = true; }
+      if (blob) { this.urls.set(k, URL.createObjectURL(blob)); this.drawn(k, blob); any = true; }
     }
     if (any) this.emit();
   }
@@ -73,7 +89,10 @@ class Drawer {
 
   /** Where a drawing stands: finished, given up on, still coming, or never asked for. */
   state(key: string): 'done' | 'failed' | 'pending' | 'none' {
-    return this.urls.has(key) ? 'done' : this.pending.has(key) ? 'pending' : this.failed.has(key) ? 'failed' : 'none';
+    if (this.urls.has(key) || this.remote.has(key)) return 'done';
+    if (this.pending.has(key)) return 'pending';
+    if (this.failed.has(key)) return 'failed';
+    return this.remoteExpected ? 'pending' : 'none';
   }
 
   /** Drops drawings still waiting in ComfyUI's queue (when the battle screen closes). */
@@ -94,7 +113,7 @@ class Drawer {
     };
     try {
       const cached = await cacheGet(d.key);
-      if (cached) { finish(URL.createObjectURL(cached)); return; }
+      if (cached) { finish(URL.createObjectURL(cached)); this.drawn(d.key, cached); return; }
       if (this.status !== 'ready' && (await this.check()) !== 'ready') { finish(null); return; }
       const res = await fetch(`${COMFY_URL}/prompt`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -117,6 +136,7 @@ class Drawer {
         const small = await compress(raw);
         void cachePut(d.key, small);
         finish(URL.createObjectURL(small));
+        this.drawn(d.key, small);
         return;
       }
       finish(null);
