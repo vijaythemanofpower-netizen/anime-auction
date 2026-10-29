@@ -44,8 +44,8 @@ export function App() {
               {online ? `🌐 Room ${online.code}` : account.profile ? `👤 ${account.profile.display_name}` : '🌐 Play online'}
             </button>
           )}
-          <button className={`btn sm ghost${screen === 'explorer' ? ' active' : ''}`} onClick={() => store.go('explorer')}>Characters</button>
-          <button className={`btn sm ghost${screen === 'hall' ? ' active' : ''}`} onClick={() => store.go('hall')}>Hall</button>
+          <button className={`btn sm ghost hide-phone${screen === 'explorer' ? ' active' : ''}`} onClick={() => store.go('explorer')}>Characters</button>
+          <button className={`btn sm ghost hide-phone${screen === 'hall' ? ' active' : ''}`} onClick={() => store.go('hall')}>Hall</button>
           <button className={`btn sm ghost${screen === 'settings' ? ' active' : ''}`} onClick={() => store.go('settings')} aria-label="Settings">⚙</button>
         </nav>
       </header>

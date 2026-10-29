@@ -193,7 +193,7 @@ function BidderCard({ g, p, onAdvice, big }: { g: GameState; p: Player; onAdvice
   const bid = (amt: number) => store.move(p.id, { t: 'bid', amount: amt });
   const steps = [min, min + 250, min + 1000].filter((v, i, arr) => v <= max && arr.indexOf(v) === i);
   return (
-    <div className={`bidder${leading ? ' leading' : ''}${passed && !leading ? ' passed' : ''}${lot.activePlayerId === p.id ? ' active' : ''}`} style={{ borderLeft: `3px solid ${p.color}` }}>
+    <div className={`bidder${store.isLocalPlayer(p) ? ' mine' : ''}${leading ? ' leading' : ''}${passed && !leading ? ' passed' : ''}${lot.activePlayerId === p.id ? ' active' : ''}`} style={{ borderLeft: `3px solid ${p.color}` }}>
       <div className="row" style={{ justifyContent: 'space-between' }}>
         <PlayerChip p={p} />
         <Coins n={p.coins} />

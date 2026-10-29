@@ -359,3 +359,12 @@ kbd { font-family: ui-monospace, Consolas, monospace; font-size: 12px; padding: 
 .room-code-input { font-family: 'Chakra Petch', monospace; font-size: 26px; letter-spacing: 0.3em; text-align: center; text-transform: uppercase; }
 .presence { width: 9px; height: 9px; border-radius: 50%; background: var(--text-faint); display: inline-block; }
 .presence.on { background: var(--good); box-shadow: 0 0 6px var(--good); }
+
+/* Phones: keep the bidding controls on screen during a 15-second lot. */
+@media (max-width: 640px) {
+  .lot-stage > .col:first-child { display: grid; grid-template-columns: 112px minmax(0, 1fr); gap: 12px; align-items: start; }
+  .lot-stage .lot-art { max-width: none; margin: 0; }
+  .bidder.mine { order: -1; border-width: 2px; }
+  .bidder-grid { grid-template-columns: 1fr; }
+  .hide-phone { display: none; }
+}
