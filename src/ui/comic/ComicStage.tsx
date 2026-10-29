@@ -1,0 +1,248 @@
+// The comic battle screen: the fight plays out as manga panels that slam onto
+// the page as the engine's events are reached. Panels are drawn by the local
+// anime model when it is running; until a drawing arrives (or without the
+// model) the panel uses the character's portrait in comic style.
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore, type CSSProperties } from 'react';
+import type { BattleEvent, BattleRecord, PublicCharacter } from '../../engine/types';
+import type { ComicPanel, ComicScript, PanelSize } from '../../engine/comic';
+import { hashString } from '../../engine/rng';
+import { CharArt } from '../components/Portrait';
+import { drawer } from './drawing';
+
+const COLS = 6, ROWS = 3;
+const SHAPE: Record<PanelSize, [number, number]> = { small: [2, 1], wide: [4, 1], tall: [2, 2], splash: [6, 1] };
+// A panel that doesn't fit on the page tries a smaller frame before starting a new page.
+const SHRINK: Record<PanelSize, PanelSize[]> = { splash: ['wide', 'small'], wide: ['small'], tall: ['small'], small: [] };
+
+export interface Placed { panel: ComicPanel; col: number; row: number; w: number; h: number }
+
+/** Packs panels onto pages of a 6x3 grid, in reading order. */
+export function paginate(panels: ComicPanel[]): Placed[][] {
+  const pages: Placed[][] = [];
+  let page: Placed[] = [];
+  let grid: boolean[][] = empty();
+  function empty() { return Array.from({ length: ROWS }, () => Array<boolean>(COLS).fill(false)); }
+  const spot = (w: number, h: number): [number, number] | null => {
+    // Never place before the last panel, so the page still reads left to right, top to bottom.
+    const last = page[page.length - 1];
+    const start = last ? last.row * COLS + last.col : 0;
+    for (let i = start; i < ROWS * COLS; i++) {
+      const r = Math.floor(i / COLS), c = i % COLS;
+      if (r + h > ROWS || c + w > COLS) continue;
+      let ok = true;
+      for (let y = r; y < r + h && ok; y++) for (let x = c; x < c + w; x++) if (grid[y][x]) { ok = false; break; }
+      if (ok) return [r, c];
+    }
+    return null;
+  };
+  for (const p of panels) {
+    let placed = false;
+    for (const size of [p.size, ...SHRINK[p.size]]) {
+      const [w, h] = SHAPE[size];
+      const at = spot(w, h);
+      if (!at) continue;
+      for (let y = at[0]; y < at[0] + h; y++) for (let x = at[1]; x < at[1] + w; x++) grid[y][x] = true;
+      page.push({ panel: p, row: at[0], col: at[1], w, h });
+      placed = true;
+      break;
+    }
+    if (!placed) {
+      pages.push(page);
+      page = []; grid = empty();
+      const [w, h] = SHAPE[p.size];
+      for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) grid[y][x] = true;
+      page.push({ panel: p, row: 0, col: 0, w, h });
+    }
+  }
+  if (page.length) pages.push(page);
+  return pages;
+}
+
+export function useDrawer() {
+  return useSyncExternalStore((f) => drawer.subscribe(f), () => drawer.status + drawer.model);
+}
+
+/** The next event waits for its panel's drawing (up to a limit) so the comic keeps up with the fight. */
+export function useComicHold(script: ComicScript, nextSeq: number | null, enabled: boolean): boolean {
+  const [, bump] = useState(0);
+  useEffect(() => drawer.subscribe(() => bump((n) => n + 1)), []);
+  const since = useRef<{ seq: number; t: number } | null>(null);
+  const [expired, setExpired] = useState<number | null>(null);
+  const keys = nextSeq === null ? [] : script.panels.filter((p) => p.seq === nextSeq).flatMap((p) => p.drawings.map((d) => d.key));
+  const waiting = enabled && drawer.status === 'ready' && keys.some((k) => !drawer.url(k) && drawer.isPending(k)) && expired !== nextSeq;
+  useEffect(() => {
+    if (!waiting || nextSeq === null) { since.current = null; return; }
+    if (since.current?.seq !== nextSeq) since.current = { seq: nextSeq, t: Date.now() };
+    const left = 25_000 - (Date.now() - since.current.t);
+    const t = setTimeout(() => setExpired(nextSeq), Math.max(0, left));
+    return () => clearTimeout(t);
+  }, [waiting, nextSeq]);
+  return waiting;
+}
+
+/** Before the bell: is the artist still drawing this fight, and how far along? */
+export function useComicPrep(script: ComicScript, enabled: boolean): { active: boolean; done: number; total: number } {
+  const [, bump] = useState(0);
+  useEffect(() => drawer.subscribe(() => bump((n) => n + 1)), []);
+  const keys = script.panels.flatMap((p) => p.drawings.map((d) => d.key));
+  const done = keys.filter((k) => { const st = drawer.state(k); return st === 'done' || st === 'failed'; }).length;
+  const live = drawer.status === 'ready' || drawer.status === 'checking' || drawer.status === 'off';
+  return { active: enabled && live && done < keys.length, done, total: keys.length };
+}
+
+export function ComicStage({ record, script, cur, done, characters, waiting, reduced, aiDrawings, manga, prep, onStartNow }: {
+  record: BattleRecord; script: ComicScript; cur: BattleEvent | null; done: boolean;
+  characters: Record<string, PublicCharacter>; waiting: boolean; reduced: boolean; aiDrawings: boolean; manga?: boolean;
+  /** Set while the whole fight is being drawn before it plays. */
+  prep?: { done: number; total: number }; onStartNow?: () => void;
+}) {
+  useDrawer();
+  const [, bump] = useState(0);
+  useEffect(() => drawer.subscribe(() => bump((n) => n + 1)), []);
+  const [readAll, setReadAll] = useState(false);
+  const pageRef = useRef<HTMLDivElement>(null);
+
+  // Ask for every drawing up front (in story order). A corner call rewrites the
+  // rest of the fight, so drawings for panels that no longer happen are dropped.
+  const asked = useRef<string[]>([]);
+  useEffect(() => {
+    const keys = script.panels.flatMap((p) => p.drawings.map((d) => d.key));
+    const stale = asked.current.filter((k) => !keys.includes(k));
+    asked.current = keys;
+    if (stale.length) void drawer.cancel(stale);
+    let live = true;
+    void drawer.restore(keys).then(async () => {
+      if (live && aiDrawings && (await drawer.check()) === 'ready' && live) drawer.request(script.panels.flatMap((p) => p.drawings));
+    });
+    return () => { live = false; };
+  }, [script, aiDrawings]);
+  useEffect(() => () => { void drawer.cancel(asked.current); }, []);
+
+  const pages = useMemo(() => paginate(script.panels), [script]);
+  const seq = cur?.seq ?? -1;
+  const shown = done ? script.panels.length : script.panels.filter((p) => p.seq <= seq).length;
+  const current = shown > 0 ? script.panels[shown - 1] : null;
+  let pageIdx = 0;
+  for (let i = 0, n = 0; i < pages.length; i++) { n += pages[i].length; if (shown <= n) { pageIdx = i; break; } pageIdx = i; }
+  const at = (pl: Placed) => ({ gridColumn: `${pl.col + 1} / span ${pl.w}`, gridRow: `${pl.row + 1} / span ${pl.h}` });
+  const page = pages[pageIdx] ?? [];
+
+  // Shake the page on hits that land.
+  const shake = cur && !done && (cur.type === 'knockdown' || cur.type === 'clash' || ((cur.type === 'attack' || cur.type === 'counter') && (cur.crit || cur.context?.impact === 'devastating' || cur.context?.impact === 'heavy'))) ? (cur.type === 'attack' || cur.type === 'counter' ? 'shake' : 'shake-big') : '';
+  useLayoutEffect(() => {
+    const el = pageRef.current;
+    if (!el || reduced) return;
+    el.classList.remove('shake', 'shake-big');
+    if (shake) { void el.offsetWidth; el.classList.add(shake); }
+  }, [cur?.seq, shake, reduced]);
+
+  return (
+    <div className={`comic-wrap${manga ? ' manga' : ''}`}>
+      <div className="comic-top">
+        <span className="comic-title">{record.input.mode === 'solo' ? 'SOLO DUEL' : record.input.mode === 'tag' ? 'TAG TEAM' : 'SQUAD BATTLE'} · PAGE {pageIdx + 1}/{pages.length}</span>
+        <ArtistStatus />
+      </div>
+      <div ref={pageRef} className={`comic-page${reduced ? ' still' : ''}`}>
+        {page.map((pl) => {
+          const p = pl.panel;
+          const i = script.panels.indexOf(p);
+          if (i >= shown) return <div key={p.id} className="cpanel blank" style={at(pl)} />;
+          return <Panel key={p.id} p={p} place={at(pl)} characters={characters} live={p === current && !done ? cur : null} current={p === current && !done} />;
+        })}
+        {prep && <PrepScreen script={script} prep={prep} onStartNow={onStartNow} />}
+        {waiting && <div className="comic-waiting"><span className="pen" />The artist is drawing the next panel…</div>}
+      </div>
+      {done && (
+        <div className="row" style={{ justifyContent: 'center', marginTop: 10 }}>
+          <button className="btn sm" onClick={() => setReadAll((v) => !v)}>{readAll ? 'Hide the full comic' : `📖 Read the whole comic (${pages.length} page${pages.length > 1 ? 's' : ''})`}</button>
+        </div>
+      )}
+      {done && readAll && (
+        <div className="col" style={{ gap: 14, marginTop: 12 }}>
+          {pages.map((pg, i) => (
+            <div key={i} className="comic-page still">
+              {pg.map((pl) => <Panel key={pl.panel.id} p={pl.panel} place={at(pl)} characters={characters} live={null} current={false} />)}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+const SECONDS_PER_DRAWING = 7;
+
+/** "Drawing your fight": the finished panels appear one by one until the comic is ready. */
+function PrepScreen({ script, prep, onStartNow }: { script: ComicScript; prep: { done: number; total: number }; onStartNow?: () => void }) {
+  const urls = script.panels.flatMap((p) => p.drawings.map((d) => drawer.url(d.key))).filter((u): u is string => !!u);
+  const left = Math.max(0, prep.total - prep.done) * SECONDS_PER_DRAWING;
+  const pct = prep.total ? Math.round((prep.done / prep.total) * 100) : 0;
+  return (
+    <div className="comic-prep" role="status" aria-live="polite">
+      <div className="prep-thumbs">
+        {urls.map((u, i) => <img key={u} src={u} alt="" style={{ ['--r' as string]: `${((i * 37) % 13) - 6}deg` } as CSSProperties} />)}
+      </div>
+      <div className="prep-card">
+        <div className="prep-title">{drawer.status === 'ready' ? 'DRAWING YOUR FIGHT…' : 'FINDING THE ARTIST…'}</div>
+        <div className="prep-sub">{prep.done} of {prep.total} drawings · about {left >= 60 ? `${Math.ceil(left / 60)} min` : `${left} s`} left</div>
+        <div className="prep-bar"><span style={{ width: `${pct}%` }} /></div>
+        {onStartNow && <button className="btn sm" onClick={onStartNow}>Start now (finish drawing during the fight)</button>}
+      </div>
+    </div>
+  );
+}
+
+function ArtistStatus() {
+  const s = drawer.status;
+  const label = s === 'ready' ? `✒ Drawing with ${drawer.model.replace(/\.safetensors$/, '')}` : s === 'checking' ? 'Looking for the drawing app…'
+    : s === 'no-model' ? 'Drawing app found, but no anime model' : 'Comic style (start the drawing app for real drawings)';
+  return <span className={`artist ${s}`} title={s === 'ready' ? 'Panels are drawn on this computer for free' : 'Double-click Start Game.bat, or Start Drawing AI.bat, to turn on real drawings'}>{label}</span>;
+}
+
+function Panel({ p, place, characters, live, current }: { p: ComicPanel; place: CSSProperties; characters: Record<string, PublicCharacter>; live: BattleEvent | null; current: boolean }) {
+  const h = hashString(p.id + p.seq);
+  const tilt = ((h % 7) - 3) * 0.6;
+  const style = { ...place, ['--tilt' as string]: `${tilt}deg`, ['--kx' as string]: `${(h % 5) - 2}%`, ['--ky' as string]: `${((h >> 3) % 5) - 2}%` } as CSSProperties;
+  const two = p.drawings.length === 2;
+  return (
+    <div className={`cpanel ${p.size} shot-${p.shot}${current ? ' current' : ''}${two ? ' two' : ''}`} style={style}>
+      {p.drawings.map((d, j) => {
+        const url = drawer.url(d.key);
+        const who = j === 0 ? p.focus : p.other!;
+        const c = characters[who];
+        return (
+          <div key={d.key} className={`cart${two ? (j === 0 ? ' half-a' : ' half-b') : ''}${url ? ' drawn' : ' sketch'}`}>
+            {url ? <img src={url} alt="" draggable={false} /> : c ? <CharArt c={c} /> : null}
+            {!url && <div className="halftone" />}
+            {!url && drawer.isPending(d.key) && <span className="drawing-tag">drawing…</span>}
+          </div>
+        );
+      })}
+      {two && <div className="vs-slash" />}
+      {(p.shot === 'strike' || p.shot === 'finisher' || p.shot === 'charge' || p.shot === 'awaken' || p.shot === 'clash') && <div className="speedlines" />}
+      {p.caption && <div className="caption">{p.caption}</div>}
+      {p.sfx && <div className="sfx" key={p.id}>{p.sfx}</div>}
+      {p.balloon && !live && <div className={`balloon${p.shot === 'taunt' ? ' spiky' : ''}`}>{p.balloon}</div>}
+      {live && <LiveOverlay e={live} />}
+    </div>
+  );
+}
+
+const LIVE_WORD: Partial<Record<BattleEvent['type'], string>> = { miss: 'WHOOSH', block: 'KLANG!', parry: 'PARRY!', guard_break: 'CRACK!', knockdown: 'DOWN!', get_up: 'GETS UP!', defeat: 'K.O.!', awakening: 'AWAKENING!', iron_will: 'IRON WILL!', verdict: 'VICTORY!' };
+
+/** What is happening right now, drawn over the newest panel. */
+function LiveOverlay({ e }: { e: BattleEvent }) {
+  let word = LIVE_WORD[e.type];
+  if ((e.type === 'attack' || e.type === 'counter') && !e.context?.environmental) {
+    const impact = String(e.context?.impact ?? '');
+    word = e.crit ? 'CRITICAL!' : impact === 'devastating' ? 'DOOM!' : impact === 'heavy' ? 'WHAM!' : impact === 'glancing' ? 'tsk' : e.type === 'counter' ? 'COUNTER!' : 'POW!';
+  }
+  if (e.type === 'defeat' && e.context?.how === 'stoppage') word = 'STOPPED!';
+  const line = e.type === 'banter' ? String(e.context?.line ?? '') : e.type === 'call' ? String(e.context?.shout ?? '') : e.type === 'twist' ? String(e.context?.title ?? '') : '';
+  return (
+    <div className="live" key={e.seq}>
+      {word && <div className={`live-word${e.type === 'defeat' || e.type === 'knockdown' ? ' big' : ''}`}>{word}</div>}
+      {line && <div className={`balloon${e.context?.kind === 'mock' ? ' spiky' : ''}`}>{line}</div>}
+    </div>
+  );
+}

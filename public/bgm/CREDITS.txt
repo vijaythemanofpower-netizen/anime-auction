@@ -1,0 +1,13 @@
+Battle music in this folder is public domain (CC0 1.0), from OpenGameArt.org.
+Files were re-encoded to MP3 and renamed for use in the game.
+
+- metal_rush.mp3: "Boss Battle #9 [Metal]" by nene: https://opengameart.org/content/boss-battle-9-metal
+- symphonic_metal.mp3: "Boss Battle #2 [Symphonic Metal]" by nene: https://opengameart.org/content/boss-battle-2-symphonic-metal
+- heroic_pursuit.mp3: "Determined Pursuit (epic orchestra loop)" by Emma_MA: https://opengameart.org/content/determined-pursuit-epic-orchestra-loop
+- epic_boss.mp3: "Boss Battle Music" (Epic Boss Battle) by Juhani Junkala / SubspaceAudio: https://opengameart.org/content/boss-battle-music
+- battle_a.mp3: "Battle Theme A" by cynicmusic: https://opengameart.org/content/battle-theme-a
+- dark_battle.mp3: "Battle Theme B for RPG" by cynicmusic: https://opengameart.org/content/battle-theme-b-for-rpg
+- tension.mp3: "Battle Theme" by Wolfgang_: https://opengameart.org/content/battle-theme-0
+- rock_battle.mp3: "Boss Battle Theme" by CleytonKauffman: https://opengameart.org/content/boss-battle-theme
+- hyper_drive.mp3: "Awake! (Megawall-10)" by cynicmusic: https://opengameart.org/content/awake-megawall-10
+- fast_fight.mp3: "Fast fight / battle music (looped)" by XCVG: https://opengameart.org/content/fast-fight-battle-music-looped

@@ -1,0 +1,19 @@
+Sound effects in this folder are public domain (CC0 1.0), from OpenGameArt.org.
+Files were renamed for use in the game; contents are unchanged.
+
+- "80 CC0 RPG SFX" by rubberduck: https://opengameart.org/content/80-cc0-rpg-sfx
+  (blade_*, fire_*, spell_*, roar_*, chain_*, rubble_*)
+- "100 CC0 SFX" by rubberduck: https://opengameart.org/content/100-cc0-sfx
+  (slam_*, boom_1, weird_*, gong_*, bell_1, splash_*, ice_*)
+- "100 CC0 SFX #2" by rubberduck: https://opengameart.org/content/100-cc0-sfx-2
+  (thunder_1, whoosh_*, metalhit_*)
+- "50 CC0 Sci-Fi SFX" by rubberduck: https://opengameart.org/content/50-cc0-sci-fi-sfx
+  (boom_2, boom_3, shoot_*, rocket_1, teleport_*)
+- "25 CC0 bang / firework SFX" by rubberduck: https://opengameart.org/content/25-cc0-bang-firework-sfx
+  (cannon_*, bang_*)
+- "20 Sword Sound Effects (Attacks and Clashes)" by StarNinjas: https://opengameart.org/content/20-sword-sound-effects-attacks-and-clashes
+  (slash_*, clash_*)
+- "10 Impact/Shield Blocks" by StarNinjas: https://opengameart.org/content/10-impactshield-blocks
+  (punch_*)
+- "Magic Spell SFX": https://opengameart.org/content/magic-spell-sfx
+  (magic_*)
