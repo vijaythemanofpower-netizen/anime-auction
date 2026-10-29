@@ -25,7 +25,16 @@
   .comic-page .cpanel { grid-column: auto / span 1 !important; grid-row: auto !important; }
   .comic-page .cpanel.wide, .comic-page .cpanel.splash { grid-column: auto / span 2 !important; }
   .comic-page .cpanel.tall { grid-row: auto / span 2 !important; }
+  /* Rows follow the screen width; no tilt (it made neighbours overlap), and
+     panels still to come don't leave empty boxes on a small screen. */
+  .comic-page { grid-auto-rows: 44vw; gap: 8px; padding: 8px; }
+  .comic-page .cpanel { transform: none !important; animation-name: panel-slam-flat; }
+  .comic-page .cpanel.blank { display: none; }
+  .caption { font-size: 10px; max-width: 88%; }
+  .sfx { font-size: 28px; }
+  .cpanel.small .sfx { font-size: 22px; }
 }
+@keyframes panel-slam-flat { 0% { transform: scale(1.15); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
 
 .cpanel {
   position: relative;

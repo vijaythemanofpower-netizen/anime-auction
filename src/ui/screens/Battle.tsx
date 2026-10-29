@@ -250,7 +250,7 @@ export function BattleView({ record, exhibition }: { record: BattleRecord; exhib
       )}
       {pendingCorner && <CornerPanel e={pendingCorner} record={record} fighters={state.fs} players={g.players} characters={g.characters} onCall={(c) => store.makeCall(record, c)} />}
 
-      <div className="row" style={{ justifyContent: 'space-between' }}>
+      <div className="row battle-controls" style={{ justifyContent: 'space-between' }}>
         <div className="row">
           <button className="btn primary" onClick={() => setPlaying((p) => !p)} disabled={done} aria-label={playing ? 'Pause' : 'Resume'}>{playing ? '❚❚ Pause' : '▶ Resume'}</button>
           <button className="btn" onClick={() => { setIdx(0); setPlaying(true); }}>↺ Replay</button>

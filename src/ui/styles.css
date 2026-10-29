@@ -369,3 +369,26 @@ kbd { font-family: ui-monospace, Consolas, monospace; font-size: 12px; padding: 
   .hide-phone { display: none; }
 }
 .invite-link { font-size: 12px; word-break: break-all; }
+
+/* Phones: the home collage stays inside the screen, toggles share the width
+   evenly instead of breaking onto a lopsided second line, and colour dots are
+   big enough to tap. */
+@media (max-width: 640px) {
+  .hero, .collage { overflow: hidden; }
+  .collage .tile { max-width: 46%; }
+  .seg { display: flex; width: 100%; }
+  .seg button { flex: 1 1 0; min-width: 0; padding: 8px 6px; white-space: normal; line-height: 1.2; text-align: center; }
+  button[aria-label^='Color'] { width: 28px !important; height: 28px !important; }
+}
+html, body { overflow-x: clip; }
+
+/* Phones: the step bar shows only the current step's name (the others become
+   dots), and the fight controls are compact. */
+@media (max-width: 640px) {
+  .phasebar { overflow: visible; gap: 4px; align-items: center; }
+  .phase { min-width: 0; flex: 0 0 10px; height: 10px; padding: 0; font-size: 0; border-radius: 99px; background: rgba(255,255,255,0.12); }
+  .phase.done { background: var(--text-dim); }
+  .phase.now { flex: 1 1 auto; height: auto; padding: 6px 10px; font-size: 11px; }
+  .battle-controls .btn { min-height: 34px; padding: 0 10px; font-size: 12px; }
+  .battle-controls .row { gap: 6px; }
+}
