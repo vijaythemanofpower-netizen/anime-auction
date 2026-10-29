@@ -42,6 +42,14 @@ Drawings come from **ComfyUI** running on this computer (`%USERPROFILE%\ComfyUI_
 - Shared comics: when the host has the drawing app running, each finished panel is uploaded to the public `comics` storage bucket under the room's code and announced to the room, so every player sees the host's drawn comic (guests use the host's comic length and style). Only the room's host can upload or delete panels, and a room's panels are deleted when the host closes it.
 - Testing two players in one browser while developing: open a second tab at `http://localhost:5173/?tab-session`.
 
+## Host Portal (admins)
+
+`admin.html` (on the website: `…/anime-auction/admin.html`) is the Host Portal: a dashboard of rooms, players and comic storage; close rooms and remove players; rename, ban and unban players; delete rooms nobody has played in for a while; and add or remove admins. Admins sign in by email. Every action is an `admin_*` database function in `supabase/admin.sql` that checks `is_admin()` on the server, so the page grants nothing by itself. The first admin is added once in the Supabase SQL Editor:
+
+```sql
+insert into public.admins (user_id) select id from auth.users where email = 'you@example.com';
+```
+
 ## Hosting publicly
 
 `npm run build` makes a static site in `dist/`. Upload that folder to any static host (Netlify, Vercel, Cloudflare Pages, GitHub Pages). There is no server: saves, settings and players' own sounds and music stay in each visitor's browser.

@@ -1,0 +1,12 @@
+/* Host Portal */
+.admin-tabs { gap: 6px; flex-wrap: wrap; }
+.admin-cards { display: grid; gap: 12px; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); }
+.admin-card { display: flex; flex-direction: column; gap: 4px; }
+.admin-big { font-family: 'Chakra Petch', sans-serif; font-size: 34px; font-weight: 700; line-height: 1.1; }
+.admin-table td, .admin-table th { vertical-align: middle; white-space: nowrap; }
+.admin-notice { padding: 10px 14px; border-radius: 10px; border: 1px solid var(--good, #34d399); color: var(--good, #34d399); background: rgba(52, 211, 153, 0.08); }
+.admin-notice.bad, .admin-error { border: 1px solid #ef4444; color: #fca5a5; background: rgba(239, 68, 68, 0.08); padding: 10px 14px; border-radius: 10px; }
+.admin-id { display: block; padding: 8px 10px; border-radius: 8px; background: rgba(255, 255, 255, 0.05); font-size: 13px; word-break: break-all; user-select: all; }
+.tag.live { color: var(--good, #34d399); border-color: currentColor; }
+.tag.bad { color: #fca5a5; border-color: currentColor; }
+a.btn { text-decoration: none; display: inline-flex; align-items: center; }

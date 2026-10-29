@@ -373,6 +373,8 @@ function saveToCloud() {
     try {
       const sb = await supabase();
       const data = await pack({ game: s.game, vault: store.encodeVault(), battles: s.battles, seats: room.seats, settings: room.settings });
+      // Shows the room as active in the Host Portal.
+      await sb.rpc('touch_room', { p_code: room.code });
       await sb.from('game_saves').upsert({ id: s.game.id, owner: room.userId, room_code: room.code, name: s.game.config.name, data, updated_at: new Date().toISOString() });
     } catch { /* the local save still has it */ }
   }, 8000);
