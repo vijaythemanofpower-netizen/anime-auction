@@ -14,6 +14,8 @@ import { useApp } from '../../store/store';
 export interface LiveFighter {
   snap: FighterSnapshot; hp: number; maxHp: number; st: number; maxSt: number; down: boolean; awakened: boolean; position: 'front' | 'back'; form: number;
   guard: number; injuries: BattleInjury[]; knockdowns: number; floored: boolean; staggered: boolean; howDown?: string;
+  /** A bench fighter stepping in for one move. */
+  fromBench?: boolean;
 }
 
 /** A fighter's state in words, the way a commentator would describe it. */
@@ -107,8 +109,13 @@ export function ArenaStage({ record, cur, done, fighters, momentum, players, cha
   const bannerAbility = banner?.ability ? getAbility(banner.ability) : null;
   const cutIn = live && (live.type === 'ability' || live.type === 'desperation') && live.ability && ABILITIES[live.ability] && (getAbility(live.ability).kind === 'ultimate' || getAbility(live.ability).kind === 'buff' || vfxOf(getAbility(live.ability)) === 'domain');
 
+  // A bench fighter sent in (corner call or jumping in on their own) steps into the arena for their moment.
+  const benchId = live ? (live.type === 'call' && typeof live.context?.reserve === 'string' ? live.context.reserve
+    : live.type === 'reinforcement' || (live.type === 'banter' && live.context?.kind === 'jump') ? live.actor : undefined) : undefined;
   const renderSide = (side: 0 | 1) => {
     const list = input.sides[side].fighters.map((f) => fighters.get(f.charId)!);
+    const bench = benchId ? (input.sides[side].reserves ?? []).find((r) => r.charId === benchId) : undefined;
+    if (bench) list.push({ snap: bench, hp: 100, maxHp: 100, st: 100, maxSt: 100, down: false, awakened: false, position: 'front', form: 1, guard: 100, injuries: [], knockdowns: 0, floored: false, staggered: false, fromBench: true });
     const front = list.filter((f) => f.position === 'front');
     const back = list.filter((f) => f.position === 'back');
     const sw = size === 1 ? 'clamp(130px, 20vw, 220px)' : size === 2 ? 'clamp(96px, 14vw, 170px)' : size === 3 ? 'clamp(84px, 11vw, 156px)' : 'clamp(72px, 8.8vw, 128px)';
@@ -119,11 +126,12 @@ export function ArenaStage({ record, cur, done, fighters, momentum, players, cha
       const blocking = !!live && live.target === f.snap.charId && live.type === 'block';
       const pc = characters[f.snap.charId];
       return (
-        <div key={f.snap.charId} className={`stand${f.hp / f.maxHp < 0.3 && !f.down ? ' hurt' : ''}${acting ? ' acting' : ''}${acting && (melee || isClash) ? ' lunge' : ''}${hit ? ' hit' : ''}${blocking ? ' blocking' : ''}${f.floored ? ' floored' : ''}${f.staggered && !f.down ? ' staggered' : ''}${f.down ? ' down' : ''}${f.awakened ? ' awakened' : ''}`}
+        <div key={f.snap.charId} className={`stand${f.fromBench ? ' from-bench' : ''}${f.hp / f.maxHp < 0.3 && !f.down ? ' hurt' : ''}${acting ? ' acting' : ''}${acting && (melee || isClash) ? ' lunge' : ''}${hit ? ' hit' : ''}${blocking ? ' blocking' : ''}${f.floored ? ' floored' : ''}${f.staggered && !f.down ? ' staggered' : ''}${f.down ? ' down' : ''}${f.awakened ? ' awakened' : ''}`}
           style={{ ['--sw' as string]: sw, ['--side' as string]: pcolor(side), ['--lx' as string]: side === 0 ? '46px' : '-46px', ['--fall' as string]: side === 0 ? '-14deg' : '14deg' } as CSSProperties}>
           <div className="pf" ref={(el) => { if (el) standRefs.current.set(f.snap.charId, el); else standRefs.current.delete(f.snap.charId); }}>
             {pc ? <CharArt c={pc} /> : null}
             <InjuryCracks injuries={f.injuries} fresh={live?.type === 'injury' && live.target === f.snap.charId ? live.seq : null} flip={side === 1} />
+            {f.fromBench && <span className="badge bench-badge">FROM THE BENCH</span>}
             {f.form >= 1.06 && <span className="badge good">TOP FORM</span>}
             {f.form <= 0.94 && <span className="badge bad">OFF DAY</span>}
             {input.mode !== 'solo' && <span className="pos">{f.position === 'front' ? 'FRONT' : 'BACK'}</span>}

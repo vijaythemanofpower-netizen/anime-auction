@@ -278,7 +278,10 @@ export function buildComic(record: BattleRecord, characters: Record<string, Publ
   const panels: ComicPanel[] = list.map((c, i) => {
     const size = c.shot === 'establish' && input.mode === 'solo' ? 'tall' : sizeOf(c.shot, rng);
     const subjects = c.other ? [c.focus, c.other] : [c.focus];
-    const drawings = subjects.map((who, j): ComicDrawing => {
+    // Two fighters share one picture at medium range (tested: close enough that both stay
+    // recognisable; wider shots shrink them to silhouettes).
+    const duo = c.other ? duoDrawing(c, characters, names, i, size, STYLE, input.seed, input.battleId) : null;
+    const drawings = duo ? [duo] : subjects.map((who, j): ComicDrawing => {
       const ch = characters[who];
       const [w, h] = c.other ? [832, 1216] : sizeFor[size];
       const angle = c.shot === 'versus' || c.shot === 'taunt' || c.shot === 'injury' ? 'close-up' : c.shot === 'establish' ? 'from below' : ANGLES[rng.int(0, ANGLES.length - 1)];
@@ -303,6 +306,19 @@ export function buildComic(record: BattleRecord, characters: Record<string, Publ
     };
   });
   return { battleId: input.battleId, panels };
+}
+
+function duoDrawing(c: Candidate, characters: Record<string, PublicCharacter>, names: Map<string, string>, i: number, size: PanelSize, style: string, fightSeed: number, battleId: string): ComicDrawing {
+  const a = characters[c.focus], b = characters[c.other!];
+  const strip = (tags: string) => tags.split(', ').filter((t) => !/^1(boy|girl)$/.test(t)).join(', ');
+  const girls = [a, b].filter((x) => x?.gender === 'female').length;
+  const count = girls === 2 ? '2girls' : girls === 1 ? '1boy, 1girl' : '2boys';
+  const what = c.shot === 'versus' ? 'face-to-face, glaring at each other, intense, upper body, close-up'
+    : 'fighting each other, clash, fists colliding, shockwave, sparks, dynamic angle, cowboy shot, motion lines';
+  const prompt = [count, `(${strip(characterTags(a, names.get(c.focus) ?? c.focus))}:1.1)`, `(${strip(characterTags(b, names.get(c.other!) ?? c.other!))}:1.1)`, what, style, SAFE, QUALITY].join(', ');
+  const [w, h] = size === 'tall' ? sizeFor.tall : sizeFor.wide;
+  const seed = hashString(`${fightSeed}:duo:${i}:${c.focus}:${c.other}`) >>> 0;
+  return { key: `${battleId}:${hashString(`${prompt}|${seed}|${w}x${h}`).toString(36)}`, prompt, seed, width: w, height: h };
 }
 
 function order(s: Shot): number { return s === 'finisher' || s === 'strike' ? 0 : s === 'impact' ? 1 : 2; }
