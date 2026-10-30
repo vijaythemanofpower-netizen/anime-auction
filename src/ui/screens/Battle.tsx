@@ -123,7 +123,7 @@ export function BattleView({ record, exhibition }: { record: BattleRecord; exhib
     naturalVoices.resetQueue();
     // Characters' own lines first, then the commentator's big calls.
     const upcoming = voiced.filter((v) => v.seq >= (events[idx - 1]?.seq ?? 0));
-    naturalVoices.prefetch([...upcoming.filter((v) => !v.key.startsWith('am_michael|')), ...upcoming.filter((v) => v.key.startsWith('am_michael|'))]);
+    naturalVoices.prefetch([...upcoming.filter((v) => !v.narrator), ...upcoming.filter((v) => v.narrator)]);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [voiced, voice, quality, nv.startsWith('ready')]);
 

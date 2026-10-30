@@ -18,11 +18,24 @@ const VOICES: Record<'male' | 'female', Record<Group, string[]>> = {
 };
 // Unhurried by default: the fight now waits for each line, so nobody has to rush.
 const SPEED: Partial<Record<Temperament, number>> = { 'hot-blooded': 1.04, reckless: 1.06, cheerful: 1.03, stoic: 0.86, calculating: 0.9, arrogant: 0.9, patient: 0.9 };
-const NARRATOR = { voice: 'am_michael', speed: 0.98 };
+const NARRATOR = { voice: 'am_michael', speed: 0.98, pitch: 1 };
 
 const hash = (s: string) => [...s].reduce((h, ch) => (h * 31 + ch.charCodeAt(0)) >>> 0, 11);
 
-export function voiceFor(v: VoiceInfo): { voice: string; speed: number } {
+// Hand-cast voices for the built-in characters: the game's own Kokoro voices,
+// picked and tuned for each character's age, attitude and pace (no voice copying).
+// "key voice speed pitch"; pitch above 1 sounds younger/lighter, below 1 bigger/deeper.
+const CAST: Record<string, { voice: string; speed: number; pitch: number }> = Object.fromEntries(
+  'naruto am_puck 1.08 1.08|sasuke bm_daniel 0.92 0.94|itachi bm_lewis 0.85 0.92|kakashi am_michael 0.9 0.96|luffy am_puck 1.1 1.12|zoro am_onyx 0.9 0.92|sanji bm_fable 1 1|ace am_liam 1.02 1|goku am_eric 1.05 1.06|vegeta am_fenrir 1 0.98|frieza bm_fable 0.9 1.12|ichigo am_liam 1 0.98|byakuya bm_george 0.85 0.95|aizen bm_lewis 0.85 0.9|gojo am_echo 1 1|yuji am_eric 1.06 1.05|sukuna am_onyx 0.9 0.85|megumi bm_daniel 0.95 0.98|tanjiro am_liam 1 1.06|zenitsu am_puck 1.15 1.15|rengoku am_fenrir 1.08 1|deku am_echo 1.05 1.1|bakugo am_fenrir 1.1 1.02|todoroki bm_daniel 0.9 0.98|allmight am_adam 1 0.88|levi bm_daniel 0.88 0.95|eren am_liam 1.05 0.98|mikasa bf_emma 0.92 1|gon am_puck 1.08 1.15|killua am_echo 1.02 1.12|hisoka bm_fable 0.9 1.02|edward am_eric 1.1 1.1|roy bm_george 0.95 0.98|saitama am_michael 0.88 1|natsu am_liam 1.1 1.04|denji am_eric 1.05 1|minato am_michael 0.95 1.02|madara am_onyx 0.88 0.9|pain bm_george 0.82 0.88|gaara bm_daniel 0.85 0.94|lee am_puck 1.12 1.05|law bm_lewis 0.92 0.96|whitebeard am_onyx 0.85 0.82|shanks am_michael 0.92 0.95|gohan am_echo 1.02 1.06|piccolo am_adam 0.9 0.88|broly am_fenrir 0.95 0.82|kenpachi am_onyx 0.95 0.86|toshiro bm_daniel 0.95 1.06|rukia bf_emma 1 1.04|yuta am_echo 0.95 1.04|todo am_adam 1.05 0.88|nanami bm_george 0.88 0.94|nobara af_jessica 1.05 1|giyu bm_daniel 0.85 0.94|inosuke am_fenrir 1.15 1.06|akaza am_fenrir 1 0.96|shinobu af_nicole 0.95 1.04|shigaraki bm_lewis 0.85 0.9|endeavor am_adam 1 0.86|kurapika bm_daniel 0.95 1.04|meruem bm_george 0.85 0.88|jinwoo am_michael 0.9 0.94|jotaro am_onyx 0.88 0.9|dio bm_fable 1 0.98|mob am_echo 0.88 1.1|kaneki am_echo 0.92 1|asta am_puck 1.15 1.08|yuno bm_daniel 0.92 1.02|power af_bella 1.12 1.06|yor af_sarah 0.92 1|gilgamesh bm_fable 0.92 0.95|saber bf_isabella 0.95 1|kirito am_liam 1 1.04|frieren bf_alice 0.85 1.02|escanor bm_george 0.9 0.9'.split('|').map((row) => { const [k, voice, speed, pitch] = row.split(' '); return [k, { voice, speed: Number(speed), pitch: Number(pitch) }]; }),
+);
+
+export function voiceFor(v: VoiceInfo): { voice: string; speed: number; pitch: number } {
+  const cast = v.charId.startsWith('legend:') ? CAST[v.charId.slice(7)] : undefined;
+  if (cast) return cast;
+  return { ...autoVoice(v), pitch: 1 };
+}
+
+function autoVoice(v: VoiceInfo): { voice: string; speed: number } {
   const g = v.gender === 'female' ? 'female' : v.gender === 'male' ? 'male' : hash(v.charId) % 3 === 0 ? 'female' : 'male';
   const list = VOICES[g][GROUP[v.temperament]];
   return { voice: list[hash(v.charId) % list.length], speed: SPEED[v.temperament] ?? 1 };
@@ -37,7 +50,8 @@ class NaturalVoices {
   private listeners = new Set<() => void>();
   private cache = new Map<string, Float32Array | null>();
   private rates = new Map<string, number>();
-  private queue: Array<{ key: string; text: string; voice: string; speed: number }> = [];
+  private queue: Array<{ key: string; text: string; voice: string; speed: number; pitch?: number }> = [];
+  private pitchOf = new Map<string, number>();
   private busy = false;
   private nextId = 1;
   private pending = new Map<number, string>();
@@ -62,7 +76,8 @@ class NaturalVoices {
       if (m.type === 'audio') {
         const key = this.pending.get(m.id);
         this.pending.delete(m.id);
-        if (key) { this.cache.set(key, m.data); this.rates.set(key, m.rate); }
+        // Played back faster/slower to shift the pitch; generated at a matching speed so the pace holds.
+        if (key) { this.cache.set(key, m.data); this.rates.set(key, m.rate * (this.pitchOf.get(key) ?? 1)); }
         this.busy = false;
         this.pump();
       }
@@ -71,7 +86,8 @@ class NaturalVoices {
   }
 
   /** Queues lines to be voiced ahead of playback. */
-  prefetch(items: Array<{ key: string; text: string; voice: string; speed: number }>) {
+  prefetch(items: Array<{ key: string; text: string; voice: string; speed: number; pitch?: number }>) {
+    for (const it of items) if (it.pitch) this.pitchOf.set(it.key, it.pitch);
     for (const it of items) if (!this.cache.has(it.key) && !this.queue.some((q) => q.key === it.key)) this.queue.push(it);
     this.pump();
   }
@@ -86,7 +102,7 @@ class NaturalVoices {
     this.busy = true;
     const id = this.nextId++;
     this.pending.set(id, next.key);
-    this.worker.postMessage({ type: 'speak', id, text: next.text, voice: next.voice, speed: next.speed });
+    this.worker.postMessage({ type: 'speak', id, text: next.text, voice: next.voice, speed: Math.min(2, Math.max(0.5, next.speed / (next.pitch ?? 1))) });
   }
 
   /** Plays a pre-generated line. Returns false if it is not ready yet. */
@@ -103,7 +119,7 @@ if (import.meta.env.DEV) (window as unknown as { __voices: NaturalVoices }).__vo
 
 /** Every line gets a natural voice: the characters' own and the commentator's. */
 export function voicedLines(lines: NarrationLine[], info: (speaker: string) => VoiceInfo | undefined) {
-  const out: Array<{ key: string; seq: number; text: string; voice: string; speed: number; big: boolean }> = [];
+  const out: Array<{ key: string; seq: number; text: string; voice: string; speed: number; pitch: number; big: boolean; narrator: boolean }> = [];
   lines.forEach((l) => {
     const big = l.tone === 'hype' || l.tone === 'shock';
     const v = l.speaker === 'narrator' ? NARRATOR : info(l.speaker) ? voiceFor(info(l.speaker)!) : NARRATOR;
@@ -112,7 +128,10 @@ export function voicedLines(lines: NarrationLine[], info: (speaker: string) => V
     if (big && /[.]$/.test(text)) text = `${text.slice(0, -1)}!`;
     if (!text || text === '...') return;
     // Keyed by voice and text, so a re-run fight reuses lines it already has.
-    out.push({ key: `${v.voice}|${v.speed}|${text}`, seq: l.seq, text, voice: v.voice, speed: v.speed, big: big || l.speaker !== 'narrator' });
+    // Delivery follows the line: shouted lines come quicker, trailing or hurt lines slower.
+    const mood = /\.\.\.|…/.test(text) ? 0.88 : /!$/.test(text) ? 1.06 : /\?$/.test(text) ? 0.97 : 1;
+    const speed = Math.round(v.speed * mood * 100) / 100;
+    out.push({ key: `${v.voice}|${speed}|${v.pitch}|${text}`, seq: l.seq, text, voice: v.voice, speed, pitch: v.pitch, big: big || l.speaker !== 'narrator', narrator: l.speaker === 'narrator' });
   });
   return out;
 }
