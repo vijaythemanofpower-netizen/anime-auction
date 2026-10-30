@@ -119,10 +119,11 @@ export function ArenaStage({ record, cur, done, fighters, momentum, players, cha
       const blocking = !!live && live.target === f.snap.charId && live.type === 'block';
       const pc = characters[f.snap.charId];
       return (
-        <div key={f.snap.charId} className={`stand${acting ? ' acting' : ''}${acting && (melee || isClash) ? ' lunge' : ''}${hit ? ' hit' : ''}${blocking ? ' blocking' : ''}${f.floored ? ' floored' : ''}${f.staggered && !f.down ? ' staggered' : ''}${f.down ? ' down' : ''}${f.awakened ? ' awakened' : ''}`}
+        <div key={f.snap.charId} className={`stand${f.hp / f.maxHp < 0.3 && !f.down ? ' hurt' : ''}${acting ? ' acting' : ''}${acting && (melee || isClash) ? ' lunge' : ''}${hit ? ' hit' : ''}${blocking ? ' blocking' : ''}${f.floored ? ' floored' : ''}${f.staggered && !f.down ? ' staggered' : ''}${f.down ? ' down' : ''}${f.awakened ? ' awakened' : ''}`}
           style={{ ['--sw' as string]: sw, ['--side' as string]: pcolor(side), ['--lx' as string]: side === 0 ? '46px' : '-46px', ['--fall' as string]: side === 0 ? '-14deg' : '14deg' } as CSSProperties}>
           <div className="pf" ref={(el) => { if (el) standRefs.current.set(f.snap.charId, el); else standRefs.current.delete(f.snap.charId); }}>
             {pc ? <CharArt c={pc} /> : null}
+            <InjuryCracks injuries={f.injuries} fresh={live?.type === 'injury' && live.target === f.snap.charId ? live.seq : null} flip={side === 1} />
             {f.form >= 1.06 && <span className="badge good">TOP FORM</span>}
             {f.form <= 0.94 && <span className="badge bad">OFF DAY</span>}
             {input.mode !== 'solo' && <span className="pos">{f.position === 'front' ? 'FRONT' : 'BACK'}</span>}
@@ -248,6 +249,41 @@ export function ArenaStage({ record, cur, done, fighters, momentum, players, cha
         </div>
       )}
     </div>
+  );
+}
+
+// Where each body part sits on a 3:4 portrait (percent), and a jagged crack drawn from there.
+const PART_AT: Record<BattleInjury['part'], [number, number]> = { head: [50, 20], arm: [24, 50], torso: [52, 55], leg: [42, 84] };
+function crackPath(seed: number, len: number): string {
+  let x = 0, y = 0, a = (seed % 360) * (Math.PI / 180), d = 'M0 0';
+  for (let i = 0; i < 5; i++) {
+    a += (((seed >> (i * 3)) % 7) - 3) * 0.35;
+    x += Math.cos(a) * len; y += Math.sin(a) * len;
+    d += ` L${x.toFixed(1)} ${y.toFixed(1)}`;
+  }
+  return d;
+}
+
+/** Cracks over injured body parts: drawn in with a flash when the injury happens, then stay. */
+function InjuryCracks({ injuries, fresh, flip }: { injuries: BattleInjury[]; fresh: number | null; flip: boolean }) {
+  if (!injuries.length) return null;
+  return (
+    <svg className="cracks" viewBox="0 0 100 133" preserveAspectRatio="none" aria-hidden="true">
+      {injuries.map((inj, i) => {
+        const [px, py] = PART_AT[inj.part];
+        const x = flip ? 100 - px : px, y = py * 1.33;
+        const big = inj.severity === 2;
+        const newest = fresh !== null && i === injuries.length - 1;
+        const seed = (i + 1) * 977 + inj.part.length * 131;
+        const rays = big ? 5 : 3;
+        return (
+          <g key={`${inj.part}-${i}`} className={`crack${big ? ' fracture' : ''}${newest ? ' fresh' : ''}`} transform={`translate(${x} ${y})`}>
+            {newest && <circle className="crack-flash" r={big ? 16 : 10} />}
+            {Array.from({ length: rays }, (_, r) => <path key={r} d={crackPath(seed + r * 72 * 7, big ? 4.2 : 3)} transform={`rotate(${(360 / rays) * r})`} />)}
+          </g>
+        );
+      })}
+    </svg>
   );
 }
 

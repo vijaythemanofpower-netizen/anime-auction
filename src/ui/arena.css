@@ -329,3 +329,17 @@
 
 .ai-moves { display: grid; gap: 8px; border: 1px solid rgba(196,181,253,0.35); border-radius: 12px; padding: 10px 12px; background: rgba(124,92,255,0.06); }
 .ai-list { margin: 0; padding-left: 18px; display: grid; gap: 4px; font-size: 13px; }
+
+/* Injury cracks over the hurt body part (Arena.tsx InjuryCracks) */
+.stand .pf .cracks { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 1; pointer-events: none; overflow: visible; }
+.cracks .crack path { fill: none; stroke: rgba(255, 255, 255, 0.85); stroke-width: 0.9; stroke-linecap: round; stroke-linejoin: round; filter: drop-shadow(0 0 1.5px #000); }
+.cracks .crack.fracture path { stroke: #fecaca; stroke-width: 1.3; filter: drop-shadow(0 0 2px #dc2626); }
+.cracks .crack.fresh path { stroke-dasharray: 40; stroke-dashoffset: 40; animation: crack-draw 0.45s cubic-bezier(.2,.9,.3,1) forwards; }
+.cracks .crack-flash { fill: rgba(255, 255, 255, 0.9); animation: crack-flash 0.5s ease-out forwards; }
+.cracks .crack.fracture .crack-flash { fill: rgba(248, 113, 113, 0.9); }
+@keyframes crack-draw { to { stroke-dashoffset: 0; } }
+@keyframes crack-flash { from { opacity: 1; transform: scale(0.3); } to { opacity: 0; transform: scale(1.4); } }
+/* Badly hurt fighters breathe heavily and glow red at the edges. */
+.stand.hurt .pf { box-shadow: 0 12px 30px -10px #000, inset 0 0 26px rgba(220, 38, 38, 0.55), 0 0 0 1px rgba(0,0,0,0.6); animation: hurt-breathe 1.6s ease-in-out infinite; }
+@keyframes hurt-breathe { 50% { transform: translateY(2px) scale(0.99); } }
+@media (prefers-reduced-motion: reduce) { .cracks .crack.fresh path { animation: none; stroke-dashoffset: 0; } .cracks .crack-flash { display: none; } .stand.hurt .pf { animation: none; } }
