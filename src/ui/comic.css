@@ -61,6 +61,16 @@
 
 /* Comic treatment for portraits while a drawing is on its way (or without the drawing app). */
 .cart.sketch img, .cart.sketch svg { filter: contrast(1.35) saturate(1.3) drop-shadow(0 0 0 #000); }
+/* Fallback panels: each portrait is cropped and posed like its own shot (sketchFrame). */
+.cart .frame { position: absolute; inset: 0; overflow: hidden; }
+.cart .frame > * { transform-origin: var(--fx, 50%) var(--fy, 30%); transform: scale(var(--fz, 1)) scaleX(var(--ff, 1)) rotate(var(--fr, 0deg)); }
+.cpanel.current .cart .frame > * { animation: frame-push 6s ease-out both; }
+@keyframes frame-push { from { transform: scale(calc(var(--fz, 1) * 0.92)) scaleX(var(--ff, 1)) rotate(var(--fr, 0deg)); } }
+.shot-impact .cart.sketch .frame::after, .shot-injury .cart.sketch .frame::after { content: ''; position: absolute; inset: 0; background: radial-gradient(circle at 50% 40%, transparent 30%, rgba(220, 20, 30, 0.45)); mix-blend-mode: multiply; }
+.shot-charge .cart.sketch .frame::after, .shot-awaken .cart.sketch .frame::after, .shot-finisher .cart.sketch .frame::after { content: ''; position: absolute; inset: 0; background: radial-gradient(circle at 50% 60%, rgba(255, 220, 80, 0.5), transparent 65%); mix-blend-mode: screen; }
+.shot-knockdown .cart.sketch img, .shot-knockdown .cart.sketch svg { filter: grayscale(0.7) contrast(1.4) brightness(0.8); }
+.shot-dodge .cart.sketch img, .shot-dodge .cart.sketch svg { filter: contrast(1.3) blur(0.6px) drop-shadow(-18px 0 0 rgba(120, 200, 255, 0.45)); }
+.shot-block .cart.sketch img, .shot-block .cart.sketch svg { filter: contrast(1.4) saturate(0.8) hue-rotate(-12deg); }
 .halftone { position: absolute; inset: 0; pointer-events: none; mix-blend-mode: multiply; opacity: 0.45;
   background-image: radial-gradient(circle, #000 1.1px, transparent 1.4px); background-size: 6px 6px; }
 .drawing-tag { position: absolute; right: 6px; bottom: 6px; z-index: 4; font-size: 11px; padding: 2px 7px; background: rgba(0,0,0,0.75); color: #fde68a; border-radius: 99px; }
@@ -109,7 +119,7 @@
 @keyframes pen-pulse { 50% { transform: scale(0.5); opacity: 0.4; } }
 
 @media (prefers-reduced-motion: reduce) {
-  .cpanel, .sfx, .live-word, .cart img, .speedlines { animation: none !important; }
+  .cpanel, .sfx, .live-word, .cart img, .cart .frame > *, .speedlines { animation: none !important; }
 }
 
 /* "Drawing your fight" screen shown before the bell */

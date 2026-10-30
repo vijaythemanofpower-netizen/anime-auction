@@ -215,7 +215,7 @@ function Panel({ p, place, characters, live, current }: { p: ComicPanel; place: 
         const c = characters[who];
         return (
           <div key={d.key} className={`cart${two ? (j === 0 ? ' half-a' : ' half-b') : ''}${url ? ' drawn' : ' sketch'}`}>
-            {url ? <img src={url} alt="" draggable={false} /> : c ? <CharArt c={c} /> : null}
+            {url ? <img src={url} alt="" draggable={false} /> : c ? <div className="frame" style={sketchFrame(p, j, h)}><CharArt c={c} /></div> : null}
             {!url && <div className="halftone" />}
             {!url && drawer.state(d.key) === 'pending' && <span className="drawing-tag">drawing…</span>}
           </div>
@@ -229,6 +229,25 @@ function Panel({ p, place, characters, live, current }: { p: ComicPanel; place: 
       {live && <LiveOverlay e={live} />}
     </div>
   );
+}
+
+// Without the drawing app every panel falls back to the same portrait, so each one
+// is framed like a different shot: a close-up crops the face, a strike leans in,
+// a knockdown tips over, and every panel picks its own crop and facing.
+const FRAMING: Partial<Record<ComicPanel['shot'], { zoom: [number, number]; y: [number, number]; rot?: number }>> = {
+  versus: { zoom: [1.9, 2.3], y: [12, 22] }, taunt: { zoom: [1.7, 2.1], y: [14, 24] }, injury: { zoom: [1.6, 2], y: [18, 30] },
+  strike: { zoom: [1.25, 1.6], y: [20, 40], rot: 6 }, impact: { zoom: [1.4, 1.8], y: [18, 34], rot: -9 }, clash: { zoom: [1.3, 1.6], y: [20, 32] },
+  charge: { zoom: [1.05, 1.25], y: [25, 45] }, awaken: { zoom: [1.1, 1.35], y: [20, 40] }, finisher: { zoom: [1.35, 1.7], y: [18, 32], rot: 4 },
+  knockdown: { zoom: [1.15, 1.4], y: [30, 50], rot: -78 }, block: { zoom: [1.2, 1.5], y: [22, 38], rot: -3 }, dodge: { zoom: [1.1, 1.35], y: [25, 45], rot: 12 },
+  establish: { zoom: [1, 1.1], y: [30, 45] }, victory: { zoom: [1, 1.15], y: [25, 40] },
+};
+function sketchFrame(p: ComicPanel, j: number, h: number): CSSProperties {
+  const f = FRAMING[p.shot] ?? { zoom: [1.1, 1.4], y: [20, 40] };
+  const r = (k: number) => ((h >> k) % 1000) / 1000;
+  const zoom = f.zoom[0] + (f.zoom[1] - f.zoom[0]) * r(2);
+  const x = 30 + r(5) * 40, y = f.y[0] + (f.y[1] - f.y[0]) * r(9);
+  const flip = (h >> (j + 12)) & 1 ? -1 : 1;
+  return { ['--fz' as string]: zoom.toFixed(2), ['--fx' as string]: `${x.toFixed(0)}%`, ['--fy' as string]: `${y.toFixed(0)}%`, ['--ff' as string]: String(j === 1 ? -1 : flip), ['--fr' as string]: `${(f.rot ?? 0) + (r(14) - 0.5) * 6}deg` } as CSSProperties;
 }
 
 const LIVE_WORD: Partial<Record<BattleEvent['type'], string>> = { miss: 'WHOOSH', block: 'KLANG!', parry: 'PARRY!', guard_break: 'CRACK!', knockdown: 'DOWN!', get_up: 'GETS UP!', defeat: 'K.O.!', awakening: 'AWAKENING!', iron_will: 'IRON WILL!', verdict: 'VICTORY!' };

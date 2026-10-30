@@ -39,7 +39,7 @@ export interface ComicScript { battleId: string; panels: ComicPanel[] }
 
 export type ComicStyle = 'color' | 'manga';
 /** Panels per fight for each comic length setting. */
-export const COMIC_LENGTHS = { short: 14, full: 28, epic: 42 } as const;
+export const COMIC_LENGTHS = { short: 16, full: 32, epic: 50 } as const;
 export type ComicLength = keyof typeof COMIC_LENGTHS;
 export const MAX_PANELS = COMIC_LENGTHS.full;
 
@@ -189,7 +189,9 @@ function sizeOf(shot: Shot, rng: Rng): PanelSize {
 
 const ANGLES = ['from below', 'from above', 'dutch angle', 'from side', 'close-up', 'cowboy shot', 'foreshortening', 'wide shot'];
 
-function action(shot: Shot, e: BattleEvent, c: PublicCharacter | undefined, record: BattleRecord, injured: string): string {
+function action(shot: Shot, e: BattleEvent, c: PublicCharacter | undefined, record: BattleRecord, injured: string, v: number): string {
+  // Each shot has several poses; v (seeded per panel) picks one, so a fighter isn't drawn the same way twice.
+  const pose = (...list: string[]) => list[v % list.length];
   const ab = e.ability ? ABILITIES[e.ability] : undefined;
   const move = ab ? `(${ab.name.toLowerCase().replace(/[!?:"()]/g, '')}:0.7)` : '';
   const elem = ab?.element ? ELEMENT_TAGS[ab.element] ?? '' : (c?.tags[0] ? ELEMENT_TAGS[c.tags[0]] ?? '' : '');
@@ -197,23 +199,23 @@ function action(shot: Shot, e: BattleEvent, c: PublicCharacter | undefined, reco
     : ab?.vfx === 'slash' ? 'slashing, slash effect, cutting, slicing wind' : '';
   const ranged = c?.reach === 'ranged' || (ab && ['beam', 'projectile', 'lightning', 'fire', 'ice', 'wave', 'explosion'].includes(ab.vfx ?? ''));
   switch (shot) {
-    case 'establish': return 'cowboy shot, standing, fighting stance, looking at viewer, serious, wind, clothes fluttering';
+    case 'establish': return `cowboy shot, ${pose('standing, fighting stance', 'arms crossed, standing tall', 'walking forward, determined', 'crouching, ready to pounce')}, looking at viewer, serious, wind, clothes fluttering`;
     case 'versus': return 'portrait, close-up, face, glaring, intense eyes, serious, looking at viewer, half face shadow';
     case 'taunt': return e.context?.kind === 'mock' ? 'smirk, close-up, upper body, pointing at viewer, smug, looking at viewer' : 'shouting, open mouth, clenched fist, determined, upper body, close-up';
-    case 'charge': return `cowboy shot, powering up, aura, glowing eyes, energy gathering, hair flowing, clenched fists, ${elem}${move ? `, ${move}` : ''}`;
+    case 'charge': return `${pose('cowboy shot', 'full body, from below', 'upper body')}, powering up, aura, glowing eyes, energy gathering, hair flowing, clenched fists, ${elem}${move ? `, ${move}` : ''}`;
     case 'strike':
       if (ranged) return `upper body, attacking, outstretched arm, energy blast, beam, motion lines, ${elem}${move ? `, ${move}` : ''}`;
-      return `upper body, ${armed || 'punching, fighting stance'}, attacking, motion lines, speed lines, impact${move ? `, ${move}` : ''}${elem ? `, ${elem}` : ''}`;
-    case 'impact': return `upper body, getting hit, flying backwards, impact, debris, shockwave, pained expression, clenched teeth, ${injured}`;
-    case 'block': return 'blocking, crossed arms, defensive stance, shockwave, sparks, gritted teeth, sliding back';
-    case 'dodge': return 'dodging, mid-air, jumping, afterimage, motion blur, agile';
+      return `${pose('upper body', 'full body', 'dynamic pose')}, ${armed || pose('punching', 'kicking, high kick', 'elbow strike', 'flying kick, mid-air', 'uppercut')}, attacking, motion lines, speed lines, impact${move ? `, ${move}` : ''}${elem ? `, ${elem}` : ''}`;
+    case 'impact': return `${pose('upper body, getting hit, flying backwards', 'punched in face, head snapped back', 'knocked through wall, rubble', 'bent over, hit in stomach, spitting')}, impact, debris, shockwave, pained expression, clenched teeth, ${injured}`;
+    case 'block': return `${pose('blocking, crossed arms', 'catching fist, palm block', 'parrying with weapon, sword clash', 'raised forearm guard')}, defensive stance, shockwave, sparks, gritted teeth, sliding back`;
+    case 'dodge': return `dodging, ${pose('mid-air, jumping, backflip', 'leaning back, narrow miss', 'sidestep, sliding on ground', 'ducking under attack')}, afterimage, motion blur, agile`;
     case 'clash': return `upper body, face, attacking, energy clash, sparks, shockwave, intense, shouting, ${elem}${move ? `, ${move}` : ''}`;
     case 'injury': return `injured, ${injured}, close-up, upper body, pained expression, sweat, heavy breathing, determined`;
     case 'knockdown': return `lying on ground, on back, defeated, crater, debris, dust cloud, eyes closed, ${injured}`;
     case 'awaken': if (e.type === 'get_up') return `getting up, one knee, wiping mouth, determined, glaring, ${injured || 'dirty clothes'}`;
       return `transformation, power up, glowing aura, glowing eyes, intense, wind, energy swirling, ${elem}, from below`;
     case 'finisher': return `ultimate attack, massive energy, explosion, dramatic, shouting, full power, motion lines${move ? `, ${move}` : ''}, ${elem}`;
-    case 'victory': return `cowboy shot, standing, victory, looking at viewer, confident, smile, smoke, wind, ${injured || 'dirty clothes'}${record.input.mode === 'solo' ? '' : ', back to viewer'}`;
+    case 'victory': return `${pose('cowboy shot, standing', 'full body, standing over defeated enemy', 'upper body, fist raised', 'walking away, looking back')}, victory, looking at viewer, confident, smile, smoke, wind, ${injured || 'dirty clothes'}${record.input.mode === 'solo' ? '' : ', back to viewer'}`;
   }
 }
 
@@ -280,7 +282,7 @@ export function buildComic(record: BattleRecord, characters: Record<string, Publ
       const evForDrawing = j === 1 && c.e.context?.counterMove ? { ...c.e, ability: String(c.e.context.counterMove) } : c.e;
       const prompt = [
         // The fighter must win over the scenery and move names (a move called "Shrine" drew a shrine).
-        `(${characterTags(ch, names.get(who) ?? who)}:1.15)`, action(c.shot, evForDrawing, ch, record, injuriesAt(who, c.e.seq)), angle, `(${arena}:0.6)`, STYLE, SAFE, QUALITY,
+        `(${characterTags(ch, names.get(who) ?? who)}:1.15)`, action(c.shot, evForDrawing, ch, record, injuriesAt(who, c.e.seq), hashString(`${input.seed}:${i}:${j}:${who}:pose`) >>> 0), angle, `(${arena}:0.6)`, STYLE, SAFE, QUALITY,
       ].filter(Boolean).join(', ').replace(/,\s*,/g, ',').replace(/,\s*$/, '');
       const seed = hashString(`${input.seed}:${i}:${j}:${who}`) >>> 0;
       // Keyed by content, so panels a corner call doesn't change keep their drawing.

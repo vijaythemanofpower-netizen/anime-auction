@@ -149,7 +149,7 @@ export function SettingsScreen() {
         <div className="field">
           <span className="label">Comic length</span>
           <Seg value={s.comicLength} onChange={(v) => store.updateSettings({ comicLength: v })} label="Comic length"
-            options={[{ v: 'short', label: 'Short (14 panels)' }, { v: 'full', label: 'Full (28)' }, { v: 'epic', label: 'Epic (42)' }]} />
+            options={[{ v: 'short', label: 'Short (16 panels)' }, { v: 'full', label: 'Full (32)' }, { v: 'epic', label: 'Epic (50)' }]} />
           <span className="faint" style={{ fontSize: 12 }}>Longer comics take longer to draw before the fight starts: roughly 1½, 3 or 4½ minutes.</span>
         </div>
         <div className="field">
