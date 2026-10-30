@@ -274,6 +274,7 @@ export function buildComic(record: BattleRecord, characters: Record<string, Publ
   };
   const arena = ARENA_TAGS[input.environmentId] ?? ARENA_TAGS.colosseum;
 
+  const usedText = new Set<string>();
   const panels: ComicPanel[] = list.map((c, i) => {
     const size = c.shot === 'establish' && input.mode === 'solo' ? 'tall' : sizeOf(c.shot, rng);
     const subjects = c.other ? [c.focus, c.other] : [c.focus];
@@ -288,13 +289,17 @@ export function buildComic(record: BattleRecord, characters: Record<string, Publ
       ].filter(Boolean).join(', ').replace(/,\s*,/g, ',').replace(/,\s*$/, '');
       const seed = hashString(`${input.seed}:${i}:${j}:${who}`) >>> 0;
       // Keyed by content, so panels a corner call doesn't change keep their drawing.
-      const ref = ch?.imageUrl;
+      // The model already knows the built-in fighters (a reference made them look worse in tests);
+      // characters found through the Explorer get their portrait as a light look reference.
+      const ref = ch && !ch.id.startsWith('legend:') && ch.source !== 'original' ? ch.imageUrl : undefined;
       return { key: `${input.battleId}:${hashString(`${prompt}|${seed}|${w}x${h}|${ref ?? ''}`).toString(36)}`, prompt, seed, width: w, height: h, ref };
     });
     return {
       id: `p${i}`, seq: c.e.seq, shot: c.shot, size, focus: c.focus, other: c.other,
-      sfx: sfxFor(c, rng), caption: captionFor(c, names, record), drawings,
-      balloon: c.shot === 'taunt' && c.e.context?.line ? String(c.e.context.line) : undefined,
+      // Told like a printed comic: the narrator's sentence in the caption box and
+      // what the fighters actually say in speech balloons; no sound-effect lettering.
+      sfx: (sfxFor(c, rng), undefined), caption: storyCaption(c, record, names, usedText) ?? captionFor(c, names, record), drawings,
+      balloon: speechFor(c, record, names, usedText),
     };
   });
   return { battleId: input.battleId, panels };
@@ -317,6 +322,36 @@ function sfxFor(c: Candidate, rng: Rng): string | undefined {
     case 'finisher': return pick('finisher');
     default: return undefined;
   }
+}
+
+/** Commentary SHOUTED IN CAPITALS reads as a normal sentence in a caption box. */
+function sentenceCase(text: string, names: Map<string, string>): string {
+  const letters = text.replace(/[^A-Za-z]/g, '');
+  if (!letters || letters.replace(/[^A-Z]/g, '').length / letters.length < 0.6) return text;
+  let out = text.toLowerCase().replace(/(^|[.!?…]\s+|—\s*)([a-z])/g, (_, a: string, b: string) => a + b.toUpperCase());
+  // Put each fighter's name back in its proper capitals.
+  for (const n of names.values()) out = out.split(n.toLowerCase()).join(n);
+  return out;
+}
+
+/** The narrator's line for this moment, as a caption. */
+function storyCaption(c: Candidate, record: BattleRecord, names: Map<string, string>, used: Set<string>): string | undefined {
+  const line = record.narration.find((l) => l.seq === c.e.seq && l.speaker === 'narrator' && !used.has(l.text))
+    ?? record.narration.find((l) => l.seq === c.e.seq - 1 && l.speaker === 'narrator' && !used.has(l.text));
+  if (!line) return undefined;
+  used.add(line.text);
+  const t = sentenceCase(line.text, names);
+  return t.length > 140 ? `${t.slice(0, 137).replace(/\s+\S*$/, '')}…` : t;
+}
+
+/** What a fighter says around this moment, for a speech balloon. */
+function speechFor(c: Candidate, record: BattleRecord, names: Map<string, string>, used: Set<string>): string | undefined {
+  const who = new Set([names.get(c.focus), c.other ? names.get(c.other) : undefined].filter(Boolean));
+  const line = record.narration.find((l) => l.speaker !== 'narrator' && who.has(l.speaker) && Math.abs(l.seq - c.e.seq) <= 2 && !used.has(l.text));
+  const raw = line?.text ?? (c.shot === 'taunt' && c.e.context?.line ? String(c.e.context.line) : undefined);
+  if (!raw) return undefined;
+  used.add(raw);
+  return raw.replace(/^[“"]|[”"]$/g, '');
 }
 
 function captionFor(c: Candidate, names: Map<string, string>, record: BattleRecord): string | undefined {

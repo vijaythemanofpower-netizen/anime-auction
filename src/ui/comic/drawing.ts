@@ -221,10 +221,10 @@ export function workflow(d: ComicDrawing, model: string, speedLora: string, ref:
   if (ref) {
     g.refimg = { class_type: 'LoadImage', inputs: { image: ref } };
     g.ipl = { class_type: 'IPAdapterUnifiedLoader', inputs: { model: [base, 0], preset: 'PLUS (high strength)' } };
-    // Moderate weight, off for the last steps: the look carries over, the pose stays free.
+    // Light touch, early steps only: the look carries over, the pose and drawing style stay free.
     g.ipa = {
       class_type: 'IPAdapterAdvanced',
-      inputs: { model: ['ipl', 0], ipadapter: ['ipl', 1], image: ['refimg', 0], weight: 0.55, weight_type: 'linear', combine_embeds: 'concat', start_at: 0, end_at: 0.75, embeds_scaling: 'V only' },
+      inputs: { model: ['ipl', 0], ipadapter: ['ipl', 1], image: ['refimg', 0], weight: 0.35, weight_type: 'linear', combine_embeds: 'concat', start_at: 0, end_at: 0.5, embeds_scaling: 'V only' },
     };
   }
   return g;

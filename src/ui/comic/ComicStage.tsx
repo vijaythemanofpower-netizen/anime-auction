@@ -263,7 +263,7 @@ function LiveOverlay({ e }: { e: BattleEvent }) {
   const line = e.type === 'banter' ? String(e.context?.line ?? '') : e.type === 'call' ? String(e.context?.shout ?? '') : e.type === 'twist' ? String(e.context?.title ?? '') : '';
   return (
     <div className="live" key={e.seq}>
-      {word && <div className={`live-word${e.type === 'defeat' || e.type === 'knockdown' ? ' big' : ''}`}>{word}</div>}
+      {word && (e.type === 'defeat' || e.type === 'verdict') && <div className="live-word big">{word}</div>}
       {line && <div className={`balloon${e.context?.kind === 'mock' ? ' spiky' : ''}`}>{line}</div>}
     </div>
   );
