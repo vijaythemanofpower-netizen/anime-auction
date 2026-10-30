@@ -4,7 +4,10 @@
 import type { ComicDrawing } from '../../engine/comic';
 import { NEGATIVE } from '../../engine/comic';
 
-export const COMFY_URL = 'http://127.0.0.1:8188';
+// While developing, Vite forwards /comfy to the drawing app (vite.config.ts), so no
+// cross-site permission is needed. The website talks to it directly; the drawing
+// app allows the website's address (Start Drawing AI.bat).
+export const COMFY_URL = import.meta.env.DEV ? '/comfy' : 'http://127.0.0.1:8188';
 const MODEL_HINT = /animagine|illustrious|noob|anime/i;
 const SPEED_HINT = /dmd2|lightning|hyper|turbo/i;
 

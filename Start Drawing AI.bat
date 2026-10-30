@@ -10,5 +10,5 @@ if not exist "%COMFY%\python_embeded\python.exe" (
 )
 title Anime Auction - Drawing AI
 cd /d "%COMFY%"
-"%COMFY%\python_embeded\python.exe" -s ComfyUI\main.py --windows-standalone-build --disable-auto-launch --listen 127.0.0.1 --port 8188 --enable-cors-header http://localhost:5173 --fp8_e4m3fn-unet --fp8_e4m3fn-text-enc
+"%COMFY%\python_embeded\python.exe" -s ComfyUI\main.py --windows-standalone-build --disable-auto-launch --listen 127.0.0.1 --port 8188 --enable-cors-header https://vijaythemanofpower-netizen.github.io --fp8_e4m3fn-unet --fp8_e4m3fn-text-enc
 pause
