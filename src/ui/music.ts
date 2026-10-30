@@ -81,7 +81,7 @@ class MusicPlayer {
   pause() { this.el?.pause(); }
   resume() { if (this.el) void this.el.play().catch(() => {}); }
   /** Quieter while a character or the commentator is speaking. */
-  duck(on: boolean) { if (this.el && !this.fade) this.el.volume = on ? VOLUME * 0.45 : VOLUME; }
+  duck(on: boolean) { if (this.el) this.ramp(on ? VOLUME * 0.35 : VOLUME, on ? 200 : 700); }
 
   stop(ms = 1500) {
     const el = this.el, url = this.url;

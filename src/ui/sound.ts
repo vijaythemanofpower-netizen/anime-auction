@@ -268,6 +268,14 @@ export function playPcm(data: Float32Array, rate: number, interrupt: boolean) {
   voiceSrc = src;
 }
 
+/** How long, in ms, the voice still has to talk (natural or basic voice). */
+export function voiceRemainingMs(): number {
+  const natural = ctx ? Math.max(0, (voiceEndsAt - ctx.currentTime) * 1000) : 0;
+  let basic = 0;
+  try { if (window.speechSynthesis?.speaking) basic = 300; } catch { /* not available */ }
+  return Math.max(natural, basic);
+}
+
 export function stopPcm() {
   try { voiceSrc?.stop(); } catch { /* already stopped */ }
   voiceSrc = null;
@@ -288,20 +296,17 @@ if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
 const hashName = (s: string) => [...s].reduce((h, ch) => (h * 31 + ch.charCodeAt(0)) >>> 0, 7);
 
 /**
- * Reads commentary aloud. Calm lines are skipped while something is still being
- * said, and big moments interrupt, so the voice keeps up with the action.
+ * Reads commentary aloud at a natural pace; playback waits for it to finish.
  */
 export function speakLines(lines: NarrationLine[], speed: number) {
   if (!('speechSynthesis' in window) || !lines.length) return;
   const synth = window.speechSynthesis;
-  const big = lines.some((l) => l.tone === 'hype' || l.tone === 'shock' || l.tone === 'dialogue');
-  if (synth.speaking && !big) return;
-  if (synth.speaking) synth.cancel();
+  // The fight waits for the voice (Battle.tsx), so lines queue instead of cutting each other off.
   for (const l of lines.slice(0, 2)) {
     const u = new SpeechSynthesisUtterance(l.text.replace(/[“”"]/g, ''));
     const narrator = l.speaker === 'narrator';
     if (voices.length) u.voice = voices[narrator ? 0 : hashName(l.speaker) % voices.length];
-    u.rate = Math.min(2, (narrator ? 1.15 : 1.05) * Math.sqrt(speed));
+    u.rate = Math.min(1.6, (narrator ? 0.98 : 0.94) * Math.sqrt(speed));
     u.pitch = narrator ? (l.tone === 'shock' || l.tone === 'hype' ? 1.25 : 1.05) : 0.7 + (hashName(l.speaker) % 70) / 100;
     u.volume = 1;
     synth.speak(u);

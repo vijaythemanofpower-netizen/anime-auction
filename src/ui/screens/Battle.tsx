@@ -10,7 +10,7 @@ import { STRATEGIES, MENTALS } from './Prep';
 import { explainOutcome, reSimulate, type OutcomeReport } from '../../engine/outcome';
 import { CornerPanel } from '../components/CornerPanel';
 import { CoachReview } from '../components/CoachReview';
-import { playEvent, speakLines, stopVoice } from '../sound';
+import { playEvent, speakLines, stopVoice, voiceRemainingMs } from '../sound';
 import { naturalVoices, stopNaturalVoice, voicedLines } from '../voices';
 import { hasSignature } from '../fx/recipes';
 import { buildComic, COMIC_LENGTHS } from '../../engine/comic';
@@ -135,7 +135,7 @@ export function BattleView({ record, exhibition }: { record: BattleRecord; exhib
     if (!voice) return;
     if (natural) {
       // Lines not generated yet (early in a fight) use the basic voice instead of staying silent.
-      const missed = voiced.filter((x) => x.seq === e.seq).filter((v) => !naturalVoices.play(v.key, v.big && e.type !== 'banter'));
+      const missed = voiced.filter((x) => x.seq === e.seq).filter((v) => !naturalVoices.play(v.key, false));
       if (missed.length) speakLines((linesBySeq.get(e.seq) ?? []).filter((l) => missed.some((m) => l.text.replace(/[“”"]/g, '').replace(/\s+/g, ' ').trim() === m.text)), speed);
     } else speakLines(linesBySeq.get(e.seq) ?? [], speed);
   }, [idx]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -160,9 +160,26 @@ export function BattleView({ record, exhibition }: { record: BattleRecord; exhib
   useEffect(() => {
     if (!playing || done || pendingCorner || remoteCorner || waitingArt || prepping) return;
     const e = events[idx];
-    const t = setTimeout(() => setIdx((i) => i + 1), delayFor(e, linesBySeq.has(e.seq)) / speed);
+    // The next moment waits until the current line has been spoken, plus a short breath,
+    // so the narration is never rushed (at most 9 s, and not at all at 4x speed).
+    let t: ReturnType<typeof setTimeout>;
+    const started = Date.now();
+    const next = () => {
+      const left = voice && speed < 4 ? voiceRemainingMs() : 0;
+      if (left > 0 && Date.now() - started < 9000) t = setTimeout(next, Math.min(left, 400) + 120);
+      else setIdx((i) => i + 1);
+    };
+    t = setTimeout(next, delayFor(e, linesBySeq.has(e.seq)) / speed);
     return () => clearTimeout(t);
-  }, [idx, playing, done, speed, events, linesBySeq, pendingCorner, remoteCorner, waitingArt, prepping]);
+  }, [idx, playing, done, speed, events, linesBySeq, pendingCorner, remoteCorner, waitingArt, prepping, voice]);
+
+  // Music dips under speech and comes back up between lines.
+  useEffect(() => {
+    if (!musicOn || !voice) return;
+    let ducked = false;
+    const iv = setInterval(() => { const on = voiceRemainingMs() > 0; if (on !== ducked) { ducked = on; music.duck(on); } }, 150);
+    return () => { clearInterval(iv); music.duck(false); };
+  }, [musicOn, voice]);
 
   // Apply consequences once the result is shown (tournament battles only).
   useEffect(() => {

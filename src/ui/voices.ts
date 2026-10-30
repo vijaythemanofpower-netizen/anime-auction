@@ -16,8 +16,9 @@ const VOICES: Record<'male' | 'female', Record<Group, string[]>> = {
   male: { fiery: ['am_puck', 'am_liam', 'am_eric'], proud: ['bm_fable', 'am_fenrir', 'bm_lewis'], cool: ['bm_george', 'am_onyx', 'bm_daniel'], fierce: ['am_fenrir', 'am_adam', 'am_onyx'], steady: ['am_echo', 'am_michael', 'bm_daniel'] },
   female: { fiery: ['af_bella', 'af_nova', 'af_sky'], proud: ['bf_isabella', 'af_kore', 'bf_lily'], cool: ['bf_emma', 'af_river', 'af_alloy'], fierce: ['af_jessica', 'af_nicole', 'af_kore'], steady: ['af_heart', 'bf_alice', 'af_sarah'] },
 };
-const SPEED: Partial<Record<Temperament, number>> = { 'hot-blooded': 1.12, reckless: 1.15, cheerful: 1.1, stoic: 0.88, calculating: 0.94, arrogant: 0.95, patient: 0.95 };
-const NARRATOR = { voice: 'am_michael', speed: 1.12 };
+// Unhurried by default: the fight now waits for each line, so nobody has to rush.
+const SPEED: Partial<Record<Temperament, number>> = { 'hot-blooded': 1.04, reckless: 1.06, cheerful: 1.03, stoic: 0.86, calculating: 0.9, arrogant: 0.9, patient: 0.9 };
+const NARRATOR = { voice: 'am_michael', speed: 0.98 };
 
 const hash = (s: string) => [...s].reduce((h, ch) => (h * 31 + ch.charCodeAt(0)) >>> 0, 11);
 
@@ -100,14 +101,15 @@ class NaturalVoices {
 export const naturalVoices = new NaturalVoices();
 if (import.meta.env.DEV) (window as unknown as { __voices: NaturalVoices }).__voices = naturalVoices;
 
-/** Which lines get a natural voice: everything a character says, plus the big calls. */
+/** Every line gets a natural voice: the characters' own and the commentator's. */
 export function voicedLines(lines: NarrationLine[], info: (speaker: string) => VoiceInfo | undefined) {
   const out: Array<{ key: string; seq: number; text: string; voice: string; speed: number; big: boolean }> = [];
   lines.forEach((l) => {
     const big = l.tone === 'hype' || l.tone === 'shock';
-    if (l.speaker === 'narrator' && !big) return;
     const v = l.speaker === 'narrator' ? NARRATOR : info(l.speaker) ? voiceFor(info(l.speaker)!) : NARRATOR;
-    const text = l.text.replace(/[“”"]/g, '').replace(/\s+/g, ' ').trim();
+    let text = l.text.replace(/[“”"]/g, '').replace(/\s+/g, ' ').trim();
+    // Big calls are read with energy: an exclamation mark lifts Kokoro's delivery.
+    if (big && /[.]$/.test(text)) text = `${text.slice(0, -1)}!`;
     if (!text || text === '...') return;
     // Keyed by voice and text, so a re-run fight reuses lines it already has.
     out.push({ key: `${v.voice}|${v.speed}|${text}`, seq: l.seq, text, voice: v.voice, speed: v.speed, big: big || l.speaker !== 'narrator' });
