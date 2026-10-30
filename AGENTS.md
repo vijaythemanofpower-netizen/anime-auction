@@ -30,10 +30,12 @@ When Claude's usage limit runs out, Claude writes HANDOFF.md with one section pe
 - Phones matter: check new screens at 375 px wide (no sideways scroll, controls reachable).
 - Keep README.md current when behaviour changes; record open work below.
 
-## Open work (owner's list, Oct 30 2026)
-Done on Oct 30: narration pacing (fight waits for speech, slower voices, every line voiced, music ducks), comic variety (fallback panels framed per shot, pose variants, 16/32/50 panels), room chat + emoji reactions, injury cracks + hurt glow in Arena, phone fixes (pinned fight controls, tap targets).
-Still open:
-1. Sign-in emails: custom SMTP via Brevo (smtp-relay.brevo.com:587, sender vijaythemanofpower@gmail.com) set up Oct 30; auth email limit raised to 60/hour. Brevo free tier = 300/day. Emails may land in spam until a domain is verified in Brevo.
-2. Check the new phone layout and chat on a real phone; test chat/reactions with two players online.
-3. Comic accuracy for lesser-known characters depends on the model knowing their name; consider adding appearance tags per character.
-4. More ideas: Host Portal view of live rooms and chat moderation; better narrator voice variety (Kokoro voice per commentator mood).
+## Open work (Oct 31 2026)
+Not yet checked in real play (owner to test): a full drawn comic via Start Game.bat; voices (hand-cast Kokoro voices, pacing); bench fighters dashing into the arena; facts on the drawing screen; private power ranking; "All anime" auction fill; career stats saving after an online game; guest "Keep my account" upgrade; chat/reactions with two players; phone layout on a real phone; Brevo emails (may land in spam).
+Known limits:
+1. Drawings only work from the local version (Start Game.bat / localhost:5173): browsers block the public website from reaching ComfyUI on the PC. Guests in a room hosted locally get the host's panels.
+2. Stats: 76 built-ins + ~150 more popular characters have canon sheets (canonStats.ts, canonByName.ts); others use a profile-based guess, or AI-rated stats with the owner's Anthropic key (not tested, needs the key).
+3. Characters outside the built-ins have type-based moves unless the AI move writer is used.
+4. One drawing holds at most two fighters (three gets messy with NoobAI).
+5. Website and localhost keep separate sign-ins; career stats come from online games only.
+6. Supabase Web3 sign-in rate limit got set to 60 by mistake (default 30); harmless, owner can reset it.
