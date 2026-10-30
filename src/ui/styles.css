@@ -64,7 +64,7 @@ p { margin: 0; }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
 /* ---------------------------------------------------------------- layout */
-.app { min-height: 100vh; display: flex; flex-direction: column; }
+.app { min-height: 100vh; display: flex; flex-direction: column; position: relative; z-index: 1; }
 .topbar {
   position: sticky; top: 0; z-index: 30;
   display: flex; align-items: center; gap: 14px;
@@ -474,13 +474,8 @@ html, body { overflow-x: clip; }
 .btn { position: relative; overflow: hidden; }
 .btn.primary::after { content: ''; position: absolute; top: 0; left: -60%; width: 40%; height: 100%; background: linear-gradient(100deg, transparent, rgba(255,255,255,0.35), transparent); transform: skewX(-20deg); transition: left 0.5s ease; pointer-events: none; }
 .btn.primary:hover::after { left: 130%; }
-/* Whole site: a slowly breathing aura behind the page */
-body::before { content: ''; position: fixed; inset: -20%; z-index: -1; pointer-events: none;
-  background: radial-gradient(40% 35% at 20% 15%, rgba(139, 92, 246, 0.16), transparent 70%), radial-gradient(35% 30% at 85% 80%, rgba(34, 211, 238, 0.12), transparent 70%), radial-gradient(30% 25% at 70% 20%, rgba(224, 79, 160, 0.10), transparent 70%);
-  animation: aura-drift 24s ease-in-out infinite alternate; }
-@keyframes aura-drift { to { transform: translate(4%, -3%) scale(1.08); } }
 @media (prefers-reduced-motion: reduce) {
-  .anime-fx, body::before, .logo-title .l2 { animation: none !important; }
+  .anime-fx, .logo-title .l2 { animation: none !important; }
   .anime-fx .petal, .anime-fx .spark, .speed-burst { display: none; }
 }
-.reduce-motion .anime-fx, .reduce-motion body::before { display: none; }
+.reduce-motion .anime-fx { display: none; }

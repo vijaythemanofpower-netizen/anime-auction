@@ -36,32 +36,35 @@ function AccountCard() {
   );
 }
 
-// Drifting petals and sparks behind the home page (pure CSS; still with reduced motion).
-const PETALS = Array.from({ length: 14 }, (_, i) => ({ left: `${(i * 71) % 100}%`, delay: `${(i * 1.7) % 12}s`, dur: `${11 + (i * 3) % 9}s`, size: 8 + (i * 5) % 10 }));
+/** Two fighters dash in, clash with a flash and a shockwave, and break apart; then a new pair. */
+function BackgroundDuel() {
+  const [round, setRound] = useState(() => Math.floor(Math.random() * 1000));
+  const pair = useMemo(() => {
+    const n = LEGEND_CHARACTERS.length;
+    const a = (round * 7) % n, b = (round * 13 + 5) % n;
+    return [LEGEND_CHARACTERS[a], LEGEND_CHARACTERS[b === a ? (b + 1) % n : b]];
+  }, [round]);
+  return (
+    <div className="duel" aria-hidden="true" key={round} onAnimationEnd={(e) => { if (e.animationName === 'duel-round') setRound((r) => r + 1); }}>
+      <div className="duel-round" />
+      <div className="duel-fighter left"><CharArt c={pair[0]} /></div>
+      <div className="duel-fighter right"><CharArt c={pair[1]} /></div>
+      <div className="duel-flash" />
+      <div className="duel-ring" />
+      <div className="duel-names"><span>{pair[0].name}</span><b>VS</b><span>{pair[1].name}</span></div>
+    </div>
+  );
+}
 
-const TILES = [
-  { left: '8%', top: '4%', w: 170, rot: -6, delay: 0 },
-  { left: '44%', top: '0%', w: 200, rot: 4, delay: 1.2 },
-  { left: '0%', top: '46%', w: 190, rot: 3, delay: 0.6 },
-  { left: '38%', top: '42%', w: 220, rot: -3, delay: 1.8 },
-  { left: '74%', top: '24%', w: 160, rot: 7, delay: 0.9 },
-];
 
 export function Home() {
   const game = useApp((s) => s.game);
   const saves = useApp((s) => s.saves);
-  const picks = useMemo(() => {
-    const day = Math.floor(Date.now() / 86_400_000);
-    return TILES.map((_, i) => LEGEND_CHARACTERS[(day * 5 + i * 7) % LEGEND_CHARACTERS.length]);
-  }, []);
   const resumable = saves.filter((s) => !s.archived && s.phase !== 'champion');
 
   return (
     <section className="hero">
-      <div className="anime-fx" aria-hidden="true">
-        <div className="speed-burst" />
-        {PETALS.map((p, i) => <span key={i} className={i % 3 === 0 ? 'spark' : 'petal'} style={{ left: p.left, animationDelay: p.delay, animationDuration: p.dur, width: p.size, height: p.size }} />)}
-      </div>
+      <div className="anime-fx" aria-hidden="true"><div className="speed-burst" /></div>
       <div style={{ position: 'relative', zIndex: 1 }}>
         <div className="eyebrow">A party game for 2–6 players</div>
         <h1 className="logo-title" style={{ marginTop: 10 }}>
@@ -85,13 +88,7 @@ export function Home() {
           <button className="btn" onClick={() => store.go('settings')}>⚙ Settings</button>
         </div>
       </div>
-      <div className="collage" aria-hidden="true">
-        {TILES.map((t, i) => (
-          <div key={i} className="tile" style={{ left: t.left, top: t.top, width: t.w, aspectRatio: '3 / 4', transform: `rotate(${t.rot}deg)`, animationDelay: `${t.delay}s` }}>
-            <CharArt c={picks[i]} />
-          </div>
-        ))}
-      </div>
+      <BackgroundDuel />
     </section>
   );
 }

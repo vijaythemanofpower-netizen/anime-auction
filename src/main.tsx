@@ -1,6 +1,7 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import './ui/styles.css';
+import './ui/scenes.css';
 import './ui/arena.css';
 import './ui/comic.css';
 import { App } from './ui/App';

@@ -11,6 +11,7 @@ import { HowTo, SettingsScreen } from './screens/Info';
 import { Saves } from './screens/Saves';
 import { OnlineScreen } from './screens/Online';
 import { RoomChat } from './components/RoomChat';
+import { SceneBackdrop } from './components/SceneBackdrop';
 import { ONLINE_AVAILABLE } from '../online/client';
 import { useAuth } from '../online/auth';
 
@@ -30,6 +31,8 @@ export function App() {
   const account = useAuth();
 
   return (
+    <>
+    <SceneBackdrop />
     <div className={`app ${motion === 'on' ? 'reduce-motion' : motion === 'system' ? 'motion-system' : ''}`}>
       <header className="topbar">
         <button className="brand" onClick={() => store.go('home')} aria-label="Home">
@@ -68,5 +71,6 @@ export function App() {
       <RoomChat />
       {toast && <div className={`toast ${toast.kind}`} role="status" aria-live="polite">{toast.text}</div>}
     </div>
+    </>
   );
 }
