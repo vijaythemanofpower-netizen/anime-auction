@@ -33,6 +33,8 @@ export interface ComicDrawing {
   seed: number;
   width: number;
   height: number;
+  /** The character's portrait, used as a look reference when the drawing app can. */
+  ref?: string;
 }
 
 export interface ComicScript { battleId: string; panels: ComicPanel[] }
@@ -286,7 +288,8 @@ export function buildComic(record: BattleRecord, characters: Record<string, Publ
       ].filter(Boolean).join(', ').replace(/,\s*,/g, ',').replace(/,\s*$/, '');
       const seed = hashString(`${input.seed}:${i}:${j}:${who}`) >>> 0;
       // Keyed by content, so panels a corner call doesn't change keep their drawing.
-      return { key: `${input.battleId}:${hashString(`${prompt}|${seed}|${w}x${h}`).toString(36)}`, prompt, seed, width: w, height: h };
+      const ref = ch?.imageUrl;
+      return { key: `${input.battleId}:${hashString(`${prompt}|${seed}|${w}x${h}|${ref ?? ''}`).toString(36)}`, prompt, seed, width: w, height: h, ref };
     });
     return {
       id: `p${i}`, seq: c.e.seq, shot: c.shot, size, focus: c.focus, other: c.other,

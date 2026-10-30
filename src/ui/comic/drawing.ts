@@ -8,7 +8,8 @@ import { NEGATIVE } from '../../engine/comic';
 // cross-site permission is needed. The website talks to it directly; the drawing
 // app allows the website's address (Start Drawing AI.bat).
 export const COMFY_URL = import.meta.env.DEV ? '/comfy' : 'http://127.0.0.1:8188';
-const MODEL_HINT = /animagine|illustrious|noob|anime/i;
+// Best first: NoobAI and Illustrious know far more characters than Animagine.
+const MODEL_ORDER = [/noob/i, /illustrious/i, /animagine/i, /anime/i];
 const SPEED_HINT = /dmd2|lightning|hyper|turbo/i;
 
 export type DrawStatus = 'off' | 'checking' | 'ready' | 'no-model' | 'unreachable';
@@ -19,6 +20,9 @@ class Drawer {
   status: DrawStatus = 'off';
   model = '';
   speedLora = '';
+  /** The portrait-reference add-on (ComfyUI_IPAdapter_plus) is installed. */
+  reference = false;
+  private uploaded = new Map<string, Promise<string | null>>();
   /** Drawings finished this session: key -> object URL. */
   private urls = new Map<string, string>();
   /** Panels drawn by the host of an online room, by key. */
@@ -44,7 +48,8 @@ class Drawer {
     if (this.status !== 'ready') this.set('checking');
     try {
       const [ckpts, loras] = await Promise.all([options('CheckpointLoaderSimple', 'ckpt_name'), options('LoraLoader', 'lora_name').catch(() => [] as string[])]);
-      this.model = ckpts.find((c) => MODEL_HINT.test(c)) ?? '';
+      this.model = MODEL_ORDER.map((re) => ckpts.find((c) => re.test(c))).find(Boolean) ?? '';
+      this.reference = (await options('IPAdapterUnifiedLoader', 'preset').catch(() => [] as string[])).some((p) => /PLUS \(high/.test(p));
       this.speedLora = loras.find((l) => SPEED_HINT.test(l)) ?? '';
       this.set(this.model ? 'ready' : 'no-model');
     } catch {
@@ -106,6 +111,26 @@ class Drawer {
     try { await fetch(`${COMFY_URL}/queue`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ delete: ids }) }); } catch { /* ComfyUI closed */ }
   }
 
+  /** Sends a character's portrait to the drawing app once; returns its name there. */
+  private upload(url: string): Promise<string | null> {
+    let p = this.uploaded.get(url);
+    if (!p) {
+      p = (async () => {
+        try {
+          const img = await fetch(url).then((r) => (r.ok ? r.blob() : null));
+          if (!img) return null;
+          const form = new FormData();
+          form.append('image', img, `aa-ref-${Math.abs([...url].reduce((h, c) => (h * 31 + c.charCodeAt(0)) | 0, 7)).toString(36)}.png`);
+          form.append('overwrite', 'true');
+          const res = await fetch(`${COMFY_URL}/upload/image`, { method: 'POST', body: form });
+          return res.ok ? ((await res.json()) as { name: string }).name : null;
+        } catch { return null; }
+      })();
+      this.uploaded.set(url, p);
+    }
+    return p;
+  }
+
   private async draw(d: ComicDrawing, entry: { promptId?: string; waiters: Array<(url: string | null) => void> }) {
     const finish = (url: string | null) => {
       if (this.pending.get(d.key) !== entry) return;
@@ -120,7 +145,7 @@ class Drawer {
       if (this.status !== 'ready' && (await this.check()) !== 'ready') { finish(null); return; }
       const res = await fetch(`${COMFY_URL}/prompt`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt: workflow(d, this.model, this.speedLora), client_id: this.clientId }),
+        body: JSON.stringify({ prompt: workflow(d, this.model, this.speedLora, this.reference && d.ref ? await this.upload(d.ref) : null), client_id: this.clientId }),
       });
       if (!res.ok) { finish(null); return; }
       const { prompt_id: promptId } = (await res.json()) as { prompt_id: string };
@@ -167,25 +192,41 @@ async function options(node: string, field: string): Promise<string[]> {
   } finally { clearTimeout(t); }
 }
 
-/** The ComfyUI graph: anime model (+ speed add-on when installed) -> one picture. */
-export function workflow(d: ComicDrawing, model: string, speedLora: string): Record<string, unknown> {
+/**
+ * The ComfyUI graph: anime model (+ speed add-on when installed) -> one picture.
+ * With a portrait reference, IP-Adapter copies the character's face, hair and
+ * outfit from their portrait while the prompt sets the pose and action.
+ */
+export function workflow(d: ComicDrawing, model: string, speedLora: string, ref: string | null = null): Record<string, unknown> {
   const fast = !!speedLora;
+  const base = fast ? 'lora' : 'ckpt';
+  // NoobAI/Illustrious read their own quality tags.
+  const text = /noob|illustrious/i.test(model) ? d.prompt.replace('high score, great score', 'best quality, newest, very aesthetic') : d.prompt;
   const g: Record<string, unknown> = {
     ckpt: { class_type: 'CheckpointLoaderSimple', inputs: { ckpt_name: model } },
-    pos: { class_type: 'CLIPTextEncode', inputs: { text: d.prompt, clip: [fast ? 'lora' : 'ckpt', 1] } },
-    neg: { class_type: 'CLIPTextEncode', inputs: { text: NEGATIVE, clip: [fast ? 'lora' : 'ckpt', 1] } },
+    pos: { class_type: 'CLIPTextEncode', inputs: { text, clip: [base, 1] } },
+    neg: { class_type: 'CLIPTextEncode', inputs: { text: NEGATIVE, clip: [base, 1] } },
     latent: { class_type: 'EmptyLatentImage', inputs: { width: d.width, height: d.height, batch_size: 1 } },
     sample: {
       class_type: 'KSampler',
       inputs: {
         seed: d.seed, steps: fast ? 8 : 24, cfg: fast ? 1 : 5, sampler_name: fast ? 'lcm' : 'euler_ancestral', scheduler: fast ? 'sgm_uniform' : 'normal', denoise: 1,
-        model: [fast ? 'lora' : 'ckpt', 0], positive: ['pos', 0], negative: ['neg', 0], latent_image: ['latent', 0],
+        model: [ref ? 'ipa' : base, 0], positive: ['pos', 0], negative: ['neg', 0], latent_image: ['latent', 0],
       },
     },
     decode: { class_type: 'VAEDecode', inputs: { samples: ['sample', 0], vae: ['ckpt', 2] } },
     out: { class_type: 'PreviewImage', inputs: { images: ['decode', 0] } },
   };
   if (fast) g.lora = { class_type: 'LoraLoader', inputs: { lora_name: speedLora, strength_model: 1, strength_clip: 1, model: ['ckpt', 0], clip: ['ckpt', 1] } };
+  if (ref) {
+    g.refimg = { class_type: 'LoadImage', inputs: { image: ref } };
+    g.ipl = { class_type: 'IPAdapterUnifiedLoader', inputs: { model: [base, 0], preset: 'PLUS (high strength)' } };
+    // Moderate weight, off for the last steps: the look carries over, the pose stays free.
+    g.ipa = {
+      class_type: 'IPAdapterAdvanced',
+      inputs: { model: ['ipl', 0], ipadapter: ['ipl', 1], image: ['refimg', 0], weight: 0.55, weight_type: 'linear', combine_embeds: 'concat', start_at: 0, end_at: 0.75, embeds_scaling: 'V only' },
+    };
+  }
   return g;
 }
 
