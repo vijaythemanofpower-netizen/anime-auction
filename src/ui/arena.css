@@ -338,6 +338,7 @@
 .cracks .crack-flash { fill: rgba(255, 255, 255, 0.9); animation: crack-flash 0.5s ease-out forwards; }
 .cracks .crack.fracture .crack-flash { fill: rgba(248, 113, 113, 0.9); }
 @keyframes crack-draw { to { stroke-dashoffset: 0; } }
+.cracks .crack-flash { transform-box: fill-box; transform-origin: center; }
 @keyframes crack-flash { from { opacity: 1; transform: scale(0.3); } to { opacity: 0; transform: scale(1.4); } }
 /* Badly hurt fighters breathe heavily and glow red at the edges. */
 .stand.hurt .pf { box-shadow: 0 12px 30px -10px #000, inset 0 0 26px rgba(220, 38, 38, 0.55), 0 0 0 1px rgba(0,0,0,0.6); animation: hurt-breathe 1.6s ease-in-out infinite; }

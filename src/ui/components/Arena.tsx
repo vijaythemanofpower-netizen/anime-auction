@@ -279,7 +279,7 @@ function InjuryCracks({ injuries, fresh, flip }: { injuries: BattleInjury[]; fre
         return (
           <g key={`${inj.part}-${i}`} className={`crack${big ? ' fracture' : ''}${newest ? ' fresh' : ''}`} transform={`translate(${x} ${y})`}>
             {newest && <circle className="crack-flash" r={big ? 16 : 10} />}
-            {Array.from({ length: rays }, (_, r) => <path key={r} d={crackPath(seed + r * 72 * 7, big ? 4.2 : 3)} transform={`rotate(${(360 / rays) * r})`} />)}
+            {Array.from({ length: rays }, (_, r) => <path key={r} d={crackPath(seed + r * 72 * 7, big ? 6 : 4.5)} transform={`rotate(${(360 / rays) * r})`} />)}
           </g>
         );
       })}
