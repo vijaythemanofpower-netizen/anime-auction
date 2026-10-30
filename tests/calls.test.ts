@@ -126,20 +126,27 @@ describe('rivalries and duos from the series', () => {
   });
 });
 
+// A fight where side 0 reaches a corner (which seed that is depends on the fighters' stats).
+function withCorner() {
+  for (let seed = 1; seed < 60; seed++) {
+    const base = battle('solo', seed, ['gojo'], ['sukuna'], { reserves: [['yuji'], []] });
+    const r0 = simulateBattle(base);
+    const corner = r0.events.find((e) => e.type === 'corner' && e.context?.side === 0);
+    if (corner) return { base, r0, corner };
+  }
+  throw new Error('no fight with a corner for side 0');
+}
+
 describe('coach review', () => {
   it('branches only change what happens after the corner', async () => {
-    const base = battle('solo', 3, ['gojo'], ['sukuna'], { reserves: [['yuji'], []] });
-    const r0 = simulateBattle(base);
-    const corner = r0.events.find((e) => e.type === 'corner' && e.context?.side === 0)!;
+    const { base, r0, corner } = withCorner();
     const r1 = simulateBattle({ ...base, branch: { side: 0, corner: Number(corner.context?.corner), salt: 9 } });
     expect(r1.events.slice(0, corner.seq).map((e) => JSON.stringify(e))).toEqual(r0.events.slice(0, corner.seq).map((e) => JSON.stringify(e)));
   });
 
   it('grades each corner call against every option and gives an IQ', async () => {
     const { reviewSide } = await import('../src/engine/review');
-    const base = battle('solo', 3, ['gojo'], ['sukuna'], { reserves: [['yuji'], []] });
-    const r0 = simulateBattle(base);
-    const corner = r0.events.find((e) => e.type === 'corner' && e.context?.side === 0)!;
+    const { base, r0, corner } = withCorner();
     const input = { ...base, calls: [{ side: 0 as const, corner: Number(corner.context?.corner), kind: 'all_out' as const }] };
     const record = { battleId: 'x', input, result: simulateBattle(input), matchId: null, kind: 'tournament' as const, narration: [], createdAt: 0, postEffects: [] };
     const rv = reviewSide(record, 0, {}, 4);
