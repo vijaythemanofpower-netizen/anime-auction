@@ -1,6 +1,8 @@
 @echo off
 rem Double-click to start Anime Auction. Keep this window open while you play.
 cd /d "%~dp0"
+rem Windows may not have picked up a fresh Node.js install yet; look in its usual folder.
+where npm >nul 2>nul || if exist "%ProgramFiles%\nodejs\npm.cmd" set "PATH=%ProgramFiles%\nodejs;%PATH%"
 where npm >nul 2>nul || (echo Node.js is not installed. Get it from https://nodejs.org and try again. & pause & exit /b 1)
 if not exist node_modules (
   echo First run: installing, this takes a minute...
