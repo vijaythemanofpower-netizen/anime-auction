@@ -2,7 +2,7 @@
 // series and turns them into balanced engine moves. Uses the player's own
 // Anthropic API key (stored only in this browser). Results are cached locally
 // and travel with the character into saved games.
-import type { Ability, AbilityKind, AbilityTarget, PublicCharacter, StatusApply, Tag, VfxKind } from '../../engine/types';
+import type { Ability, AbilityKind, AbilityTarget, PublicCharacter, Stats, StatusApply, Tag, VfxKind } from '../../engine/types';
 import { registerCharacterMoves } from '../../engine/data/abilities';
 
 const TAGS = ['FIRE', 'DARK', 'LIGHTNING', 'ICE', 'DRAGON', 'DEMON', 'DIVINE', 'MAGIC', 'WARRIOR', 'ASSASSIN', 'SHADOW', 'HOLY', 'WIND', 'EARTH', 'WATER', 'SPIRIT'] as const;
@@ -26,6 +26,8 @@ export interface MoveSetResult {
   hidden: MoveDescription;
   ultimate: MoveDescription;
   evolvedForm: string;
+  /** Canon-based stats, 15-99 (older cached results don't have them). */
+  stats?: Stats;
   confidence: 'canon' | 'mostly_canon' | 'invented';
 }
 
@@ -39,7 +41,7 @@ export function setApiKey(key: string) {
   try { if (key) localStorage.setItem(KEY_STORE, key.trim()); else localStorage.removeItem(KEY_STORE); } catch { /* storage unavailable */ }
 }
 
-interface Cached { moves: Ability[]; kit: NonNullable<PublicCharacter['customKit']>; confidence: MoveSetResult['confidence'] }
+interface Cached { moves: Ability[]; kit: NonNullable<PublicCharacter['customKit']>; confidence: MoveSetResult['confidence']; stats?: Stats }
 function readCache(): Record<string, Cached> {
   try { return JSON.parse(localStorage.getItem(CACHE_STORE) ?? '{}') as Record<string, Cached>; } catch { return {}; }
 }
@@ -49,7 +51,7 @@ export function withAiMoves(pc: PublicCharacter): PublicCharacter {
   if (pc.source === 'legend' || pc.source === 'original') return pc;
   const c = readCache()[pc.id];
   if (!c) return pc;
-  const out = { ...pc, customMoves: c.moves, customKit: c.kit, knownAbilities: [c.moves[0].id, c.moves[1].id] };
+  const out = { ...pc, customMoves: c.moves, customKit: c.kit, knownAbilities: [c.moves[0].id, c.moves[1].id], ...(c.stats ? { canonStats: c.stats } : {}) };
   registerCharacterMoves(out);
   return out;
 }
@@ -92,7 +94,7 @@ export async function writeMoves(pc: PublicCharacter, signal?: AbortSignal): Pro
   if (refused) throw new Error('Claude declined to write moves for this character.');
   if (!out || out.known.length < 2) throw new Error('Claude did not return a usable move set. Try again.');
   const { moves, kit } = movesFromResult(pc, out);
-  return { character: saveMoves(pc, moves, kit, out.confidence), confidence: out.confidence };
+  return { character: saveMoves(pc, moves, kit, out.confidence, cleanStats(out.stats)), confidence: out.confidence };
 }
 
 /** Turns Claude's description into balanced engine moves (pure; tested). */
@@ -103,12 +105,40 @@ export function movesFromResult(pc: PublicCharacter, out: MoveSetResult): { move
   return { moves, kit };
 }
 
-/** Stores (or re-stores after editing) a character's written moves. */
-export function saveMoves(pc: PublicCharacter, moves: Ability[], kit: Cached['kit'], confidence: Cached['confidence']): PublicCharacter {
+/** Keeps Claude's numbers inside the game's 15-99 range. */
+export function cleanStats(s: Stats | undefined): Stats | undefined {
+  if (!s) return undefined;
+  const keys: Array<keyof Stats> = ['attack', 'defense', 'speed', 'technique', 'battleIQ', 'stamina', 'adaptability', 'luck', 'potential'];
+  if (keys.some((k) => typeof s[k] !== 'number' || Number.isNaN(s[k]))) return undefined;
+  return Object.fromEntries(keys.map((k) => [k, Math.max(15, Math.min(99, Math.round(s[k])))])) as Stats;
+}
+
+/** Stores (or re-stores after editing) a character's written moves (and stats, when Claude rated them). */
+export function saveMoves(pc: PublicCharacter, moves: Ability[], kit: Cached['kit'], confidence: Cached['confidence'], stats = readCache()[pc.id]?.stats): PublicCharacter {
   const cache = readCache();
-  cache[pc.id] = { moves, kit, confidence };
+  cache[pc.id] = { moves, kit, confidence, ...(stats ? { stats } : {}) };
   try { localStorage.setItem(CACHE_STORE, JSON.stringify(cache)); } catch { /* storage full or unavailable */ }
-  const character = { ...pc, customMoves: moves, customKit: kit, knownAbilities: [moves[0].id, moves[1].id] };
+  const character = { ...pc, customMoves: moves, customKit: kit, knownAbilities: [moves[0].id, moves[1].id], ...(stats ? { canonStats: stats } : {}) };
   registerCharacterMoves(character);
   return character;
+}
+
+/**
+ * Writes moves and canon stats for many characters before they join an auction
+ * (stats are fixed once a character is in the pool). A few at a time; a character
+ * that fails keeps its type-based stats.
+ */
+export async function rateAll(pcs: PublicCharacter[], onProgress?: (done: number, total: number) => void): Promise<PublicCharacter[]> {
+  const out = [...pcs];
+  const todo = out.map((pc, i) => ({ pc, i })).filter(({ pc }) => pc.source !== 'legend' && pc.source !== 'original' && !pc.canonStats);
+  let done = 0, next = 0;
+  const worker = async () => {
+    while (next < todo.length) {
+      const { pc, i } = todo[next++];
+      try { out[i] = (await writeMoves(pc)).character; } catch { /* keep type-based stats */ }
+      onProgress?.(++done, todo.length);
+    }
+  };
+  await Promise.all(Array.from({ length: Math.min(4, todo.length) }, worker));
+  return out;
 }

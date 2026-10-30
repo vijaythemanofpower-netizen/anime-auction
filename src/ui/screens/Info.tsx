@@ -92,7 +92,7 @@ function ApiKeyField() {
   return (
     <div className="field">
       <span className="label">AI move writer (optional)</span>
-      <span className="faint" style={{ fontSize: 12 }}>With your own Anthropic API key, Claude can write the real moves from the series for any character you find (a fraction of a cent each). The key is kept only in this browser and sent only to Anthropic.</span>
+      <span className="faint" style={{ fontSize: 12 }}>With your own Anthropic API key, Claude can write the real moves from the series and a canon-based stat sheet for any character you find (a few cents each). The key is kept only in this browser and sent only to Anthropic.</span>
       {saved ? (
         <div className="row" style={{ gap: 8 }}><span className="tag" style={{ color: 'var(--good)' }}>Key saved</span><button className="btn sm ghost" onClick={() => { setApiKey(''); setSaved(false); }}>Remove key</button></div>
       ) : (

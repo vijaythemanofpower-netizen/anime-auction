@@ -146,7 +146,7 @@ describe('coach review', () => {
 
   it('grades each corner call against every option and gives an IQ', async () => {
     const { reviewSide } = await import('../src/engine/review');
-    const { base, r0, corner } = withCorner();
+    const { base, corner } = withCorner();
     const input = { ...base, calls: [{ side: 0 as const, corner: Number(corner.context?.corner), kind: 'all_out' as const }] };
     const record = { battleId: 'x', input, result: simulateBattle(input), matchId: null, kind: 'tournament' as const, narration: [], createdAt: 0, postEffects: [] };
     const rv = reviewSide(record, 0, {}, 4);

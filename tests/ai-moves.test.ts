@@ -54,3 +54,20 @@ describe('AI-written moves', () => {
     expect(missingFrom(a, m).map((c) => c.name)).toEqual(['Someone Else']);
   });
 });
+
+describe('AI-rated stats', () => {
+  it('keeps stats in range and uses them like a canon sheet', async () => {
+    const { cleanStats } = await import('../src/ui/ai/moveWriter');
+    const { generateHidden } = await import('../src/engine/hidden');
+    const { LEGEND_CHARACTERS } = await import('../src/engine/data/legends');
+    const s = cleanStats({ attack: 120, defense: 5, speed: 80.6, technique: 70, battleIQ: 60, stamina: 50, adaptability: 40, luck: 30, potential: 99 })!;
+    expect(s.attack).toBe(99);
+    expect(s.defense).toBe(15);
+    expect(s.speed).toBe(81);
+    expect(cleanStats({ attack: Number.NaN } as never)).toBeUndefined();
+    const pc = { ...LEGEND_CHARACTERS[0], id: 'anilist:999', source: 'anilist' as const, canonStats: s };
+    const h = generateHidden(pc, 42);
+    expect(Math.abs(h.stats.speed - 81)).toBeLessThanOrEqual(5);
+    expect(Math.abs(h.stats.potential - 99)).toBeLessThanOrEqual(5);
+  });
+});

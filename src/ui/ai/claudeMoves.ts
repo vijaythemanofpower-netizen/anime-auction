@@ -24,6 +24,10 @@ const MoveSet = z.object({
   hidden: Move.describe('A lesser-known or surprising technique they have.'),
   ultimate: Move.describe('Their strongest finishing technique or transformation attack.'),
   evolvedForm: z.string().describe('Name of a stronger form or state they reach in the series (e.g. "Bankai", "Gear Fifth").'),
+  stats: z.object({
+    attack: z.number().int(), defense: z.number().int(), speed: z.number().int(), technique: z.number().int(), battleIQ: z.number().int(),
+    stamina: z.number().int(), adaptability: z.number().int(), luck: z.number().int(), potential: z.number().int(),
+  }).describe('Their canon fighting ability at their strongest commonly shown state, each 15-99, on this fixed scale: Goku attack 97 speed 95; Gojo defense 99 technique 97; Itachi battleIQ 98; Naruto stamina 99; Nobara attack 72 speed 70; an ordinary trained human about 30; a non-fighter about 20. Rate from their feats in the series, not their popularity.'),
   confidence: z.enum(['canon', 'mostly_canon', 'invented']).describe('canon: all from the series; invented: the character has no fighting techniques, so the moves are made up to fit them.'),
 });
 // Keep in step with the MoveSetResult interface in moveWriter.ts.
@@ -38,10 +42,10 @@ export async function askClaude(pc: PublicCharacter, apiKey: string, signal?: Ab
     betas: ['server-side-fallback-2026-07-01'],
     fallbacks: 'default',
     output_config: { effort: 'low', format: betaZodOutputFormat(MoveSet) },
-    system: 'You know anime and manga in depth. You list the real fighting techniques characters use in their series. Prefer official English technique names. If the character never fights, invent moves that fit their personality and abilities, and say so through the confidence field.',
+    system: 'You know anime and manga in depth. You list the real fighting techniques characters use in their series and rate how strong they are from their feats. Prefer official English technique names. If the character never fights, invent moves that fit their personality and abilities, and say so through the confidence field.',
     messages: [{
       role: 'user',
-      content: `Character: ${pc.name}${pc.aliases.length ? ` (also known as ${pc.aliases.join(', ')})` : ''}\nSeries: ${pc.series}\nDescription: ${pc.bio.slice(0, 900)}\n\nGive their two signature moves, one hidden technique, their ultimate, and an evolved form.`,
+      content: `Character: ${pc.name}${pc.aliases.length ? ` (also known as ${pc.aliases.join(', ')})` : ''}\nSeries: ${pc.series}\nDescription: ${pc.bio.slice(0, 900)}\n\nGive their two signature moves, one hidden technique, their ultimate, an evolved form, and their stat sheet.`,
     }],
   }, { signal });
   return { out: response.parsed_output ?? null, refused: response.stop_reason === 'refusal' };

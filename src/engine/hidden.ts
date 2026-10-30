@@ -38,7 +38,7 @@ export function generateHidden(pc: PublicCharacter, gameSecret: number): HiddenP
   const kit = LEGEND_KITS[pc.id] ?? (pc.customKit ? { ...pc.customKit, bias: {} } : undefined);
   // Built-in characters follow their canon sheet with only a small wobble per game;
   // everyone else is built from their fighter type with a wider spread.
-  const canon = canonStats(pc.id);
+  const canon = pc.canonStats ?? canonStats(pc.id);
   for (const k of STAT_KEYS) stats[k] = canon ? clamp(Math.round(canon[k] + rng.range(-5, 5)), 15, 99) : clamp(Math.round(base[k] + (kit?.bias[k] ?? 0) + rng.range(-14, 14)), 15, 99);
 
   // A single "profile twist" makes cheap-looking characters occasionally

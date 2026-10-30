@@ -3,7 +3,7 @@ import * as G from '../../engine/game';
 import { describeFormat, matchOrder } from '../../engine/tournament';
 import { LEGEND_CHARACTERS } from '../../engine/data/legends';
 import { randomPopular } from '../../engine/providers/anilist';
-import { withAiMoves } from '../ai/moveWriter';
+import { getApiKey, rateAll, withAiMoves } from '../ai/moveWriter';
 import type { PublicCharacter } from '../../engine/types';
 import { store, useApp } from '../../store/store';
 import { Emblem, Seg } from '../components/common';
@@ -29,6 +29,8 @@ export function Setup() {
   const [events, setEvents] = useState(true);
   const [privacy, setPrivacy] = useState(privacyDefault);
   const [poolSource, setPoolSource] = useState<'mix' | 'all' | 'builtin'>('mix');
+  const hasKey = !!getApiKey();
+  const [aiRate, setAiRate] = useState(hasKey);
 
   const setup: G.GameSetup = {
     name, players, rosterSize, privacyScreens: privacy,
@@ -63,8 +65,15 @@ export function Setup() {
     if (poolSource !== 'builtin') {
       // A different handful of popular characters from every anime each game.
       const found = await randomPopular(60).then((r) => r.map(withAiMoves)).catch(() => [] as PublicCharacter[]);
-      if (found.length) catalog = poolSource === 'all' ? found : [...LEGEND_CHARACTERS, ...found];
-      else store.toast('Could not reach AniList, so the built-in characters are used.', 'error');
+      const g = store.getState().game;
+      const need = g ? G.poolRecommended(g) : 24;
+      const shuffle = <T,>(xs: T[]) => xs.slice().sort(() => Math.random() - 0.5);
+      if (found.length && aiRate && hasKey) {
+        // Rate just the ones that will be auctioned, so it costs only what's needed.
+        const rated = await rateAll(shuffle(found).slice(0, poolSource === 'all' ? need : Math.ceil(need / 2)), (d, t) => { if (d === 1 || d === t || d % 5 === 0) store.toast(`AI is rating fighters from their series: ${d} of ${t}…`); });
+        catalog = poolSource === 'all' ? rated : [...shuffle(LEGEND_CHARACTERS).slice(0, need - rated.length), ...rated];
+      } else if (found.length) catalog = poolSource === 'all' ? found : [...LEGEND_CHARACTERS, ...found];
+      if (!found.length) store.toast('Could not reach AniList, so the built-in characters are used.', 'error');
     }
     store.act((g, v) => G.autoFillPool(g, v, catalog));
   };
@@ -124,6 +133,12 @@ export function Setup() {
                 { v: 'builtin', label: 'Built-in 76', title: 'Only the hand-made characters with their real moves' },
               ]} />
             </div>
+            {poolSource !== 'builtin' && (
+              <label className="row" style={{ gap: 8, fontSize: 14 }} title={hasKey ? 'Claude rates each new fighter from their feats in the series and writes their real moves' : 'Add your Anthropic API key in Settings to use this'}>
+                <input type="checkbox" checked={aiRate && hasKey} disabled={!hasKey} onChange={(e) => setAiRate(e.target.checked)} />
+                AI-accurate stats and moves for fighters from all anime {hasKey ? <span className="faint">(your Anthropic key, a few cents each)</span> : <span className="faint">(add your key in Settings)</span>}
+              </label>
+            )}
             <div className="field"><span className="label">Roster size</span><Seg value={rosterSize} onChange={setRosterSize} label="Roster size" options={[{ v: 3, label: '3 fighters' }, { v: 4, label: '4 fighters' }]} /></div>
             <div className="field">
               <span className="label">Bidding mode</span>
