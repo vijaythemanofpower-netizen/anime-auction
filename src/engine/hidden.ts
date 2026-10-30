@@ -2,7 +2,7 @@
 // from public game state. Each game has its own secret, so the same
 // character has different (but stable within the campaign) true stats in
 // every game — knowing a character's public profile never reveals its power.
-import { canonStats } from './data/canonStats';
+import { canonFor } from './data/canonByName';
 import type { EvolutionPath, HiddenProfile, HiddenTrait, PublicCharacter, StatKey, Stats, Tag } from './types';
 import { STAT_KEYS } from './types';
 import { ARCHETYPES } from './data/archetypes';
@@ -38,8 +38,15 @@ export function generateHidden(pc: PublicCharacter, gameSecret: number): HiddenP
   const kit = LEGEND_KITS[pc.id] ?? (pc.customKit ? { ...pc.customKit, bias: {} } : undefined);
   // Built-in characters follow their canon sheet with only a small wobble per game;
   // everyone else is built from their fighter type with a wider spread.
-  const canon = pc.canonStats ?? canonStats(pc.id);
-  for (const k of STAT_KEYS) stats[k] = canon ? clamp(Math.round(canon[k] + rng.range(-5, 5)), 15, 99) : clamp(Math.round(base[k] + (kit?.bias[k] ?? 0) + rng.range(-14, 14)), 15, 99);
+  const canon = pc.canonStats ?? canonFor(pc);
+  // Without a sheet, the profile's strength guess shifts the fighting stats and narrows the spread.
+  const hint = pc.powerHint ?? 0;
+  const FIGHT: StatKey[] = ['attack', 'defense', 'speed', 'technique', 'stamina'];
+  const spread = pc.powerHint !== undefined ? 10 : 14;
+  for (const k of STAT_KEYS) {
+    stats[k] = canon ? clamp(Math.round(canon[k] + rng.range(-5, 5)), 15, 99)
+      : clamp(Math.round(base[k] + (kit?.bias[k] ?? 0) + (FIGHT.includes(k) ? hint * 7 : 0) + rng.range(-spread, spread)), 15, 99);
+  }
 
   // A single "profile twist" makes cheap-looking characters occasionally
   // excellent and intimidating ones occasionally fragile (never for canon sheets).

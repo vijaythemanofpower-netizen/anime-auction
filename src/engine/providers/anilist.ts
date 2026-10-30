@@ -18,7 +18,7 @@ const TIMEOUT_MS = 8000;
 const MAX_RETRIES = 2;
 
 const CHAR_FIELDS = `id name { full alternative } image { large } description(asHtml: false) favourites gender
-  media(perPage: 1, sort: [POPULARITY_DESC]) { nodes { id title { romaji english } } }`;
+  media(perPage: 1, sort: [POPULARITY_DESC]) { nodes { id genres title { romaji english } } }`;
 
 const CHAR_SEARCH = `query ($page: Int, $perPage: Int, $search: String) {
   Page(page: $page, perPage: $perPage) {
@@ -53,7 +53,7 @@ interface RawChar {
   description: string | null;
   favourites: number | null;
   gender?: string | null;
-  media: { nodes: Array<{ id: number; title: { romaji: string | null; english: string | null } }> } | null;
+  media: { nodes: Array<{ id: number; genres?: string[] | null; title: { romaji: string | null; english: string | null } }> } | null;
 }
 
 const cache = new Map<string, unknown>();
@@ -135,6 +135,23 @@ export function cleanDescription(d: string | null): string {
   return d.replace(/~!.*?!~/gs, '[spoiler hidden]').replace(/<[^>]+>/g, '').replace(/__|\*\*|_/g, '').replace(/\s+/g, ' ').trim().slice(0, 420);
 }
 
+const FIGHT_GENRES = ['Action', 'Adventure', 'Fantasy', 'Supernatural', 'Mecha', 'Sci-Fi', 'Sports'];
+const TOP = /(strongest|god|goddess|deity|demon king|king of|emperor|immortal|invincible|overwhelming|legendary|s-class|s-rank|special[- ]grade|hashira|captain|admiral|espada|upper (rank|moon)|yonko|four emperors|kage)/i;
+const FIGHTER = /(warrior|swords?man|swordswoman|fighter|hunter|soldier|knight|assassin|sorcerer|wizard|mage|ninja|shinobi|demon|vampire|samurai|martial art|combat|battle|hero|villain|superpower|quirk|pirate|shinigami|soul reaper|titan|ghoul|devil|alchemist)/i;
+const MILD = /(high school student|student council|club|idol|maid|teacher|doctor|ordinary|normal|average|shy|caf[eé]|manga artist|office worker|housewife)/i;
+const NONCOMBAT = /(cannot fight|can't fight|non-combat|civilian|baby|infant|toddler|pet)/i;
+
+/** A rough -2..+2 strength guess from the profile, for characters without a canon sheet. */
+export function powerHintFrom(desc: string, genres: string[], favourites: number): number {
+  let h = 0;
+  if (TOP.test(desc)) h += 2; else if (FIGHTER.test(desc)) h += 1;
+  if (NONCOMBAT.test(desc)) h -= 2; else if (MILD.test(desc)) h -= 1;
+  if (genres.length && !genres.some((g) => FIGHT_GENRES.includes(g))) h -= 1;
+  // Very popular characters are usually main characters, who tend to be strong in their story.
+  if (favourites > 20000 && genres.some((g) => FIGHT_GENRES.includes(g))) h += 1;
+  return Math.max(-2, Math.min(2, h));
+}
+
 /** Maps an AniList record to a game character. Throws on malformed data. */
 export function mapAniListCharacter(raw: RawChar): PublicCharacter {
   if (!raw || typeof raw.id !== 'number' || !raw.name?.full) throw new Error('Malformed AniList character');
@@ -163,6 +180,8 @@ export function mapAniListCharacter(raw: RawChar): PublicCharacter {
     imageUrl: raw.image?.large ?? undefined,
     gender: raw.gender === 'Male' ? 'male' : raw.gender === 'Female' ? 'female' : raw.gender ? 'other' : undefined,
     bio: desc || 'No biography available from AniList.',
+    genres: media?.genres ?? undefined,
+    powerHint: powerHintFrom(desc, media?.genres ?? [], raw.favourites ?? 0),
     specialty,
     fightingStyle: style,
     weapon,
@@ -197,7 +216,11 @@ export async function randomPopular(count: number, signal?: AbortSignal): Promis
     const data = await gql<{ Page: { characters: RawChar[] } }>(CHAR_SEARCH, { page, perPage: 50 }, signal);
     out.push(...mapList(data.Page?.characters ?? []));
   }
-  return new Rng(hashString(String(Math.random()))).shuffle(out).slice(0, count);
+  // Prefer characters from fighting shows (action, fantasy...), topping up with others if needed.
+  const fighters = out.filter((c) => !c.genres?.length || c.genres.some((g) => FIGHT_GENRES.includes(g)));
+  const rest = out.filter((c) => !fighters.includes(c));
+  const rng = new Rng(hashString(String(Math.random())));
+  return [...rng.shuffle(fighters), ...rng.shuffle(rest)].slice(0, count);
 }
 
 export const aniListProvider: CharacterProvider = {

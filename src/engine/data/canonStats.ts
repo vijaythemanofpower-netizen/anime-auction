@@ -4,7 +4,7 @@
 // Each game adds only a small wobble around these (hidden.ts), so the strongest stay strong.
 import type { StatKey, Stats } from '../types';
 
-const ORDER: StatKey[] = ['attack', 'defense', 'speed', 'technique', 'battleIQ', 'stamina', 'adaptability', 'luck', 'potential'];
+export const SHEET_ORDER: StatKey[] = ['attack', 'defense', 'speed', 'technique', 'battleIQ', 'stamina', 'adaptability', 'luck', 'potential'];
 
 const SHEETS: Record<string, number[]> = {
   goku: [97, 88, 95, 90, 82, 95, 92, 60, 99], vegeta: [95, 86, 93, 88, 80, 90, 85, 45, 92], frieza: [94, 85, 94, 88, 85, 80, 70, 50, 90],
@@ -42,5 +42,5 @@ const SHEETS: Record<string, number[]> = {
 export function canonStats(charId: string): Stats | null {
   const sheet = charId.startsWith('legend:') ? SHEETS[charId.slice(7)] : undefined;
   if (!sheet) return null;
-  return Object.fromEntries(ORDER.map((k, i) => [k, sheet[i]])) as Stats;
+  return Object.fromEntries(SHEET_ORDER.map((k, i) => [k, sheet[i]])) as Stats;
 }

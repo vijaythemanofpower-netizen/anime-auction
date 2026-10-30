@@ -48,6 +48,10 @@ export interface PublicCharacter {
   customMoves?: Ability[];
   /** Which custom moves are hidden until purchase and unlocked by evolution. */
   customKit?: { hidden: string; ultimate: string; form: string };
+  /** Rough strength from the character's AniList profile, -2 (non-fighter) to +2 (top tier); used when there is no canon sheet. */
+  powerHint?: number;
+  /** Genres of the character's main show (AniList). */
+  genres?: string[];
   /** Canon-based stat sheet written by the AI move writer; used like the built-in sheets. */
   canonStats?: Stats;
   bio: string;
