@@ -1,8 +1,43 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { store, useApp } from '../../store/store';
 import { LEGEND_CHARACTERS } from '../../engine/data/legends';
 import { CharArt } from '../components/Portrait';
 import { ONLINE_AVAILABLE } from '../../online/client';
+import { sendSignInLink, signInAsGuest, useAuth } from '../../online/auth';
+
+/** Sign in right from the start, so your record follows you; or a welcome back with your record. */
+function AccountCard() {
+  const a = useAuth();
+  const [email, setEmail] = useState('');
+  const [sent, setSent] = useState(false);
+  const [busy, setBusy] = useState(false);
+  if (!ONLINE_AVAILABLE || !a.ready) return null;
+  if (a.userId) {
+    const p = a.profile;
+    return (
+      <div className="account-card signed">
+        <div><div className="eyebrow">Welcome back</div><strong>{p?.display_name ?? a.email?.split('@')[0] ?? 'Player'}</strong>{a.guest && <span className="tag" style={{ marginLeft: 6 }}>GUEST</span>}
+          {p && <div className="faint">{p.games_played} played · {p.wins} won</div>}</div>
+        <button className="btn sm" onClick={() => store.go('online')}>Your account</button>
+      </div>
+    );
+  }
+  if (sent) return <div className="account-card"><div><strong>Check your email</strong><div className="faint">Open the link we sent to {email} on this device and you&apos;re in, for good.</div></div></div>;
+  return (
+    <form className="account-card" onSubmit={async (e) => {
+      e.preventDefault(); setBusy(true);
+      try { await sendSignInLink(email); setSent(true); } catch (err) { store.toast((err as Error).message, 'error'); } finally { setBusy(false); }
+    }}>
+      <div style={{ flexBasis: '100%' }}><strong>Sign in</strong> <span className="faint">to keep your wins and play online. One email link, then you stay signed in.</span></div>
+      <input className="input" type="email" required placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} aria-label="Email" style={{ flex: '1 1 200px', minHeight: 40 }} />
+      <button className="btn primary" disabled={busy}>Send link</button>
+      <button type="button" className="btn ghost" disabled={busy} onClick={async () => { setBusy(true); try { await signInAsGuest(); store.go('online'); } catch (err) { store.toast((err as Error).message, 'error'); } finally { setBusy(false); } }}>Play as guest</button>
+    </form>
+  );
+}
+
+// Drifting petals and sparks behind the home page (pure CSS; still with reduced motion).
+const PETALS = Array.from({ length: 14 }, (_, i) => ({ left: `${(i * 71) % 100}%`, delay: `${(i * 1.7) % 12}s`, dur: `${11 + (i * 3) % 9}s`, size: 8 + (i * 5) % 10 }));
 
 const TILES = [
   { left: '8%', top: '4%', w: 170, rot: -6, delay: 0 },
@@ -23,7 +58,11 @@ export function Home() {
 
   return (
     <section className="hero">
-      <div>
+      <div className="anime-fx" aria-hidden="true">
+        <div className="speed-burst" />
+        {PETALS.map((p, i) => <span key={i} className={i % 3 === 0 ? 'spark' : 'petal'} style={{ left: p.left, animationDelay: p.delay, animationDuration: p.dur, width: p.size, height: p.size }} />)}
+      </div>
+      <div style={{ position: 'relative', zIndex: 1 }}>
         <div className="eyebrow">A party game for 2–6 players</div>
         <h1 className="logo-title" style={{ marginTop: 10 }}>
           <span className="l1">Anime Auction</span>
@@ -34,6 +73,7 @@ export function Home() {
           Each player gets <span className="coins">10,000</span> coins. Fighters go under the hammer one at a time — but their true power stays hidden
           until you buy them. Build a team, prepare your strategy, and fight through a tournament decided by a real combat simulation.
         </p>
+        <AccountCard />
         <div className="menu">
           {game && <button className="btn primary lg" onClick={() => store.go('game')}>▶ Return to “{game.config.name}”</button>}
           <button className={`btn lg ${game ? '' : 'primary'}`} onClick={() => store.go('setup')}>✦ Create New Game</button>

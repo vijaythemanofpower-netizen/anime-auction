@@ -33,8 +33,26 @@ export function RosterView({ g, player, viewer }: { g: GameState; player: Player
   const analysis = own && known.length === members.length && members.length ? analyzeTeam(known, discovered) : null;
   const sel = open ? members.find((m) => m.id === open) : null;
 
+  // Only you see your own fighters ranked by true power (their hidden stats are yours once bought).
+  const ranked = own ? members.map((m) => ({ m, p: m.h && m.c ? truePower(progressedStats(m.h, m.c)) : null })).filter((x): x is { m: typeof members[number]; p: number } => x.p !== null).sort((a, b) => b.p - a.p) : [];
+  const top = ranked[0]?.p ?? 1;
+  const rankOf = new Map(ranked.map((x, i) => [x.m.id, i + 1]));
+
   return (
     <div className="col" style={{ gap: 14 }}>
+      {ranked.length > 1 && (
+        <div className="panel tight col power-rank" style={{ gap: 6 }}>
+          <strong>Your power ranking <span className="faint" style={{ fontWeight: 400 }}>· only you can see this</span></strong>
+          {ranked.map((x, i) => (
+            <div key={x.m.id} className="pr-row">
+              <span className={`pr-place p${i + 1}`}>#{i + 1}</span>
+              <span className="pr-name">{x.m.c?.evolved && x.m.h ? x.m.h.evolution.formName : x.m.pc.name}</span>
+              <span className="pr-bar"><span style={{ width: `${Math.round((x.p / top) * 100)}%` }} /></span>
+              <span className="pr-pwr">PWR {x.p}</span>
+            </div>
+          ))}
+        </div>
+      )}
       <div className="cards" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))' }}>
         {members.map((m) => {
           const stats = m.h && m.c ? progressedStats(m.h, m.c) : null;
@@ -52,7 +70,7 @@ export function RosterView({ g, player, viewer }: { g: GameState; player: Player
               {stats ? (
                 <div className="row" style={{ justifyContent: 'space-between' }}>
                   <span className="faint">ATK {stats.attack} · DEF {stats.defense} · SPD {stats.speed}</span>
-                  <span className="tag" style={{ color: 'var(--cyan)' }}>PWR {truePower(stats)}</span>
+                  <span className="tag" style={{ color: 'var(--cyan)' }}>{rankOf.has(m.id) ? `#${rankOf.get(m.id)} · ` : ''}PWR {truePower(stats)}</span>
                 </div>
               ) : <div className="faint">Stats hidden{own ? '' : ' — scout during preparation to learn more'}.</div>}
               <div className="row" style={{ gap: 4 }}>{m.pc.tags.map((t) => <TagChip key={t} t={t} />)}</div>

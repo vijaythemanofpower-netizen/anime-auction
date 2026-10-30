@@ -4,6 +4,7 @@
 // model) the panel uses the character's portrait in comic style.
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore, type CSSProperties } from 'react';
 import type { BattleEvent, BattleRecord, PublicCharacter } from '../../engine/types';
+import { LEGEND_FACTS } from '../../engine/data/legendFacts';
 import type { ComicPanel, ComicScript, PanelSize } from '../../engine/comic';
 import { hashString } from '../../engine/rng';
 import { CharArt } from '../components/Portrait';
@@ -99,6 +100,7 @@ export function ComicStage({ record, script, cur, done, characters, waiting, red
   prep?: { done: number; total: number }; onStartNow?: () => void;
 }) {
   useDrawer();
+  const facts = useMemo(() => fightFacts(record, characters), [record, characters]);
   const [, bump] = useState(0);
   useEffect(() => drawer.subscribe(() => bump((n) => n + 1)), []);
   const [readAll, setReadAll] = useState(false);
@@ -151,7 +153,7 @@ export function ComicStage({ record, script, cur, done, characters, waiting, red
           if (i >= shown) return <div key={p.id} className="cpanel blank" style={at(pl)} />;
           return <Panel key={p.id} p={p} place={at(pl)} characters={characters} live={p === current && !done ? cur : null} current={p === current && !done} />;
         })}
-        {prep && <PrepScreen script={script} prep={prep} onStartNow={onStartNow} remote={remoteArt} />}
+        {prep && <PrepScreen script={script} prep={prep} onStartNow={onStartNow} remote={remoteArt} facts={facts} />}
         {waiting && <div className="comic-waiting"><span className="pen" />The artist is drawing the next panel…</div>}
       </div>
       {done && (
@@ -172,10 +174,39 @@ export function ComicStage({ record, script, cur, done, characters, waiting, red
   );
 }
 
-const SECONDS_PER_DRAWING = 7;
+const SECONDS_PER_DRAWING = 9;
+
+/** Facts about the fighters in this fight: hand-written for built-in characters, otherwise from their profile. */
+export function fightFacts(record: BattleRecord, characters: Record<string, PublicCharacter>): Array<{ who: string; text: string; image?: string }> {
+  const ids = [...new Set(record.input.sides.flatMap((s) => [...s.fighters, ...(s.reserves ?? [])]).map((f) => f.charId))];
+  const out: Array<{ who: string; text: string; image?: string }> = [];
+  for (const id of ids) {
+    const c = characters[id];
+    if (!c) continue;
+    const own = c.id.startsWith('legend:') ? LEGEND_FACTS[c.id.slice(7)] : undefined;
+    const fromBio = (c.bio ?? '').replace(/\s+/g, ' ').split(/(?<=[.!?])\s+/).filter((x) => x.length > 25 && x.length < 220 && !/No biography/.test(x)).slice(0, 3);
+    const lines = own ?? [...fromBio, `${c.name} fights with ${c.weapon.toLowerCase()}: ${c.fightingStyle.toLowerCase()}.`, `Specialty: ${c.specialty}.`];
+    for (const text of lines) out.push({ who: c.name, text, image: c.imageUrl });
+  }
+  // Interleave the fighters so facts alternate between them.
+  return out.sort((a, b) => out.filter((x) => x.who === a.who).indexOf(a) - out.filter((x) => x.who === b.who).indexOf(b));
+}
+
+function FactCard({ facts }: { facts: ReturnType<typeof fightFacts> }) {
+  const [i, setI] = useState(0);
+  useEffect(() => { if (facts.length < 2) return; const t = setInterval(() => setI((n) => (n + 1) % facts.length), 7000); return () => clearInterval(t); }, [facts.length]);
+  const f = facts[i % Math.max(1, facts.length)];
+  if (!f) return null;
+  return (
+    <div className="fact-card" key={i}>
+      {f.image && <img src={f.image} alt="" referrerPolicy="no-referrer" />}
+      <div><div className="fact-who">Did you know? · {f.who}</div><p>{f.text}</p></div>
+    </div>
+  );
+}
 
 /** "Drawing your fight": the finished panels appear one by one until the comic is ready. */
-function PrepScreen({ script, prep, onStartNow, remote }: { script: ComicScript; prep: { done: number; total: number }; onStartNow?: () => void; remote?: boolean }) {
+function PrepScreen({ script, prep, onStartNow, remote, facts }: { script: ComicScript; prep: { done: number; total: number }; onStartNow?: () => void; remote?: boolean; facts: ReturnType<typeof fightFacts> }) {
   const urls = script.panels.flatMap((p) => p.drawings.map((d) => drawer.url(d.key))).filter((u): u is string => !!u);
   const left = Math.max(0, prep.total - prep.done) * SECONDS_PER_DRAWING;
   const pct = prep.total ? Math.round((prep.done / prep.total) * 100) : 0;
@@ -190,6 +221,7 @@ function PrepScreen({ script, prep, onStartNow, remote }: { script: ComicScript;
         <div className="prep-bar"><span style={{ width: `${pct}%` }} /></div>
         {onStartNow && <button className="btn sm" onClick={onStartNow}>Start now (finish drawing during the fight)</button>}
       </div>
+      <FactCard facts={facts} />
     </div>
   );
 }

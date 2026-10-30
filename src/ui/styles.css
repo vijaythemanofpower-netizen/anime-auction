@@ -439,3 +439,48 @@ html, body { overflow-x: clip; }
 .reaction-float small { font-size: 10px; color: var(--text-dim); background: rgba(0,0,0,0.5); padding: 1px 6px; border-radius: 6px; }
 @keyframes react-up { 0% { opacity: 0; transform: translateY(20px) scale(0.6); } 15% { opacity: 1; transform: translateY(0) scale(1.1); } 100% { opacity: 0; transform: translateY(-50vh) scale(0.9); } }
 @media (prefers-reduced-motion: reduce) { .reaction-float span { animation-duration: 1.2s; } }
+
+/* Private power ranking of your own fighters (Roster.tsx) */
+.power-rank .pr-row { display: grid; grid-template-columns: 36px minmax(0, 1.4fr) minmax(60px, 2fr) auto; gap: 10px; align-items: center; font-size: 14px; }
+.pr-place { font-weight: 800; color: var(--text-dim); }
+.pr-place.p1 { color: #f5c451; } .pr-place.p2 { color: #cbd5e1; } .pr-place.p3 { color: #d97706; }
+.pr-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pr-bar { height: 8px; border-radius: 4px; background: rgba(255,255,255,0.08); overflow: hidden; }
+.pr-bar span { display: block; height: 100%; background: linear-gradient(90deg, var(--violet), var(--cyan)); border-radius: 4px; }
+.pr-pwr { font-variant-numeric: tabular-nums; color: var(--cyan); font-weight: 700; font-size: 13px; }
+
+/* ------------------------------------------------ anime atmosphere */
+/* Home: sign-in card */
+.account-card { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-top: 18px; max-width: 560px; padding: 14px 16px; border-radius: 14px; background: linear-gradient(135deg, rgba(139, 92, 246, 0.18), rgba(34, 211, 238, 0.08)); border: 1px solid var(--line-strong); }
+.account-card.signed { justify-content: space-between; }
+/* Home: drifting petals, sparks and a slow speed-line burst behind everything */
+.anime-fx { position: absolute; inset: -40px -16px 0; overflow: hidden; pointer-events: none; z-index: 0; }
+.anime-fx .petal, .anime-fx .spark { position: absolute; top: -20px; animation: petal-fall linear infinite; opacity: 0; }
+.anime-fx .petal { background: radial-gradient(circle at 30% 30%, #fbcfe8, #f472b6); border-radius: 80% 0 80% 0; }
+.anime-fx .spark { background: #a5f3fc; border-radius: 50%; box-shadow: 0 0 12px 3px rgba(34, 211, 238, 0.7); width: 4px !important; height: 4px !important; }
+@keyframes petal-fall {
+  0% { transform: translate(0, 0) rotate(0deg); opacity: 0; }
+  10% { opacity: 0.85; }
+  100% { transform: translate(-120px, 105vh) rotate(540deg); opacity: 0; }
+}
+.speed-burst { position: absolute; left: 70%; top: 40%; width: 1400px; height: 1400px; margin: -700px 0 0 -700px; opacity: 0.08;
+  background: repeating-conic-gradient(from 0deg, #fff 0deg 1.2deg, transparent 1.2deg 9deg); -webkit-mask: radial-gradient(circle, transparent 18%, #000 60%); mask: radial-gradient(circle, transparent 18%, #000 60%);
+  animation: burst-spin 60s linear infinite; }
+@keyframes burst-spin { to { transform: rotate(360deg); } }
+/* Title: a slow energy shimmer across the second line */
+.logo-title .l2 { background-size: 200% 100%; background-image: linear-gradient(90deg, var(--violet-2), var(--cyan), #f472b6, var(--violet-2)); animation: title-shimmer 6s linear infinite; }
+@keyframes title-shimmer { to { background-position: 200% 0; } }
+/* Every primary button: a light sweep on hover, like a blade glint */
+.btn { position: relative; overflow: hidden; }
+.btn.primary::after { content: ''; position: absolute; top: 0; left: -60%; width: 40%; height: 100%; background: linear-gradient(100deg, transparent, rgba(255,255,255,0.35), transparent); transform: skewX(-20deg); transition: left 0.5s ease; pointer-events: none; }
+.btn.primary:hover::after { left: 130%; }
+/* Whole site: a slowly breathing aura behind the page */
+body::before { content: ''; position: fixed; inset: -20%; z-index: -1; pointer-events: none;
+  background: radial-gradient(40% 35% at 20% 15%, rgba(139, 92, 246, 0.16), transparent 70%), radial-gradient(35% 30% at 85% 80%, rgba(34, 211, 238, 0.12), transparent 70%), radial-gradient(30% 25% at 70% 20%, rgba(224, 79, 160, 0.10), transparent 70%);
+  animation: aura-drift 24s ease-in-out infinite alternate; }
+@keyframes aura-drift { to { transform: translate(4%, -3%) scale(1.08); } }
+@media (prefers-reduced-motion: reduce) {
+  .anime-fx, body::before, .logo-title .l2 { animation: none !important; }
+  .anime-fx .petal, .anime-fx .spark, .speed-burst { display: none; }
+}
+.reduce-motion .anime-fx, .reduce-motion body::before { display: none; }
