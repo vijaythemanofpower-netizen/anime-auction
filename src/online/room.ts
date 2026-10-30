@@ -54,6 +54,7 @@ type Msg =
   | { k: 'artist'; artist: ArtistInfo }
   | { k: 'art'; items: Array<{ key: string; url: string }> }
   | { k: 'error'; text: string }
+  | { k: 'chat'; name: string; text: string; at: number }
   | { k: 'closed' };
 
 let room: RoomState | null = null;
@@ -122,6 +123,7 @@ async function disconnect() {
   drawer.expectRemote(false);
   if (channel) { const sb = await supabase(); await sb.removeChannel(channel); channel = null; }
   if (room?.role === 'guest') store.leaveOnlineGame();
+  chatLog = []; unread = 0; emitChat();
   setRoom(null);
 }
 
@@ -186,6 +188,8 @@ async function receive(w: Wire) {
   let msg: Msg;
   try { msg = await unpack<Msg>(whole); } catch (e) { debug.failed.push(`unpack:${(e as Error).message}`); return; }
   debug.received.push(msg.k);
+  // Chat goes straight from anyone to everyone; the host doesn't relay it.
+  if (msg.k === 'chat') { addChat(w.from, msg); return; }
   if (room.role === 'host') hostReceive(w.from, msg);
   else if (w.from === room.hostId) guestReceive(msg);
 }
@@ -429,6 +433,44 @@ function guestReceive(msg: Msg) {
 }
 
 /** Guest: sends a move to the host. */
+// ---------------------------------------------------------------- chat
+
+export interface ChatLine { id: string; from: string; name: string; text: string; at: number; mine: boolean }
+let chatLog: ChatLine[] = [];
+let unread = 0;
+const chatListeners = new Set<() => void>();
+let chatSnap = { lines: chatLog, unread };
+export const chat = {
+  get: () => chatSnap,
+  subscribe: (l: () => void) => { chatListeners.add(l); return () => { chatListeners.delete(l); }; },
+  markRead() { if (unread) { unread = 0; emitChat(); } },
+};
+function emitChat() { chatSnap = { lines: chatLog, unread }; chatListeners.forEach((l) => l()); }
+export const MAX_CHAT = 280;
+function addChat(from: string, m: { name: string; text: string; at: number }) {
+  if (!room || typeof m.text !== 'string') return;
+  const text = m.text.replace(/\s+/g, ' ').trim().slice(0, MAX_CHAT);
+  if (!text) return;
+  // Shown under the name the room knows them by, so nobody can pose as someone else.
+  const name = room.members.find((x) => x.userId === from)?.name ?? String(m.name ?? 'Player').slice(0, 24);
+  const mine = from === room.userId;
+  chatLog = [...chatLog, { id: `${from}-${m.at}-${chatLog.length}`, from, name, text, at: Date.now(), mine }].slice(-150);
+  if (!mine) unread++;
+  emitChat();
+}
+let lastChat = 0;
+/** Sends a chat line to everyone in the room. Returns false if sent too fast. */
+export function sendChat(text: string): boolean {
+  if (!room) return false;
+  const t = text.replace(/\s+/g, ' ').trim().slice(0, MAX_CHAT);
+  if (!t || Date.now() - lastChat < 700) return false;
+  lastChat = Date.now();
+  const msg = { k: 'chat' as const, name: me().name, text: t, at: lastChat };
+  addChat(room.userId, msg);
+  void send(msg);
+  return true;
+}
+
 export function sendMove(move: PlayerMove) { void send({ k: 'move', move }); }
 /** Guest: sends a corner call to the host. */
 export function sendCall(battleId: string, call: CoachCall) { void send({ k: 'call', battleId, call }); }

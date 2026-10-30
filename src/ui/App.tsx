@@ -10,6 +10,7 @@ import { Hall } from './screens/Hall';
 import { HowTo, SettingsScreen } from './screens/Info';
 import { Saves } from './screens/Saves';
 import { OnlineScreen } from './screens/Online';
+import { RoomChat } from './components/RoomChat';
 import { ONLINE_AVAILABLE } from '../online/client';
 import { useAuth } from '../online/auth';
 
@@ -64,6 +65,7 @@ export function App() {
           </>
         )}
       </main>
+      <RoomChat />
       {toast && <div className={`toast ${toast.kind}`} role="status" aria-live="polite">{toast.text}</div>}
     </div>
   );
