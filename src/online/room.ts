@@ -10,7 +10,7 @@ import type { GameSetup } from '../engine/game';
 import { DEFAULT_AUCTION, DEFAULT_TOURNAMENT } from '../engine/game';
 import { isPlayerMove, type PlayerMove } from '../engine/actions';
 import { supabase } from './client';
-import { auth } from './auth';
+import { auth, recordResult } from './auth';
 import { Reassembler, pack, split, unpack } from './wire';
 import { store } from '../store/store';
 import { drawer } from '../ui/comic/drawing';
@@ -435,6 +435,22 @@ function guestReceive(msg: Msg) {
 }
 
 /** Guest: sends a move to the host. */
+// ---------------------------------------------------------------- career
+
+// When an online tournament ends, each player adds it to their own career record
+// (wins and games played on their profile). Once per game, even across reloads.
+function recordedKey(userId: string) { return `aa-recorded-games:${userId}`; }
+store.subscribe(() => {
+  const g = store.getState().game;
+  if (!room?.myPlayerId || !g || g.phase !== 'champion' || !g.tournament?.championId) return;
+  const key = recordedKey(room.userId);
+  let done: string[] = [];
+  try { done = JSON.parse(localStorage.getItem(key) ?? '[]') as string[]; } catch { /* storage unavailable */ }
+  if (done.includes(g.id)) return;
+  try { localStorage.setItem(key, JSON.stringify([...done, g.id].slice(-200))); } catch { /* storage unavailable */ }
+  void recordResult(g.tournament.championId === room.myPlayerId, null);
+});
+
 // ---------------------------------------------------------------- chat
 
 export interface ChatLine { id: string; from: string; name: string; text: string; at: number; mine: boolean }

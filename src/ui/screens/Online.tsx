@@ -35,6 +35,22 @@ function Panel({ title, eyebrow, children }: { title: string; eyebrow?: string; 
   );
 }
 
+/** Guests can attach an email to keep this same account, with its record, on any device. */
+function KeepAccount() {
+  const [email, setEmail] = useState('');
+  const [state, setState] = useState<'idle' | 'busy' | 'sent'>('idle');
+  if (state === 'sent') return <p className="faint" style={{ margin: 0 }}>Check <strong>{email}</strong> and open the link to confirm. Your record stays with you.</p>;
+  return (
+    <form className="row" style={{ gap: 6, flexWrap: 'wrap' }} onSubmit={async (e) => {
+      e.preventDefault(); setState('busy');
+      try { await sendSignInLink(email); setState('sent'); } catch (err) { store.toast((err as Error).message, 'error'); setState('idle'); }
+    }}>
+      <input className="input" style={{ minHeight: 32, flex: '1 1 180px' }} type="email" required placeholder="Add your email to keep this account" value={email} onChange={(e) => setEmail(e.target.value)} aria-label="Email to keep this account" />
+      <button className="btn sm primary" disabled={state === 'busy'}>Keep my account</button>
+    </form>
+  );
+}
+
 function SignIn() {
   const [email, setEmail] = useState('');
   const [sent, setSent] = useState(false);
@@ -107,7 +123,7 @@ function Rooms() {
     <div className="col" style={{ gap: 18, maxWidth: 820, margin: '0 auto' }}>
       <div className="row" style={{ justifyContent: 'space-between', alignItems: 'flex-end' }}>
         <div><div className="eyebrow">Play online</div><h1>Play with friends</h1></div>
-        <div className="panel tight row" style={{ gap: 10 }}>
+        <div className="panel tight row" style={{ gap: 10, flexWrap: 'wrap' }}>
           {renaming ? (
             <form className="row" style={{ gap: 6 }} onSubmit={async (e) => { e.preventDefault(); try { await saveDisplayName(name); setRenaming(false); } catch (err) { store.toast((err as Error).message, 'error'); } }}>
               <input className="input" style={{ minHeight: 32, width: 160 }} maxLength={24} value={name} onChange={(e) => setName(e.target.value)} aria-label="Player name" />
@@ -120,6 +136,7 @@ function Rooms() {
               <button className="btn sm ghost" onClick={() => void signOut()}>Sign out</button>
             </>
           )}
+          {a.guest && !renaming && <div style={{ flexBasis: '100%' }}><KeepAccount /></div>}
         </div>
       </div>
       <div className="grid grid-2">

@@ -43,7 +43,15 @@ export async function initAuth(): Promise<void> {
 /** Emails a one-time sign-in link that brings the player back to this page. */
 export async function sendSignInLink(email: string): Promise<void> {
   const sb = await supabase();
-  const { error } = await sb.auth.signInWithOtp({ email: email.trim(), options: { emailRedirectTo: location.origin + location.pathname } });
+  const redirect = location.origin + location.pathname;
+  // A guest who adds their email keeps the same account (and its record) instead of starting over.
+  if (state.guest) {
+    const { error } = await sb.auth.updateUser({ email: email.trim() }, { emailRedirectTo: redirect });
+    if (!error) return;
+    // That email already has an account: sign in to it instead.
+    if (!/already|registered|exists/i.test(error.message)) throw new Error(error.message);
+  }
+  const { error } = await sb.auth.signInWithOtp({ email: email.trim(), options: { emailRedirectTo: redirect } });
   if (error) throw new Error(error.message);
 }
 
@@ -79,9 +87,16 @@ export async function saveDisplayName(name: string): Promise<void> {
 
 /** Adds a finished online tournament to the player's career record. */
 export async function recordResult(won: boolean, iq: number | null): Promise<void> {
+  if (!state.userId) return;
+  const sb = await supabase();
+  // Players who never picked a name still get a record, under their email's name.
+  if (!state.profile) {
+    const { error } = await sb.from('profiles').upsert({ id: state.userId, display_name: (state.email?.split('@')[0] ?? 'Player').slice(0, 24), updated_at: new Date().toISOString() });
+    if (error) return;
+    set({ profile: await loadProfile(state.userId) });
+  }
   const p = state.profile;
   if (!p) return;
-  const sb = await supabase();
   const next = { games_played: p.games_played + 1, wins: p.wins + (won ? 1 : 0), best_iq: iq !== null ? Math.max(p.best_iq ?? 0, iq) : p.best_iq };
   const { error } = await sb.from('profiles').update(next).eq('id', p.id);
   if (!error) set({ profile: { ...p, ...next } });
