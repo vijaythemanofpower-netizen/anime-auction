@@ -46,8 +46,6 @@ const TEMPLATES: Record<TauntKind, string[]> = {
     'Is this really all you brought, {foe}?',
     'You\'re slowing down, {foe}. I can hear you breathing.',
     'Look at your hands shaking, {foe}.',
-    'They paid a fortune for you, {foe}? Somebody got robbed.',
-    'Cheapest fighter in the arena, and I\'m still beating you, {foe}.',
     'Your guard has a hole in it the size of a door, {foe}.',
     'Try that {foeMove} again. I dare you.',
     'You hit like someone who\'s never lost. Let me fix that, {foe}.',
@@ -77,7 +75,6 @@ const TEMPLATES: Record<TauntKind, string[]> = {
     'My legs still work. My fists still work. Let\'s go.',
     'Pain\'s just a reminder that I\'m still in this.',
     'Watch closely, {foe}. This is where it turns.',
-    'Nobody bet on me. Even better.',
     'Everyone\'s watching. Don\'t you dare fold now.',
     'One more round. Then one more.',
   ],
@@ -140,8 +137,6 @@ function fill(t: string, c: TauntContext): string | null {
 }
 
 function fits(t: string, c: TauntContext): boolean {
-  if (/robbed/.test(t)) return !!c.underdog;
-  if (/Cheapest fighter|Nobody bet on me/.test(t)) return !!c.underdog;
   if (/losing|breathing that hard|slowing down|shaking/.test(t)) return c.standing === 'ahead';
   if (/They think I\'m finished|Get up\. Breathe/.test(t)) return c.standing === 'behind';
   return true;

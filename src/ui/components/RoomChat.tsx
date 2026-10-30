@@ -3,6 +3,7 @@
 // room channel (src/online/room.ts), so they work in the lobby and mid-fight.
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { chat, MAX_CHAT, REACTIONS, reactionFeed, sendChat, sendReaction, useRoom } from '../../online/room';
+import { useApp } from '../../store/store';
 
 const QUICK = ['GG!', 'No way!', 'That was brutal', 'My fighter is cooking', 'Bid war!', 'Unlucky'];
 
@@ -16,7 +17,12 @@ export function RoomChat() {
 
   useEffect(() => { if (open) chat.markRead(); }, [open, lines]);
   useEffect(() => { listRef.current?.scrollTo({ top: listRef.current.scrollHeight }); }, [open, lines]);
-  if (!room) return null;
+  const screen = useApp((st) => st.screen);
+  // Only inside a live room with someone else there, on the room or game screens.
+  const others = room ? room.members.filter((m) => m.online && m.userId !== room.userId).length : 0;
+  if (!room || !room.connected || others === 0 || (screen !== 'online' && screen !== 'game')) {
+    return floating.length ? <div className="reaction-float" aria-hidden="true">{floating.map((r) => <span key={r.id} style={{ right: `${r.x}%` }}><b>{r.emoji}</b><small>{r.name}</small></span>)}</div> : null;
+  }
 
   const submit = (t: string) => { if (sendChat(t)) setText(''); };
   const time = (at: number) => new Date(at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -27,9 +33,6 @@ export function RoomChat() {
       {floating.map((r) => <span key={r.id} style={{ right: `${r.x}%` }}><b>{r.emoji}</b><small>{r.name}</small></span>)}
     </div>
     <div className={`room-chat${open ? ' open' : ''}`}>
-      <div className="reaction-bar" role="group" aria-label="Send a reaction">
-        {REACTIONS.map((e) => <button key={e} onClick={() => sendReaction(e)} aria-label={`React ${e}`}>{e}</button>)}
-      </div>
       {open && (
         <section className="chat-panel" aria-label="Room chat">
           <header>
@@ -46,6 +49,9 @@ export function RoomChat() {
                 <time>{time(l.at)}</time>
               </div>
             ))}
+          </div>
+          <div className="reaction-bar" role="group" aria-label="Send a reaction">
+            {REACTIONS.map((e) => <button key={e} onClick={() => sendReaction(e)} aria-label={`React ${e}`}>{e}</button>)}
           </div>
           <div className="chat-quick">
             {QUICK.map((q) => <button key={q} className="chip" onClick={() => submit(q)}>{q}</button>)}

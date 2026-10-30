@@ -67,8 +67,6 @@ export function narrate(input: BattleInput, result: BattleResult, ctx: Narration
   };
 
   const allSnaps = [...fighters.values()];
-  const priciest = allSnaps.slice().sort((a, b) => b.price - a.price)[0];
-  const cheapest = allSnaps.slice().sort((a, b) => a.price - b.price)[0];
   let bigHits = 0;
 
   for (const e of result.events) {
@@ -76,9 +74,6 @@ export function narrate(input: BattleInput, result: BattleResult, ctx: Narration
       case 'intro': {
         const [a, b] = input.sides;
         say(e, `Welcome to ${ctx.stageName}! ${ctx.playerNames[a.playerId]} versus ${ctx.playerNames[b.playerId]} in ${e.context?.env}!`, 'hype');
-        if (priciest && cheapest && priciest.price > cheapest.price * 2.5 && priciest.side !== cheapest.side) {
-          say(e, `${priciest.name} cost ${priciest.price} coins at auction. ${cheapest.name} went for just ${cheapest.price}. Price tags mean nothing in this arena!`, 'hype');
-        }
         const rv = input.rivalry;
         if (rv && rv.encounters > 0) {
           say(e, `These two have met ${rv.encounters} time${rv.encounters > 1 ? 's' : ''} before — the rivalry stands at ${rv.winsA}–${rv.winsB}!`, 'tense');
@@ -268,9 +263,6 @@ export function narrate(input: BattleInput, result: BattleResult, ctx: Narration
         const downs = result.fighters.filter((f) => f.side === result.winnerSide).reduce((n, f) => n + f.knockdowns, 0);
         if (minPct < 0.15 || downs > 0) say(e, downs > 0 ? 'KNOCKED DOWN AND STILL WON! WHAT A COMEBACK!' : 'WHAT AN INCREDIBLE COMEBACK!', 'shock');
         else if (bigHits >= 3) say(e, 'A brutal, high-impact battle from start to finish!', 'hype');
-        const loserPrice = Math.max(...input.sides[1 - result.winnerSide].fighters.map((f) => f.price));
-        const winnerPrice = Math.max(...winSide.fighters.map((f) => f.price));
-        if (loserPrice > winnerPrice * 2 && winnerPrice > 0) say(e, `The bargain buy beats the big spender! ${winnerPrice} coins topples ${loserPrice}!`, 'hype');
         dialogue(e, winner.charId, 'win');
         break;
       }

@@ -212,8 +212,9 @@ function PrepScreen({ script, prep, onStartNow, remote, facts }: { script: Comic
   const pct = prep.total ? Math.round((prep.done / prep.total) * 100) : 0;
   return (
     <div className="comic-prep" role="status" aria-live="polite">
-      <div className="prep-thumbs">
-        {urls.map((u, i) => <img key={u} src={u} alt="" style={{ ['--r' as string]: `${((i * 37) % 13) - 6}deg` } as CSSProperties} />)}
+      {/* Finished panels stay face down: the fight is a surprise until it plays. */}
+      <div className="prep-thumbs sealed">
+        {urls.map((u, i) => <div key={u} className="sealed-card" style={{ ['--r' as string]: `${((i * 37) % 13) - 6}deg` } as CSSProperties}><span>{i + 1}</span></div>)}
       </div>
       <div className="prep-card">
         <div className="prep-title">{remote ? 'THE HOST IS DRAWING YOUR FIGHT…' : drawer.status === 'ready' ? 'DRAWING YOUR FIGHT…' : 'FINDING THE ARTIST…'}</div>

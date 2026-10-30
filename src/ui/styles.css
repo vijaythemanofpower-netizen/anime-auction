@@ -479,3 +479,16 @@ html, body { overflow-x: clip; }
   .anime-fx .petal, .anime-fx .spark, .speed-burst { display: none; }
 }
 .reduce-motion .anime-fx { display: none; }
+
+/* "Should you bid?" on your own bidding card (Auction.tsx InlineAdvice) */
+.inline-advice { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; width: 100%; text-align: left; padding: 8px 10px; border-radius: 8px; border: 2px solid var(--line-strong); background: var(--surface-2); color: var(--text); cursor: pointer; font-size: 13px; }
+.inline-advice b { font-family: var(--font-display); font-weight: 400; font-size: 16px; letter-spacing: 0.03em; }
+.inline-advice.TAKE { border-color: var(--take); } .inline-advice.TAKE b { color: var(--take); }
+.inline-advice.MIGHT { border-color: var(--might); } .inline-advice.MIGHT b { color: var(--might); }
+.inline-advice.LEAVE { border-color: var(--leave); } .inline-advice.LEAVE b { color: var(--leave); }
+/* Reactions now live inside the chat panel. */
+.chat-panel .reaction-bar { border: 0; border-top: 1px solid var(--line); border-radius: 0; box-shadow: none; background: transparent; justify-content: space-around; padding: 6px 8px; }
+/* The chat corner never blocks clicks on what's behind it; only its own buttons and panel take clicks. */
+.room-chat { pointer-events: none; }
+.room-chat > * { pointer-events: auto; }
+.reaction-float, .reaction-float * { pointer-events: none; }

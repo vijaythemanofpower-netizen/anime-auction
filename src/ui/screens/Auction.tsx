@@ -179,6 +179,26 @@ export function AuctionPhase() {
   );
 }
 
+/**
+ * "Should you bid?" right on your bidding card, always visible. When several people
+ * share one screen with privacy on, it stays behind the button instead (it can use
+ * your private scouting).
+ */
+function InlineAdvice({ g, p, onMore }: { g: GameState; p: Player; onMore?: () => void }) {
+  const shared = g.config.privacyScreens && g.players.filter((x) => x.kind === 'human' && store.isLocalPlayer(x)).length > 1;
+  const advice = shared ? null : G.scoutFor(g, p.id);
+  if (!advice) return null;
+  const label = advice.label === 'TAKE' ? '✓ RECOMMENDED' : advice.label === 'LEAVE' ? '✕ NOT RECOMMENDED' : '~ MAYBE';
+  const cls = advice.label === 'MIGHT TAKE' ? 'MIGHT' : advice.label;
+  return (
+    <button type="button" className={`inline-advice ${cls}`} onClick={onMore} title="Based on price, your budget and your team. Not on how strong the fighter is.">
+      <b>{label}</b>
+      <span>{advice.reasons[0] ?? ''}{advice.label !== 'TAKE' ? ' (about price and fit, not strength)' : ''}</span>
+      <span className="faint">Fair price ~{advice.fairPrice.toLocaleString()}</span>
+    </button>
+  );
+}
+
 function BidderCard({ g, p, onAdvice, big }: { g: GameState; p: Player; onAdvice?: () => void; big?: boolean }) {
   const a = g.auction!;
   const lot = a.lot!;
@@ -213,8 +233,9 @@ function BidderCard({ g, p, onAdvice, big }: { g: GameState; p: Player; onAdvice
             <button className="btn sm primary" disabled={!can || !custom} onClick={() => { bid(Math.round(Number(custom))); setCustom(''); }}>Bid</button>
             <button className="btn sm" disabled={leading || (a.config.mode === 'turns' && lot.activePlayerId !== p.id)} onClick={() => store.move(p.id, { t: 'pass' })}>Pass</button>
           </div>
+          <InlineAdvice g={g} p={p} onMore={onAdvice} />
           <div className="row" style={{ gap: 6 }}>
-            {onAdvice && <button className="btn sm ghost" onClick={onAdvice}>Scout advice</button>}
+            {onAdvice && <button className="btn sm ghost" onClick={onAdvice}>Why?</button>}
             {!big && p.scoutTokens > 0 && <span className="faint">{p.scoutTokens} scout token{p.scoutTokens > 1 ? 's' : ''}</span>}
           </div>
         </>

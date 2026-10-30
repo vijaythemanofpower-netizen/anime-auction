@@ -1,7 +1,5 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { store, useApp } from '../../store/store';
-import { LEGEND_CHARACTERS } from '../../engine/data/legends';
-import { CharArt } from '../components/Portrait';
 import { ONLINE_AVAILABLE } from '../../online/client';
 import { sendSignInLink, signInAsGuest, useAuth } from '../../online/auth';
 
@@ -36,22 +34,28 @@ function AccountCard() {
   );
 }
 
-/** Two fighters dash in, clash with a flash and a shockwave, and break apart; then a new pair. */
-function BackgroundDuel() {
-  const [round, setRound] = useState(() => Math.floor(Math.random() * 1000));
-  const pair = useMemo(() => {
-    const n = LEGEND_CHARACTERS.length;
-    const a = (round * 7) % n, b = (round * 13 + 5) % n;
-    return [LEGEND_CHARACTERS[a], LEGEND_CHARACTERS[b === a ? (b + 1) % n : b]];
-  }, [round]);
+// Fight scenes painted for the game by the local drawing app (public/scenes).
+const FIGHTS: Array<[file: string, title: string, show: string]> = [
+  ['naruto-sasuke', 'Naruto vs Sasuke', 'Naruto'], ['gojo-sukuna', 'Gojo vs Sukuna', 'Jujutsu Kaisen'], ['goku-vegeta', 'Goku vs Vegeta', 'Dragon Ball'],
+  ['luffy-kaido', 'Luffy vs Kaido', 'One Piece'], ['ichigo-aizen', 'Ichigo vs Aizen', 'Bleach'], ['itachi-sasuke', 'Itachi vs Sasuke', 'Naruto'],
+  ['deku-bakugo', 'Deku vs Bakugo', 'My Hero Academia'], ['zoro-mihawk', 'Zoro vs Mihawk', 'One Piece'], ['levi-titans', 'Levi vs the Titans', 'Attack on Titan'],
+  ['gon-killua', 'Gon & Killua', 'Hunter x Hunter'],
+];
+const SCENE_MS = 6500;
+
+/** A slowly panning slideshow of fight scenes, in a random order every visit. */
+function FightReel() {
+  const order = useMemo(() => FIGHTS.map((f) => [Math.random(), f] as const).sort((a, b) => a[0] - b[0]).map(([, f]) => f), []);
+  const [i, setI] = useState(0);
+  useEffect(() => { const t = setInterval(() => setI((n) => (n + 1) % order.length), SCENE_MS); return () => clearInterval(t); }, [order.length]);
+  // Preload the next scene so the change is seamless.
+  useEffect(() => { const img = new Image(); img.src = `${import.meta.env.BASE_URL}scenes/${order[(i + 1) % order.length][0]}.jpg`; }, [i, order]);
+  const [file, title, show] = order[i];
   return (
-    <div className="duel" aria-hidden="true" key={round} onAnimationEnd={(e) => { if (e.animationName === 'duel-round') setRound((r) => r + 1); }}>
-      <div className="duel-round" />
-      <div className="duel-fighter left"><CharArt c={pair[0]} /></div>
-      <div className="duel-fighter right"><CharArt c={pair[1]} /></div>
-      <div className="duel-flash" />
-      <div className="duel-ring" />
-      <div className="duel-names"><span>{pair[0].name}</span><b>VS</b><span>{pair[1].name}</span></div>
+    <div className="fight-reel" aria-label={`Fight scene: ${title}`}>
+      <img key={file} src={`${import.meta.env.BASE_URL}scenes/${file}.jpg`} alt={`${title} (${show})`} className={i % 2 ? 'pan-left' : 'pan-right'} />
+      <div className="reel-caption" key={`c-${file}`}><b>{title}</b><span>{show}</span></div>
+      <div className="reel-dots" aria-hidden="true">{order.map((f, k) => <span key={f[0]} className={k === i ? 'on' : ''} />)}</div>
     </div>
   );
 }
@@ -88,7 +92,7 @@ export function Home() {
           <button className="btn" onClick={() => store.go('settings')}>⚙ Settings</button>
         </div>
       </div>
-      <BackgroundDuel />
+      <FightReel />
     </section>
   );
 }
