@@ -1,6 +1,7 @@
 @echo off
 rem Starts the free local drawing app (ComfyUI) that draws the battle comics.
 rem Keep this window open while you play. Start Game.bat starts it for you too.
+set "PATH=%SystemRoot%\System32;%SystemRoot%;%PATH%"
 set "COMFY=%USERPROFILE%\ComfyUI_windows_portable"
 if not exist "%COMFY%\python_embeded\python.exe" (
   echo The drawing app is not installed at %COMFY%.
