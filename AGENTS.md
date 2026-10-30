@@ -33,7 +33,7 @@ When Claude's usage limit runs out, Claude writes HANDOFF.md with one section pe
 ## Open work (owner's list, Oct 30 2026)
 Done on Oct 30: narration pacing (fight waits for speech, slower voices, every line voiced, music ducks), comic variety (fallback panels framed per shot, pose variants, 16/32/50 panels), room chat + emoji reactions, injury cracks + hurt glow in Arena, phone fixes (pinned fight controls, tap targets).
 Still open:
-1. Sign-in emails hit Supabase's hourly limit: needs a custom SMTP sender (owner sets it up in Supabase > Authentication > Emails > SMTP and enters the password themselves; e.g. Resend or Brevo free tier).
+1. Sign-in emails: custom SMTP via Brevo (smtp-relay.brevo.com:587, sender vijaythemanofpower@gmail.com) set up Oct 30; auth email limit raised to 60/hour. Brevo free tier = 300/day. Emails may land in spam until a domain is verified in Brevo.
 2. Check the new phone layout and chat on a real phone; test chat/reactions with two players online.
 3. Comic accuracy for lesser-known characters depends on the model knowing their name; consider adding appearance tags per character.
 4. More ideas: Host Portal view of live rooms and chat moderation; better narrator voice variety (Kokoro voice per commentator mood).
