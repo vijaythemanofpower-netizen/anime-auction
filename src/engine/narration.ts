@@ -2,6 +2,7 @@
 // verified engine event and carries that event's id; the narrator never
 // creates damage, abilities, or outcomes. validateNarration() checks any
 // narration (local or from an optional external model) against the log.
+import { strikeLook } from './data/flavor';
 import type { BattleEvent, BattleInput, BattleResult, NarrationLine, Temperament } from './types';
 import { Rng, deriveSeed } from './rng';
 import { getAbility } from './data/abilities';
@@ -26,22 +27,22 @@ const DIALOGUE: Record<Temperament, { intro: string[]; hurt: string[]; win: stri
   cheerful: { intro: ['Let\'s have a great fight!', 'Hi! Don\'t hold back, okay?'], hurt: ['Ow ow ow! Okay, okay!'], win: ['Good game!'], lose: ['Aw... that was fun though!'], awaken: ['I can still go! Here I go!'] },
 };
 
-const OPENERS = ['AND WE\'RE UNDERWAY!', 'THE BELL RINGS — LET\'S GO!', 'HERE WE GO, FOLKS!', 'FIGHTERS, BEGIN!'];
-const CRIT = ['WHAT A HIT!', 'CRITICAL! RIGHT ON TARGET!', 'THAT ONE\'S GOING ON THE HIGHLIGHT REEL!', 'DEVASTATING!'];
-const DODGE = ['Clean dodge!', 'Not even close!', 'Slipped right past it!', 'Read it perfectly!'];
-const BLOCK = ['Blocked!', 'Took it on the guard!', 'Arms up, nothing clean gets through!'];
-const PARRY = ['PARRIED!', 'Turned aside — and now they\'re open!', 'What a read! Knocked it off line!'];
-const CLASH = ['THE TECHNIQUES COLLIDE!', 'MOVE MEETS MOVE!', 'A HEAD-ON CLASH!'];
-const KNOCKDOWN = ['DOWN! THEY\'RE DOWN!', 'OFF THEIR FEET!', 'THAT PUT THEM ON THE FLOOR!'];
+const OPENERS = ['AND WE\'RE UNDERWAY!', 'THE BELL RINGS — LET\'S GO!', 'HERE WE GO, FOLKS!', 'FIGHTERS, BEGIN!', 'NO MORE TALKING — THEY CLASH!', 'THE CROWD IS ON ITS FEET!', 'BOTH FIGHTERS EXPLODE OFF THE MARK!', "THIS IS THE ONE WE'VE BEEN WAITING FOR!", 'SILENCE... AND THEN, CHAOS!'];
+const CRIT = ['WHAT A HIT!', 'CRITICAL! RIGHT ON TARGET!', 'THAT ONE\'S GOING ON THE HIGHLIGHT REEL!', 'DEVASTATING!', 'RIGHT ON THE BUTTON!', 'YOU COULD HEAR THAT ONE FROM THE CHEAP SEATS!', 'PERFECT PLACEMENT!', "THAT'S GOING TO LEAVE A MARK!", 'OH, THAT WAS NASTY!'];
+const DODGE = ['Clean dodge!', 'Not even close!', 'Slipped right past it!', 'Read it perfectly!', 'Gone — like smoke!', 'Too slow!', 'Footwork on display!', 'Swung at nothing but air!', 'Saw it coming a mile away!'];
+const BLOCK = ['Blocked!', 'Took it on the guard!', 'Arms up, nothing clean gets through!', 'Ate it on the forearms!', 'Shell up — absorbed!', 'Solid wall!', 'Not this time!'];
+const PARRY = ['PARRIED!', 'Turned aside — and now they\'re open!', 'What a read! Knocked it off line!', 'Swatted away!', 'Redirected — beautiful!', 'Steel on steel, and the opening appears!'];
+const CLASH = ['THE TECHNIQUES COLLIDE!', 'MOVE MEETS MOVE!', 'A HEAD-ON CLASH!', 'SHOCKWAVES ACROSS THE ARENA!', 'NEITHER ONE GIVES AN INCH!', 'THE AIR ITSELF SPLITS!'];
+const KNOCKDOWN = ['DOWN! THEY\'RE DOWN!', 'OFF THEIR FEET!', 'THAT PUT THEM ON THE FLOOR!', 'FLAT ON THE CANVAS!', 'THEY HIT THE GROUND HARD!', 'TIMBER!'];
 const IMPACT: Record<string, string[]> = {
-  glancing: ['grazes', 'clips', 'nicks'],
-  solid: ['catches', 'tags', 'connects with', 'cracks'],
-  heavy: ['rocks', 'hammers', 'slams into', 'staggers'],
-  devastating: ['DEMOLISHES', 'FLATTENS', 'OBLITERATES THE GUARD OF'],
+  glancing: ['grazes', 'clips', 'nicks', 'brushes', 'skims'],
+  solid: ['catches', 'tags', 'connects with', 'cracks', 'stings', 'finds', 'snaps into'],
+  heavy: ['rocks', 'hammers', 'slams into', 'staggers', 'crushes', 'blasts', 'rattles'],
+  devastating: ['DEMOLISHES', 'FLATTENS', 'OBLITERATES THE GUARD OF', 'DETONATES ON', 'BURIES'],
 };
-const COUNTER = ['THAT COUNTER CHANGES EVERYTHING!', 'Punished on the spot!', 'COUNTER! What timing!'];
+const COUNTER = ['THAT COUNTER CHANGES EVERYTHING!', 'Punished on the spot!', 'COUNTER! What timing!', 'Made them pay instantly!', 'Waited for it — and BANG!', 'Turned defence into offence!'];
 const DEFEAT = ['AND THAT\'S IT FOR', 'LIGHTS OUT FOR', 'IT\'S ALL OVER FOR'];
-const STILL = ['WAIT — STILL STANDING!', 'REFUSING TO FALL!', 'NOT. GOING. DOWN.'];
+const STILL = ['WAIT — STILL STANDING!', 'REFUSING TO FALL!', 'NOT. GOING. DOWN.', "THEY JUST WON'T STAY DOWN!", 'PURE STUBBORNNESS!', 'HOW ARE THEY STILL UP?!'];
 
 export function narrate(input: BattleInput, result: BattleResult, ctx: NarrationContext): NarrationLine[] {
   const rng = new Rng(deriveSeed('narration', input.seed, input.battleId));
@@ -50,6 +51,7 @@ export function narrate(input: BattleInput, result: BattleResult, ctx: Narration
   const temp = (id?: string) => (id ? fighters.get(id)?.temperament : undefined);
   const lines: NarrationLine[] = [];
   const used = new Set<string>();
+  const usedLooks = new Set<string>();
   const pick = (arr: string[]) => {
     const fresh = arr.filter((x) => !used.has(x));
     const v = rng.pick(fresh.length ? fresh : arr);
@@ -106,11 +108,14 @@ export function narrate(input: BattleInput, result: BattleResult, ctx: Narration
         const verb = rng.pick(IMPACT[impact] ?? IMPACT.solid);
         const big = impact === 'heavy' || impact === 'devastating' || e.crit;
         const move = e.ability ? `${getAbility(e.ability).name} ` : '';
-        if (e.crit) { say(e, `${pick(CRIT)} ${nm(e.actor)}'s ${move || 'strike '}${verb} ${nm(e.target)}!`, 'hype'); bigHits++; }
+        // Plain attacks are described in the fighter's own style and element.
+        const me = e.actor ? fighters.get(e.actor) : undefined;
+        const look = me ? strikeLook(rng, me.archetype, me.tags, usedLooks) : '';
+        if (e.crit) { say(e, move ? `${pick(CRIT)} ${nm(e.actor)}'s ${move}${verb} ${nm(e.target)}!` : (/ (with|into|on|of)$/.test(verb) ? `${pick(CRIT)} With ${look || 'a huge strike'}, ${nm(e.actor)} ${verb} ${nm(e.target)}!` : `${pick(CRIT)} ${nm(e.actor)} ${verb} ${nm(e.target)} with ${look || 'a huge strike'}!`), 'hype'); bigHits++; }
         else if (e.response === 'clash') say(e, `${nm(e.actor)} pushes through the clash and ${verb} ${nm(e.target)}!`, 'hype');
         else if (e.action === 'combo' || e.action === 'assist') say(e, `${nm(e.actor)} piles on and ${verb} ${nm(e.target)}!`, 'hype');
         else if (move) say(e, `${nm(e.actor)}'s ${move}${verb} ${nm(e.target)}${big ? '!' : '.'}`, big ? 'hype' : 'calm');
-        else if (rng.chance(0.6) || big) say(e, `${nm(e.actor)} ${verb} ${nm(e.target)}${big ? '!' : '.'}`, big ? 'hype' : 'calm');
+        else if (rng.chance(0.6) || big) say(e, `${look && / (with|into|on|of)$/.test(verb) ? `With ${look}, ` : ''}${nm(e.actor)} ${verb} ${nm(e.target)}${look && !/ (with|into|on|of)$/.test(verb) ? ` with ${look}` : ''}${big ? '!' : '.'}`, big ? 'hype' : 'calm');
         if (e.target && e.hpAfter !== undefined && e.hpBefore !== undefined) {
           const max = result.fighters.find((f) => f.charId === e.target)?.maxHp ?? 1;
           if (e.hpBefore / max > 0.5 && e.hpAfter / max <= 0.5 && rng.chance(0.5)) dialogue(e, e.target, 'hurt');

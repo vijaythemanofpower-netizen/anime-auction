@@ -7,7 +7,8 @@ import type {
 import { CALLS_PER_BATTLE, ENGINE_VERSION } from '../types';
 import { Rng, deriveSeed, hashString } from '../rng';
 import { duoOf, rivalryBetween, type Rivalry } from '../data/rivals';
-import { BANTER, EAGERNESS, reactionTo } from '../data/banter';
+import { EAGERNESS, reactionTo } from '../data/banter';
+import { writeTaunt, type TauntContext, type TauntKind } from '../data/flavor';
 import { ARCHETYPES, TEMPERAMENTS } from '../data/archetypes';
 import { ABILITIES, BASIC_ATTACK, getAbility } from '../data/abilities';
 import { elementMultiplier, getEnvironment, getSynergy, type Environment } from '../data/world';
@@ -77,6 +78,9 @@ export class BattleSim {
   // Banter, jump-ins and twists draw from their own random stream.
   private flavorRng: Rng;
   private banterAt = new Map<string, number>();
+  /** Lines already said this fight, and each fighter's last named move, for fresh trash talk. */
+  private saidLines = new Set<string>();
+  private lastMove = new Map<string, string>();
   private usedReserves = new Set<string>();
   private lastJumpTurn: [number, number] = [-99, -99];
   private twists = new Set<string>();
@@ -114,6 +118,7 @@ export class BattleSim {
   // ---------------------------------------------------------------- events
 
   private emit(type: BattleEventType, explanation: string, extra: Partial<BattleEvent> = {}): BattleEvent {
+    if (extra.actor && extra.ability && extra.ability !== BASIC_ATTACK.id) this.lastMove.set(extra.actor, getAbility(extra.ability).name);
     const ev: BattleEvent = {
       id: `${this.input.battleId}-${this.events.length + 1}`,
       battleId: this.input.battleId,
@@ -402,7 +407,7 @@ export class BattleSim {
     const snap = (this.input.sides[side].reserves ?? []).find((r) => r.charId === reserveId);
     const focus = this.fighters.find((f) => f.id === focusId);
     if (!snap || !focus || this.usedReserves.has(reserveId)) return;
-    const line = this.flavorRng.pick(BANTER[snap.temperament].jump);
+    const line = this.say('jump', snap.temperament, { ally: this.name(focus), foe: this.fighters.find((f) => f.snap.side !== side && !f.defeated)?.snap.name, move: this.signature(snap.abilities) });
     const rule = this.input.sides[side].jumpIn?.[reserveId] ?? 'ask';
     const auto = this.input.sides[side].coach === 'auto';
     let go: boolean;
@@ -449,7 +454,7 @@ export class BattleSim {
       : ({ 'hot-blooded': 0.55, cheerful: 0.45, defensive: 0.45, reckless: 0.4, aggressive: 0.35 } as Record<string, number>)[t] ?? 0.2;
     if (!this.flavorRng.chance(chance)) return;
     this.banterAt.set(speaker.id, this.turn);
-    const line = this.flavorRng.pick(BANTER[t][kind]).replace('{foe}', target ? this.name(target) : 'you');
+    const line = this.say(kind, t, this.tauntContext(speaker, target ?? this.fighters.find((f) => f.snap.side !== speaker.snap.side && !f.defeated)));
     if (kind === 'pump') {
       speaker.statuses.push({ type: 'focus', duration: 2, magnitude: 0.12 });
       this.emit('banter', `${this.name(speaker)}: "${line}" (fired up: +12% power for 2 actions)`, { actor: speaker.id, context: { line, kind } });
@@ -459,11 +464,33 @@ export class BattleSim {
     const tt = target!;
     if (tt.defeated) return;
     const reaction = reactionTo(tt.snap.temperament);
-    const reply = this.flavorRng.pick(BANTER[tt.snap.temperament][reaction]);
+    const reply = this.say(reaction, tt.snap.temperament, this.tauntContext(tt, speaker));
     if (reaction === 'fired') tt.mods.dmg += 0.06;
     if (reaction === 'rattled') tt.statuses.push({ type: 'weaken', duration: 3, magnitude: 0.12 });
     const effect = reaction === 'fired' ? 'fired up (+6% power for the rest of the fight)' : reaction === 'rattled' ? 'rattled (weakened for 3 actions)' : 'unbothered';
     this.emit('banter', `${this.name(tt)}: "${reply}" (${effect})`, { actor: tt.id, target: speaker.id, context: { line: reply, kind: reaction } });
+  }
+
+  private say(kind: TauntKind, t: CombatFighter['snap']['temperament'], c: Omit<TauntContext, 'temperament'>): string {
+    return writeTaunt(this.flavorRng, kind, { ...c, temperament: t }, this.saidLines);
+  }
+
+  private signature(abilities: string[]): string | undefined {
+    const named = abilities.filter((id) => id !== BASIC_ATTACK.id && ABILITIES[id]).map((id) => getAbility(id));
+    return (named.find((a) => a.kind === 'ultimate') ?? named[0])?.name;
+  }
+
+  /** What the speaker can talk about: moves, the foe's injuries, price, who is ahead. */
+  private tauntContext(me: CombatFighter, foe?: CombatFighter): Omit<TauntContext, 'temperament'> {
+    if (!foe) return { move: this.signature(me.snap.abilities) };
+    const mine = me.hp / me.maxHp, theirs = foe.hp / foe.maxHp;
+    return {
+      foe: this.name(foe), move: this.signature(me.snap.abilities),
+      foeMove: this.lastMove.get(foe.id) ?? this.signature(foe.snap.abilities),
+      foeArchetype: foe.snap.archetype, foePart: foe.injuries[foe.injuries.length - 1]?.part,
+      underdog: me.snap.price < foe.snap.price * 0.7, favourite: me.snap.price > foe.snap.price * 1.4,
+      standing: mine - theirs > 0.2 ? 'ahead' : theirs - mine > 0.2 ? 'behind' : 'even',
+    };
   }
 
   private twist(key: string, title: string, text: string, actor?: CombatFighter) {
