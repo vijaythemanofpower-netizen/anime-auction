@@ -26,7 +26,7 @@ When Claude's usage limit runs out, Claude writes HANDOFF.md with one section pe
 ## Rules of the house
 - Never put the Supabase service_role/secret key, or any password, in the code.
 - Don't bundle copyrighted music or clone real voice actors; players may add their own files locally.
-- Drawing (ComfyUI + Animagine XL 4.0 + DMD2, ~6 s/panel on the owner's RTX 3060) runs only on the host's machine; guests get the host's panels via storage, everyone else gets portrait comics.
+- Drawing (ComfyUI + Animagine XL 4.0 + DMD2, ~6 s/panel on the owner's RTX 3060) runs only on the host's machine (it allows only the website's origin, https://vijaythemanofpower-netizen.github.io; `npm run dev` reaches it through the `/comfy` proxy in vite.config.ts, and Chrome asks once to allow local network access on the website); guests get the host's panels via storage, everyone else gets portrait comics.
 - Phones matter: check new screens at 375 px wide (no sideways scroll, controls reachable).
 - Keep README.md current when behaviour changes; record open work below.
 
