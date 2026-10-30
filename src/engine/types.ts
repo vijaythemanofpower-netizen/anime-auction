@@ -229,6 +229,8 @@ export interface AuctionState {
   transactions: Transaction[];
   log: Array<{ at: number; text: string }>;
   observations: ScoutObservation[];
+  /** How each player bids (for badges): bids, passes, last-second bids, times outbid. Older saves lack it. */
+  habits?: Record<string, { bids: number; passes: number; lateBids: number; outbid: number }>;
   attempts: Record<string, number>;
   rngState: number;
   complete: boolean;

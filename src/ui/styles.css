@@ -492,3 +492,12 @@ html, body { overflow-x: clip; }
 .room-chat { pointer-events: none; }
 .room-chat > * { pointer-events: auto; }
 .reaction-float, .reaction-float * { pointer-events: none; }
+/* Natural voice download status (Info.tsx VoiceDownload) */
+.voice-status { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 13px; color: var(--text-dim); }
+.voice-status.ok { color: var(--good); }
+.voice-status.bad { color: var(--bad); }
+.voice-bar { flex: 1 1 140px; height: 8px; border-radius: 4px; background: var(--surface-3); overflow: hidden; }
+.voice-bar span { display: block; height: 100%; background: var(--violet); }
+/* Roast badges (components/Badges.tsx) */
+.badge-chips { display: inline-flex; flex-wrap: wrap; gap: 4px; vertical-align: middle; }
+.roast-badge { display: inline-flex; align-items: center; gap: 3px; padding: 1px 7px; border-radius: 999px; font-size: 11px; font-weight: 700; white-space: nowrap; background: var(--surface-3); border: 1px solid var(--line-strong); color: var(--text); cursor: help; }

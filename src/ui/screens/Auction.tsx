@@ -1,3 +1,4 @@
+import { BadgeChips, useBadges } from '../components/Badges';
 import { useEffect, useState } from 'react';
 import type { GameState, Player } from '../../engine/types';
 import * as A from '../../engine/auction';
@@ -271,6 +272,7 @@ function ScoutPanel({ g, playerId }: { g: GameState; playerId: string }) {
 }
 
 function EconomyTable({ g }: { g: GameState }) {
+  const badges = useBadges(g);
   return (
     <div className="panel table-wrap">
       <h3>Economy</h3>
@@ -281,7 +283,7 @@ function EconomyTable({ g }: { g: GameState }) {
             const e = A.economy(g, p);
             return (
               <tr key={p.id}>
-                <td><PlayerChip p={p} /></td>
+                <td><PlayerChip p={p} /> <BadgeChips badges={badges[p.id]} /></td>
                 <td>{e.spent.toLocaleString()}</td>
                 <td><Coins n={e.remaining} /></td>
                 <td>{e.average ? e.average.toLocaleString() : '—'}</td>

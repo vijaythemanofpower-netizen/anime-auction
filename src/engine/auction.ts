@@ -147,6 +147,11 @@ export function openNextLot(g: GameState, now: number): Result {
   return OK;
 }
 
+function habit(a: AuctionState, playerId: string) {
+  a.habits ??= {};
+  return (a.habits[playerId] ??= { bids: 0, passes: 0, lateBids: 0, outbid: 0 });
+}
+
 export function placeBid(g: GameState, playerId: string, amount: number, now: number): Result {
   const a = g.auction;
   if (g.phase !== 'auction' || !a?.lot) return fail('No lot is open.');
@@ -164,6 +169,11 @@ export function placeBid(g: GameState, playerId: string, amount: number, now: nu
   const max = maxBidFor(p, g.config.rosterSize, a.config.openingBid);
   if (amount > max) return fail(amount > p.coins ? 'You cannot bid more than your balance.' : `You must keep ${reserveNeeded(p, g.config.rosterSize, a.config.openingBid) - a.config.openingBid} coins to fill your remaining slots. Max bid: ${max}.`);
 
+  const prev = leader(lot)?.playerId;
+  const h = habit(a, playerId);
+  h.bids += 1;
+  if (a.config.mode === 'live' && lot.deadline - now < 3000) h.lateBids += 1;
+  if (prev && prev !== playerId) habit(a, prev).outbid += 1;
   a.bidSeq += 1;
   lot.bids.push({ playerId, amount, at: now, seq: a.bidSeq });
   log(a, now, `${p.name} bids ${amount}.`);
@@ -187,6 +197,7 @@ export function passLot(g: GameState, playerId: string, now: number): Result {
   const p = g.players.find((x) => x.id === playerId);
   if (!p) return fail('Unknown player.');
   lot.passed.push(playerId);
+  habit(a, playerId).passes += 1;
   log(a, now, `${p.name} passes.`);
   if (a.config.mode === 'turns') {
     lot.activePlayerId = nextActive(g, playerId);

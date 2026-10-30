@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useSyncExternalStore } from 'react';
 import { getApiKey, setApiKey } from '../ai/moveWriter';
+import { naturalVoices } from '../voices';
 import { store, useApp } from '../../store/store';
 import { RUNNING_LOCALLY } from '../../store/persistence';
 import { Seg } from '../components/common';
@@ -133,6 +134,7 @@ export function SettingsScreen() {
           <span className="label">Voices</span>
           <Seg value={!s.voice ? 'off' : s.voiceQuality} onChange={(v) => store.updateSettings(v === 'off' ? { voice: false } : { voice: true, voiceQuality: v })} label="Voices"
             options={[{ v: 'off', label: 'Off' }, { v: 'system', label: 'Basic (built-in)' }, { v: 'natural', label: 'Natural (download)' }]} />
+          {s.voice && s.voiceQuality === 'natural' && <VoiceDownload />}
           <span className="faint" style={{ fontSize: 12 }}>Natural voices give every character their own original voice. They download once (about 300 MB with a graphics card, about 90 MB without) and run on this device.</span>
         </div>
         <div className="field">
@@ -174,5 +176,27 @@ export function SettingsScreen() {
         </div>
       </div>
     </div>
+  );
+}
+
+/** Live status of the natural-voice download: progress, ready, or the error with a retry. */
+function VoiceDownload() {
+  useSyncExternalStore((f) => naturalVoices.subscribe(f), () => `${naturalVoices.status}:${naturalVoices.progress}:${naturalVoices.error}`);
+  const v = naturalVoices;
+  if (v.status === 'ready') return <span className="voice-status ok">✓ Natural voices ready ({v.device === 'webgpu' ? 'graphics card' : 'processor'})</span>;
+  if (v.status === 'error') {
+    return (
+      <span className="voice-status bad">
+        Download failed: {v.error || 'unknown error'}. Check your internet connection.
+        <button className="btn sm" onClick={() => v.retry()}>Retry</button>
+      </span>
+    );
+  }
+  if (v.status === 'off') return <span className="voice-status"><button className="btn sm primary" onClick={() => v.load()}>Download natural voices</button></span>;
+  return (
+    <span className="voice-status">
+      Downloading voices… {v.progress}%
+      <span className="voice-bar"><span style={{ width: `${v.progress}%` }} /></span>
+    </span>
   );
 }

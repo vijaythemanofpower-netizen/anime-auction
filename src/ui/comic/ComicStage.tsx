@@ -4,7 +4,7 @@
 // model) the panel uses the character's portrait in comic style.
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore, type CSSProperties } from 'react';
 import type { BattleEvent, BattleRecord, PublicCharacter } from '../../engine/types';
-import { LEGEND_FACTS } from '../../engine/data/legendFacts';
+import { factsFor } from '../../engine/data/characterFacts';
 import type { ComicPanel, ComicScript, PanelSize } from '../../engine/comic';
 import { hashString } from '../../engine/rng';
 import { CharArt } from '../components/Portrait';
@@ -183,9 +183,7 @@ export function fightFacts(record: BattleRecord, characters: Record<string, Publ
   for (const id of ids) {
     const c = characters[id];
     if (!c) continue;
-    const own = c.id.startsWith('legend:') ? LEGEND_FACTS[c.id.slice(7)] : undefined;
-    const fromBio = (c.bio ?? '').replace(/\s+/g, ' ').split(/(?<=[.!?])\s+/).filter((x) => x.length > 25 && x.length < 220 && !/No biography/.test(x)).slice(0, 3);
-    const lines = own ?? [...fromBio, `${c.name} fights with ${c.weapon.toLowerCase()}: ${c.fightingStyle.toLowerCase()}.`, `Specialty: ${c.specialty}.`];
+    const lines = factsFor(c);
     for (const text of lines) out.push({ who: c.name, text, image: c.imageUrl });
   }
   // Interleave the fighters so facts alternate between them.

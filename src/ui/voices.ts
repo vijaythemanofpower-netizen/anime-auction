@@ -85,6 +85,14 @@ class NaturalVoices {
     this.worker.postMessage({ type: 'load' });
   }
 
+  /** Starts the download again after an error (or a stuck download). */
+  retry() {
+    this.worker?.terminate();
+    this.worker = null;
+    this.status = 'off'; this.progress = 0; this.error = ''; this.busy = false; this.pending.clear();
+    this.load();
+  }
+
   /** Queues lines to be voiced ahead of playback. */
   prefetch(items: Array<{ key: string; text: string; voice: string; speed: number; pitch?: number }>) {
     for (const it of items) if (it.pitch) this.pitchOf.set(it.key, it.pitch);

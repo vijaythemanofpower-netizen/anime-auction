@@ -1,3 +1,4 @@
+import { BadgeChips, HallOfShame, useBadges } from '../components/Badges';
 import { useEffect, useMemo, useState } from 'react';
 import type { GameState, Player } from '../../engine/types';
 import * as G from '../../engine/game';
@@ -261,6 +262,7 @@ export function Bracket({ g }: { g: GameState }) {
   const battles = useApp((s) => s.battles);
   const t = g.tournament!;
   const p = (id: string) => g.players.find((x) => x.id === id)!;
+  const badges = useBadges(g);
   const ranked = rankedPlayers(t, g.players.map((x) => x.id));
   return (
     <div className="col" style={{ gap: 16 }}>
@@ -297,7 +299,7 @@ export function Bracket({ g }: { g: GameState }) {
           <tbody>
             {ranked.map((id, i) => {
               const s = t.standings[id];
-              return <tr key={id} style={i < t.knockoutSize ? { color: 'var(--text)' } : { color: 'var(--text-dim)' }}><td>{i + 1}</td><td><PlayerChip p={p(id)} /> <TitleChips titles={titlesFor(g, Object.values(battles), id)} /></td><td><strong>{s.points}</strong></td><td>{s.wins}</td><td>{s.losses}</td><td>{s.byes}</td><td>{s.hpScore}</td><td>{coachIq(Object.values(battles), id) ?? '—'}</td><td><Coins n={p(id).coins} /></td></tr>;
+              return <tr key={id} style={i < t.knockoutSize ? { color: 'var(--text)' } : { color: 'var(--text-dim)' }}><td>{i + 1}</td><td><PlayerChip p={p(id)} /> <TitleChips titles={titlesFor(g, Object.values(battles), id)} /> <BadgeChips badges={badges[id]} /></td><td><strong>{s.points}</strong></td><td>{s.wins}</td><td>{s.losses}</td><td>{s.byes}</td><td>{s.hpScore}</td><td>{coachIq(Object.values(battles), id) ?? '—'}</td><td><Coins n={p(id).coins} /></td></tr>;
             })}
           </tbody>
         </table>
@@ -397,6 +399,7 @@ function ChampionPhase({ g }: { g: GameState }) {
         <div className="row" style={{ justifyContent: 'center' }}>{champ.roster.map((id) => <span key={id} className="player-chip">{g.characters[id].name}</span>)}</div>
         <p className="muted" style={{ marginTop: 10 }}>Spent {(10000 - champ.coins).toLocaleString()} coins · {t.standings[champ.id].wins} wins</p>
       </div>
+      <HallOfShame g={g} />
       <Bracket g={g} />
       {hall.length > 0 && (
         <div className="panel">
