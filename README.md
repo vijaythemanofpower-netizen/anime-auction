@@ -39,6 +39,7 @@ Drawings come from **ComfyUI** running on this computer (`%USERPROFILE%\ComfyUI_
 - Sign-in settings in Supabase: anonymous sign-ins on (for guests); Site URL and Redirect URLs set to the website and `http://localhost:5173/`.
 - `src/online/client.ts` holds the project URL and publishable key (public by design). Override with `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY` to use another project.
 - Supabase's built-in email sender allows only a few sign-in emails per hour; add a custom SMTP provider (Authentication → Emails) before many people sign in by email.
+- New games choose who's in the auction: Mix (built-in favourites plus random popular characters from every anime on AniList), All anime, or the built-in 76. During bidding, each player sees whether the advisor recommends bidding (Recommended / Maybe / Not recommended), with a note that "not recommended" is about price, budget and team fit, not strength.
 - Home page: sign in (email link or guest) right on the home page, with a welcome-back card showing your record; drifting petals, sparks and a speed-line burst (off with reduced motion).
 - While a comic is drawn, the finished panels appear one by one and facts about the fighters rotate underneath (hand-written for the 76 built-in anime characters, from the AniList biography for others).
 - Your roster shows a private power ranking of your own fighters (#1 strongest), visible only to you.

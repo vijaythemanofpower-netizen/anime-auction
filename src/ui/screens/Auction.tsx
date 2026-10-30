@@ -234,10 +234,11 @@ function ScoutPanel({ g, playerId }: { g: GameState; playerId: string }) {
   return (
     <div className="scout col" style={{ gap: 8 }}>
       <div className="row" style={{ justifyContent: 'space-between' }}>
-        <span className="label">Scout Advisor · {p.name}</span>
+        <span className="label">Should you bid? · {p.name}</span>
         <span className="faint">Confidence: {advice.confidence}</span>
       </div>
-      <div className={`scout-label ${cls}`}>{advice.label}</div>
+      <div className={`scout-label ${cls}`}>{advice.label === 'TAKE' ? '✓ RECOMMENDED' : advice.label === 'LEAVE' ? '✕ NOT RECOMMENDED' : '~ MAYBE'}</div>
+      {advice.label !== 'TAKE' && <div className="faint" style={{ fontSize: 13 }}>This is about <b>your</b> budget, price and team fit right now, not how strong {lot.charId && g.characters[lot.charId] ? g.characters[lot.charId].name : 'this fighter'} is. A strong fighter can still be a bad buy at this price.</div>}
       <ul>{advice.reasons.map((r) => <li key={r}>{r}</li>)}</ul>
       <div className="faint">Estimated fair price: ~{advice.fairPrice.toLocaleString()} · You need ≥ {e.minNeeded.toLocaleString()} for your remaining {e.slots} slot(s).</div>
       <div className="faint">The advisor uses only public information and your own scouting. It cannot see hidden stats or the future.</div>

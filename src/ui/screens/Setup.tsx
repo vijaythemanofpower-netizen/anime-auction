@@ -2,6 +2,9 @@ import { useState } from 'react';
 import * as G from '../../engine/game';
 import { describeFormat, matchOrder } from '../../engine/tournament';
 import { LEGEND_CHARACTERS } from '../../engine/data/legends';
+import { randomPopular } from '../../engine/providers/anilist';
+import { withAiMoves } from '../ai/moveWriter';
+import type { PublicCharacter } from '../../engine/types';
 import { store, useApp } from '../../store/store';
 import { Emblem, Seg } from '../components/common';
 import type { AuctionMode, PlayerKind } from '../../engine/types';
@@ -25,6 +28,7 @@ export function Setup() {
   const [persistent, setPersistent] = useState(true);
   const [events, setEvents] = useState(true);
   const [privacy, setPrivacy] = useState(privacyDefault);
+  const [poolSource, setPoolSource] = useState<'mix' | 'all' | 'builtin'>('mix');
 
   const setup: G.GameSetup = {
     name, players, rosterSize, privacyScreens: privacy,
@@ -52,9 +56,17 @@ export function Setup() {
     return next;
   }));
 
-  const create = (s: G.GameSetup, autofill: boolean) => {
+  const create = async (s: G.GameSetup, autofill: boolean) => {
     if (!store.createGame(s)) return;
-    if (autofill) store.act((g, v) => G.autoFillPool(g, v, LEGEND_CHARACTERS));
+    if (!autofill) return;
+    let catalog: PublicCharacter[] = LEGEND_CHARACTERS;
+    if (poolSource !== 'builtin') {
+      // A different handful of popular characters from every anime each game.
+      const found = await randomPopular(60).then((r) => r.map(withAiMoves)).catch(() => [] as PublicCharacter[]);
+      if (found.length) catalog = poolSource === 'all' ? found : [...LEGEND_CHARACTERS, ...found];
+      else store.toast('Could not reach AniList, so the built-in characters are used.', 'error');
+    }
+    store.act((g, v) => G.autoFillPool(g, v, catalog));
   };
 
   const quick = (humans: number, npcs: number) => {
@@ -62,7 +74,7 @@ export function Setup() {
       ...Array.from({ length: humans }, (_, i) => ({ name: `Player ${i + 1}`, color: COLORS[i], emblem: EMBLEMS[i], kind: 'human' as PlayerKind })),
       ...Array.from({ length: npcs }, (_, i) => ({ name: NPC_NAMES[i], color: COLORS[humans + i], emblem: EMBLEMS[humans + i], kind: 'npc' as PlayerKind })),
     ];
-    create({ ...setup, name: humans === 1 ? 'Solo vs Rival Houses' : 'Quick Match', players: ps, privacyScreens: humans > 1 && privacy }, true);
+    void create({ ...setup, name: humans === 1 ? 'Solo vs Rival Houses' : 'Quick Match', players: ps, privacyScreens: humans > 1 && privacy }, true);
   };
 
   return (
@@ -104,6 +116,14 @@ export function Setup() {
         <div className="col">
           <div className="panel col">
             <h3>Auction</h3>
+            <div className="field">
+              <span className="label">Fighters in the auction</span>
+              <Seg value={poolSource} onChange={setPoolSource} label="Fighters in the auction" options={[
+                { v: 'mix', label: 'Mix', title: 'Built-in favourites plus random characters from all anime' },
+                { v: 'all', label: 'All anime', title: 'Random popular characters from every anime on AniList' },
+                { v: 'builtin', label: 'Built-in 76', title: 'Only the hand-made characters with their real moves' },
+              ]} />
+            </div>
             <div className="field"><span className="label">Roster size</span><Seg value={rosterSize} onChange={setRosterSize} label="Roster size" options={[{ v: 3, label: '3 fighters' }, { v: 4, label: '4 fighters' }]} /></div>
             <div className="field">
               <span className="label">Bidding mode</span>
@@ -134,8 +154,8 @@ export function Setup() {
       {errors.length > 0 && <div className="panel" role="alert" style={{ borderColor: 'var(--bad)' }}>{errors.map((e) => <div key={e}>• {e}</div>)}</div>}
       <div className="row" style={{ justifyContent: 'flex-end' }}>
         <button className="btn ghost" onClick={() => store.go('home')}>Cancel</button>
-        <button className="btn" disabled={errors.length > 0} onClick={() => create(setup, false)}>Create &amp; pick pool manually</button>
-        <button className="btn primary lg" disabled={errors.length > 0} onClick={() => create(setup, true)}>Create game</button>
+        <button className="btn" disabled={errors.length > 0} onClick={() => void create(setup, false)}>Create &amp; pick pool manually</button>
+        <button className="btn primary lg" disabled={errors.length > 0} onClick={() => void create(setup, true)}>Create game</button>
       </div>
     </div>
   );
