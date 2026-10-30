@@ -20,6 +20,9 @@ A party game: players bid on anime fighters with hidden stats, then a tournament
 - `src/admin/` Host Portal (admin.html). Every admin action is an `admin_*` SQL function that checks `is_admin()` server-side.
 - `supabase/schema.sql`, `supabase/admin.sql`: database, storage and security rules. Run changes in the Supabase SQL Editor (project pzshrqbbovlqjerhdrzc); keep these files the source of truth.
 
+## Backup AI hand-off
+When Claude's usage limit runs out, Claude writes HANDOFF.md with one section per assistant ("## Codex task", "## Gemini task": always two different tasks, or "none") and runs `Continue with backup AI.bat` (tools/handoff.ps1). Codex runs first, then Gemini, never at the same time. Both are kept inside this folder: Codex by its Windows sandbox (%USERPROFILE%\.codex\config.toml), Gemini (model gemini-3.5-flash, API key in %USERPROFILE%\.gemini\.env) by workspace-only file tools plus an allow-list of the three check commands. Neither commits or pushes: after each one the script runs type-check, tests and build, publishing only if all pass and otherwise saving the work on a backup/<time>-<ai> branch. Results: handoff-logs/last-result.txt.
+
 ## Rules of the house
 - Never put the Supabase service_role/secret key, or any password, in the code.
 - Don't bundle copyrighted music or clone real voice actors; players may add their own files locally.
