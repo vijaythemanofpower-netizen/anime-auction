@@ -135,7 +135,7 @@ export function PowerRing({ stats }: { stats: Stats }) {
       <circle cx="50" cy="50" r={r} fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="8" />
       <circle cx="50" cy="50" r={r} fill="none" stroke="url(#pr)" strokeWidth="8" strokeLinecap="round" strokeDasharray={`${(p / 100) * c} ${c}`} transform="rotate(-90 50 50)" />
       <defs><linearGradient id="pr"><stop offset="0" stopColor="#8b5cf6" /><stop offset="1" stopColor="#22d3ee" /></linearGradient></defs>
-      <text x="50" y="50" textAnchor="middle" dominantBaseline="central" fill="#fff" fontFamily="Chakra Petch, sans-serif" fontWeight="700" fontSize="26">{p}</text>
+      <text x="50" y="50" textAnchor="middle" dominantBaseline="central" fill="#fff" fontFamily="Anton, Impact, sans-serif" fontWeight="400" fontSize="26">{p}</text>
       <text x="50" y="72" textAnchor="middle" fill="#a9a7cf" fontSize="9" letterSpacing="1">POWER</text>
     </svg>
   );

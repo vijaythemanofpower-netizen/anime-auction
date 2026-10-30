@@ -1,0 +1,59 @@
+/* The site's visual identity, loaded after the base styles: a manga-cover look.
+   Warm ink black and cream paper, one bold flat accent per scene, inked titles
+   and hard-shadow buttons instead of neon gradients and glows. */
+:root {
+  --bg: #121014; --bg-2: #17141a; --surface: #1d1a21; --surface-2: #25212a; --surface-3: #2e2934;
+  --line: rgba(242, 236, 226, 0.09); --line-strong: rgba(242, 236, 226, 0.2);
+  --text: #f2ece2; --text-dim: #b9b0a3; --text-faint: #7d7569;
+  --gold: #f2b134; --gold-2: #f7cf7a; --good: #5bbf7a; --warn: #f2b134; --bad: #e5484d;
+  --take: #5bbf7a; --might: #f2b134; --leave: #e5484d;
+  --ink: #0b0a0c; --btn-ink: #fff;
+  --radius: 10px; --radius-sm: 7px;
+  --shadow: 0 10px 30px -14px rgba(0, 0, 0, 0.8);
+  --font-display: 'Anton', 'Impact', 'Arial Narrow', sans-serif;
+  --font-body: 'Zen Kaku Gothic New', 'Segoe UI', system-ui, sans-serif;
+  /* Default accent (before a scene is chosen): vermilion. */
+  --violet: #e4572e; --violet-2: #f39a6b; --cyan: #f2b134; --magenta: #e4572e;
+}
+/* One flat accent per scene (SceneBackdrop.tsx), plus a soft second tone for its glow. */
+:root[data-scene="sakura"]  { --violet: #e8577d; --violet-2: #f4a3b8; --cyan: #f2ece2; --magenta: #e8577d; --scene-a: rgba(232, 87, 125, 0.14); --scene-b: rgba(242, 177, 52, 0.06); --btn-ink: #fff; }
+:root[data-scene="thunder"] { --violet: #f2c14e; --violet-2: #ffe08a; --cyan: #7fb7e6; --magenta: #f2c14e; --scene-a: rgba(127, 183, 230, 0.12); --scene-b: rgba(242, 193, 78, 0.08); --btn-ink: #121014; }
+:root[data-scene="inferno"] { --violet: #e4572e; --violet-2: #f39a6b; --cyan: #f2b134; --magenta: #e4572e; --scene-a: rgba(228, 87, 46, 0.16); --scene-b: rgba(242, 177, 52, 0.07); --btn-ink: #fff; }
+:root[data-scene="frost"]   { --violet: #4f9fd1; --violet-2: #a9d3ee; --cyan: #e8f1f7; --magenta: #4f9fd1; --scene-a: rgba(79, 159, 209, 0.14); --scene-b: rgba(232, 241, 247, 0.05); --btn-ink: #fff; }
+:root[data-scene="shadow"]  { --violet: #9b7fd4; --violet-2: #c9b8ee; --cyan: #c7e36b; --magenta: #9b7fd4; --scene-a: rgba(155, 127, 212, 0.14); --scene-b: rgba(199, 227, 107, 0.05); --btn-ink: #fff; }
+
+/* Paper-like base: flat ink with a faint halftone dot screen. */
+body::before { background: radial-gradient(rgba(242, 236, 226, 0.035) 1px, transparent 1.3px) 0 0 / 18px 18px, var(--bg); }
+.scene-glow { opacity: 0.8; }
+
+h1, h2 { font-family: var(--font-display); font-weight: 400; letter-spacing: 0.01em; }
+h3, h4 { font-family: var(--font-body); font-weight: 700; letter-spacing: 0; }
+.eyebrow { color: var(--violet); font-family: var(--font-body); font-weight: 700; }
+
+/* Title: inked letters with a hard offset shadow, like a manga cover. */
+.logo-title { font-weight: 400; letter-spacing: 0.01em; line-height: 0.92; }
+.logo-title .l1 { color: var(--text); text-shadow: 4px 4px 0 var(--ink); }
+.logo-title .l2 { background: none; -webkit-text-fill-color: currentColor; color: var(--violet); text-shadow: 4px 4px 0 var(--ink); animation: none; transition: color 1.2s; }
+.logo-sub { color: var(--text-dim); font-family: var(--font-body); font-weight: 700; }
+
+/* Panels: flat cards, thin rule, no gradient. */
+.panel { background: var(--surface); border: 1px solid var(--line); }
+
+/* Buttons: flat colour, ink outline and a hard drop shadow that presses in. */
+.btn { border-radius: 8px; }
+.btn.primary, :root[data-scene] .btn.primary {
+  background: var(--violet); color: var(--btn-ink); border: 2px solid var(--ink); box-shadow: 4px 4px 0 var(--ink);
+  transition: transform 0.08s, box-shadow 0.08s, background-color 1.2s;
+}
+.btn.primary:hover:not(:disabled), :root[data-scene] .btn.primary:hover:not(:disabled) { background: var(--violet); transform: translate(-1px, -1px); box-shadow: 5px 5px 0 var(--ink); }
+.btn.primary:active:not(:disabled) { transform: translate(2px, 2px); box-shadow: 2px 2px 0 var(--ink); }
+.btn.primary::after { display: none; }
+
+/* Home: the sign-in card and the duel in the same inked style. */
+.account-card { background: var(--surface); border: 2px solid var(--ink); box-shadow: 5px 5px 0 var(--violet); }
+.duel-fighter { border: 3px solid var(--ink); box-shadow: 8px 8px 0 var(--violet); transition: box-shadow 1.2s; }
+.duel-names { font-family: var(--font-display); font-size: 18px; text-shadow: 2px 2px 0 var(--ink); }
+.duel-names b { color: var(--violet); text-shadow: 3px 3px 0 var(--ink); font-size: 34px; }
+.duel-ring { border-color: var(--violet); }
+.speed-burst { opacity: 0.05; }
+.chat-fab { background: var(--violet); color: var(--btn-ink); border: 2px solid var(--ink); box-shadow: 3px 3px 0 var(--ink); }

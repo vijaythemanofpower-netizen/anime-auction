@@ -1,10 +1,5 @@
 /* ------------------------------------------------ scenes (components/SceneBackdrop.tsx) */
 /* Each scene recolours the whole site through the accent variables. */
-:root[data-scene="sakura"]  { --violet: #e0559b; --violet-2: #f9a8d4; --cyan: #c4b5fd; --magenta: #fb7185; --scene-a: rgba(236, 72, 153, 0.22); --scene-b: rgba(167, 139, 250, 0.16); }
-:root[data-scene="thunder"] { --violet: #3b82f6; --violet-2: #93c5fd; --cyan: #facc15; --magenta: #60a5fa; --scene-a: rgba(59, 130, 246, 0.24); --scene-b: rgba(250, 204, 21, 0.10); }
-:root[data-scene="inferno"] { --violet: #ea580c; --violet-2: #fdba74; --cyan: #fbbf24; --magenta: #ef4444; --scene-a: rgba(234, 88, 12, 0.24); --scene-b: rgba(239, 68, 68, 0.14); }
-:root[data-scene="frost"]   { --violet: #0891b2; --violet-2: #a5f3fc; --cyan: #e0f2fe; --magenta: #818cf8; --scene-a: rgba(8, 145, 178, 0.22); --scene-b: rgba(129, 140, 248, 0.14); }
-:root[data-scene="shadow"]  { --violet: #7c3aed; --violet-2: #c4b5fd; --cyan: #a3e635; --magenta: #a21caf; --scene-a: rgba(124, 58, 237, 0.24); --scene-b: rgba(163, 230, 53, 0.08); }
 .btn, .logo-title .l2, .chat-fab, a { transition: color 1.2s, background-color 1.2s, border-color 1.2s; }
 
 .scene { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; animation: scene-in 2.5s ease-out both; }
@@ -51,7 +46,3 @@
 }
 .scene.still .fx, .scene.still .scene-flash, .scene.still .scene-bolt { display: none; }
 .scene.still .scene-glow { animation: none; }
-
-/* Primary buttons take the scene's colours too. */
-:root[data-scene] .btn.primary { background: linear-gradient(135deg, var(--violet), color-mix(in srgb, var(--violet) 70%, #000)); box-shadow: 0 6px 24px -8px var(--violet); }
-:root[data-scene] .btn.primary:hover:not(:disabled) { background: linear-gradient(135deg, color-mix(in srgb, var(--violet) 85%, #fff), var(--violet)); }
