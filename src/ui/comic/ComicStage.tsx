@@ -198,7 +198,10 @@ function ArtistStatus({ remote }: { remote?: boolean }) {
   if (remote) return <span className="artist ready" title="The host's computer draws this comic and shares it with the room">✒ Drawn live by the host</span>;
   const s = drawer.status;
   const label = s === 'ready' ? `✒ Drawing with ${drawer.model.replace(/\.safetensors$/, '')}` : s === 'checking' ? 'Looking for the drawing app…'
-    : s === 'no-model' ? 'Drawing app found, but no anime model' : 'Comic style (start the drawing app for real drawings)';
+    : s === 'no-model' ? 'Drawing app found, but no anime model'
+      // Browsers stop a public website from reaching programs on this PC, so drawings need the local version.
+      : location.hostname.endsWith('github.io') ? 'Comic style: for real drawings, open the game with Start Game.bat on the PC that has the drawing app'
+        : 'Comic style (start the drawing app for real drawings)';
   return <span className={`artist ${s}`} title={s === 'ready' ? 'Panels are drawn on this computer for free' : 'Double-click Start Game.bat, or Start Drawing AI.bat, to turn on real drawings'}>{label}</span>;
 }
 
