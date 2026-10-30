@@ -55,6 +55,7 @@ type Msg =
   | { k: 'art'; items: Array<{ key: string; url: string }> }
   | { k: 'error'; text: string }
   | { k: 'chat'; name: string; text: string; at: number }
+  | { k: 'react'; emoji: string }
   | { k: 'closed' };
 
 let room: RoomState | null = null;
@@ -190,6 +191,7 @@ async function receive(w: Wire) {
   debug.received.push(msg.k);
   // Chat goes straight from anyone to everyone; the host doesn't relay it.
   if (msg.k === 'chat') { addChat(w.from, msg); return; }
+  if (msg.k === 'react') { addReaction(w.from, msg.emoji); return; }
   if (room.role === 'host') hostReceive(w.from, msg);
   else if (w.from === room.hostId) guestReceive(msg);
 }
@@ -469,6 +471,32 @@ export function sendChat(text: string): boolean {
   addChat(room.userId, msg);
   void send(msg);
   return true;
+}
+
+// Emoji reactions float up everyone's screen (a crowd cheering a big hit).
+export const REACTIONS = ['🔥', '😱', '😂', '👏', '💀', '💪'];
+export interface Reaction { id: number; emoji: string; name: string; x: number }
+let reactions: Reaction[] = [];
+let reactionId = 0;
+const reactionListeners = new Set<() => void>();
+export const reactionFeed = {
+  get: () => reactions,
+  subscribe: (l: () => void) => { reactionListeners.add(l); return () => { reactionListeners.delete(l); }; },
+};
+function addReaction(from: string, emoji: string) {
+  if (!room || !REACTIONS.includes(emoji)) return;
+  const id = ++reactionId;
+  const name = from === room.userId ? 'You' : room.members.find((x) => x.userId === from)?.name ?? 'Player';
+  reactions = [...reactions, { id, emoji, name, x: 8 + Math.random() * 30 }].slice(-24);
+  reactionListeners.forEach((l) => l());
+  setTimeout(() => { reactions = reactions.filter((r) => r.id !== id); reactionListeners.forEach((l) => l()); }, 2600);
+}
+let lastReact = 0;
+export function sendReaction(emoji: string) {
+  if (!room || Date.now() - lastReact < 400) return;
+  lastReact = Date.now();
+  addReaction(room.userId, emoji);
+  void send({ k: 'react', emoji });
 }
 
 export function sendMove(move: PlayerMove) { void send({ k: 'move', move }); }

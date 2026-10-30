@@ -2,13 +2,14 @@
 // panel, on every screen while you're in a room. Messages go straight to the
 // room channel (src/online/room.ts), so they work in the lobby and mid-fight.
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
-import { chat, MAX_CHAT, sendChat, useRoom } from '../../online/room';
+import { chat, MAX_CHAT, REACTIONS, reactionFeed, sendChat, sendReaction, useRoom } from '../../online/room';
 
 const QUICK = ['GG!', 'No way!', 'That was brutal', 'My fighter is cooking', 'Bid war!', 'Unlucky'];
 
 export function RoomChat() {
   const room = useRoom();
   const { lines, unread } = useSyncExternalStore(chat.subscribe, chat.get);
+  const floating = useSyncExternalStore(reactionFeed.subscribe, reactionFeed.get);
   const [open, setOpen] = useState(false);
   const [text, setText] = useState('');
   const listRef = useRef<HTMLDivElement>(null);
@@ -21,7 +22,14 @@ export function RoomChat() {
   const time = (at: number) => new Date(at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
   return (
+    <>
+    <div className="reaction-float" aria-hidden="true">
+      {floating.map((r) => <span key={r.id} style={{ right: `${r.x}%` }}><b>{r.emoji}</b><small>{r.name}</small></span>)}
+    </div>
     <div className={`room-chat${open ? ' open' : ''}`}>
+      <div className="reaction-bar" role="group" aria-label="Send a reaction">
+        {REACTIONS.map((e) => <button key={e} onClick={() => sendReaction(e)} aria-label={`React ${e}`}>{e}</button>)}
+      </div>
       {open && (
         <section className="chat-panel" aria-label="Room chat">
           <header>
@@ -52,5 +60,6 @@ export function RoomChat() {
         💬{unread > 0 && !open && <span className="badge">{unread > 9 ? '9+' : unread}</span>}
       </button>
     </div>
+    </>
   );
 }

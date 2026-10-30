@@ -426,3 +426,16 @@ html, body { overflow-x: clip; }
   .chat-fab { width: 46px; height: 46px; font-size: 19px; }
   input, select, textarea { font-size: 16px; }
 }
+
+/* Emoji reactions everyone in the room sees (RoomChat.tsx) */
+.room-chat { flex-direction: column; }
+.reaction-bar { display: flex; gap: 4px; padding: 4px; border-radius: 999px; background: var(--surface-2); border: 1px solid var(--line); box-shadow: var(--shadow); }
+.room-chat.open .reaction-bar { display: none; }
+.reaction-bar button { width: 34px; height: 34px; border: 0; border-radius: 50%; background: transparent; font-size: 18px; cursor: pointer; transition: transform 0.15s; }
+.reaction-bar button:active { transform: scale(1.3); }
+.reaction-float { position: fixed; inset: 0; pointer-events: none; z-index: 69; overflow: hidden; }
+.reaction-float span { position: absolute; bottom: 120px; display: flex; flex-direction: column; align-items: center; animation: react-up 2.6s ease-out forwards; }
+.reaction-float b { font-size: 34px; filter: drop-shadow(0 4px 8px rgba(0,0,0,0.5)); }
+.reaction-float small { font-size: 10px; color: var(--text-dim); background: rgba(0,0,0,0.5); padding: 1px 6px; border-radius: 6px; }
+@keyframes react-up { 0% { opacity: 0; transform: translateY(20px) scale(0.6); } 15% { opacity: 1; transform: translateY(0) scale(1.1); } 100% { opacity: 0; transform: translateY(-50vh) scale(0.9); } }
+@media (prefers-reduced-motion: reduce) { .reaction-float span { animation-duration: 1.2s; } }
