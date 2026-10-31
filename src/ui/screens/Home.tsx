@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { store, useApp } from '../../store/store';
 import { ONLINE_AVAILABLE } from '../../online/client';
 import { sendSignInLink, signInAsGuest, useAuth } from '../../online/auth';
@@ -34,28 +34,92 @@ function AccountCard() {
   );
 }
 
-// Fight scenes painted for the game by the local drawing app (public/scenes).
-const FIGHTS: Array<[file: string, title: string, show: string]> = [
-  ['naruto-sasuke', 'Naruto vs Sasuke', 'Naruto'], ['gojo-sukuna', 'Gojo vs Sukuna', 'Jujutsu Kaisen'], ['goku-vegeta', 'Goku vs Vegeta', 'Dragon Ball'],
-  ['luffy-kaido', 'Luffy vs Kaido', 'One Piece'], ['ichigo-aizen', 'Ichigo vs Aizen', 'Bleach'], ['itachi-sasuke', 'Itachi vs Sasuke', 'Naruto'],
-  ['deku-bakugo', 'Deku vs Bakugo', 'My Hero Academia'], ['zoro-mihawk', 'Zoro vs Mihawk', 'One Piece'], ['levi-titans', 'Levi vs the Titans', 'Attack on Titan'],
-  ['gon-killua', 'Gon & Killua', 'Hunter x Hunter'],
+// Real fight scenes: official clips the rights holders publish on YouTube (embedding
+// them is how YouTube lets sites show them; nothing is copied into the game).
+// Checked with YouTube's oEmbed: owner as listed, embedding allowed.
+const CLIPS: Array<[id: string, title: string, show: string, owner: string]> = [
+  ['NyPf5ipLFkU', 'Gojo vs Sukuna', 'Jujutsu Kaisen', 'Crunchyroll'],
+  ['gr8reTtElqc', 'Luffy Gear 5 vs Kaido', 'One Piece', 'Crunchyroll'],
+  ['s3kYr2OVoUc', 'Tanjiro faces Akaza', 'Demon Slayer: Infinity Castle', 'Aniplex USA'],
+  ['CNWI9lJZ7aw', "Naruto's best fights", 'Naruto', 'Crunchyroll'],
+  ['WnrfPSVtNaY', "Jinwoo's first solo battle", 'Solo Leveling', 'Crunchyroll'],
+  ['Gjw-I7HWU10', 'Chainsaw vs Katana', 'Chainsaw Man', 'Crunchyroll'],
+  ['nowY_icRZsQ', 'Gear 5 Luffy vs Kizaru', 'One Piece', 'Crunchyroll'],
+  ['bLSQgT_So7Y', 'Tanjiro & Giyu vs Akaza', 'Demon Slayer: Infinity Castle', 'Aniplex USA'],
+  ['dw3GT6THxnY', 'Jinwoo vs Kang Taeshik', 'Solo Leveling', 'Crunchyroll'],
+  ['Cwk0bXiVRao', 'The final attack', 'Black Clover', 'Crunchyroll'],
+  ['scPBmrzdD0g', 'Gear 5 for Rob Lucci', 'One Piece', 'Crunchyroll'],
+  ['oGF9Zu9AV_Q', 'Denji vs the Bat Devil', 'Chainsaw Man', 'Crunchyroll Dubs'],
+  ['xqz6bMgNdGU', 'Special attacks', 'Jujutsu Kaisen', 'Crunchyroll'],
 ];
-const SCENE_MS = 6500;
+const CLIP_MS = 45_000;
+// Painted scenes (public/scenes) show behind each clip while it loads.
+const POSTERS = ['naruto-sasuke', 'gojo-sukuna', 'goku-vegeta', 'luffy-kaido', 'ichigo-aizen', 'itachi-sasuke', 'deku-bakugo', 'zoro-mihawk', 'levi-titans', 'gon-killua'];
 
-/** A slowly panning slideshow of fight scenes, in a random order every visit. */
+type YTPlayer = { mute(): void; unMute(): void; playVideo(): void; destroy(): void };
+type YTApi = { Player: new (el: HTMLElement, opts: Record<string, unknown>) => YTPlayer };
+let ytApi: Promise<YTApi> | null = null;
+/** YouTube's player script, loaded once, so the reel can tell when a clip is blocked or ends. */
+function loadYouTube(): Promise<YTApi> {
+  const w = window as unknown as { YT?: YTApi & { loaded?: number }; onYouTubeIframeAPIReady?: () => void };
+  ytApi ??= new Promise((resolve) => {
+    if (w.YT?.Player) { resolve(w.YT); return; }
+    const prev = w.onYouTubeIframeAPIReady;
+    w.onYouTubeIframeAPIReady = () => { prev?.(); resolve(w.YT!); };
+    const tag = document.createElement('script');
+    tag.src = 'https://www.youtube.com/iframe_api';
+    document.head.appendChild(tag);
+  });
+  return ytApi;
+}
+
+/** Official fight clips playing muted, in a random order. A clip the owner blocks in this
+ *  country (YouTube error 150) is skipped, and the next starts when one ends. */
 function FightReel() {
-  const order = useMemo(() => FIGHTS.map((f) => [Math.random(), f] as const).sort((a, b) => a[0] - b[0]).map(([, f]) => f), []);
+  const order = useMemo(() => CLIPS.map((c) => [Math.random(), c] as const).sort((a, b) => a[0] - b[0]).map(([, c]) => c), []);
   const [i, setI] = useState(0);
-  useEffect(() => { const t = setInterval(() => setI((n) => (n + 1) % order.length), SCENE_MS); return () => clearInterval(t); }, [order.length]);
-  // Preload the next scene so the change is seamless.
-  useEffect(() => { const img = new Image(); img.src = `${import.meta.env.BASE_URL}scenes/${order[(i + 1) % order.length][0]}.jpg`; }, [i, order]);
-  const [file, title, show] = order[i];
+  const [sound, setSound] = useState(false);
+  const [blocked, setBlocked] = useState<Set<string>>(new Set());
+  const host = useRef<HTMLDivElement>(null);
+  const player = useRef<YTPlayer | null>(null);
+  const playable = order.filter((c) => !blocked.has(c[0]));
+  const clip = playable.length ? playable[i % playable.length] : null;
+  const next = () => setI((n) => n + 1);
+
+  useEffect(() => {
+    if (!clip || !host.current) return;
+    let alive = true;
+    const el = document.createElement('div');
+    host.current.replaceChildren(el);
+    const timer = setTimeout(next, CLIP_MS);
+    void loadYouTube().then((YT) => {
+      if (!alive) return;
+      player.current = new YT.Player(el, {
+        videoId: clip[0], host: 'https://www.youtube-nocookie.com', width: '100%', height: '100%',
+        playerVars: { autoplay: 1, mute: 1, controls: 0, rel: 0, playsinline: 1, modestbranding: 1 },
+        events: {
+          onReady: (e: { target: YTPlayer }) => { if (sound) e.target.unMute(); else e.target.mute(); e.target.playVideo(); },
+          onStateChange: (e: { data: number }) => { if (e.data === 0) next(); },
+          onError: () => { setBlocked((b) => new Set(b).add(clip[0])); },
+        },
+      });
+    });
+    return () => { alive = false; clearTimeout(timer); player.current?.destroy(); player.current = null; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [clip?.[0]]);
+  useEffect(() => { if (sound) player.current?.unMute(); else player.current?.mute(); }, [sound]);
+
+  if (!clip) return <div className="fight-reel" style={{ backgroundImage: `url(${import.meta.env.BASE_URL}scenes/${POSTERS[0]}.jpg)` }} />;
+  const [id, title, show, owner] = clip;
   return (
-    <div className="fight-reel" aria-label={`Fight scene: ${title}`}>
-      <img key={file} src={`${import.meta.env.BASE_URL}scenes/${file}.jpg`} alt={`${title} (${show})`} className={i % 2 ? 'pan-left' : 'pan-right'} />
-      <div className="reel-caption" key={`c-${file}`}><b>{title}</b><span>{show}</span></div>
-      <div className="reel-dots" aria-hidden="true">{order.map((f, k) => <span key={f[0]} className={k === i ? 'on' : ''} />)}</div>
+    <div className="fight-reel" style={{ backgroundImage: `url(${import.meta.env.BASE_URL}scenes/${POSTERS[i % POSTERS.length]}.jpg)` }}>
+      <div className="reel-video" ref={host} />
+      <div className="reel-caption" key={`c-${id}`}><b>{title}</b><span>{show} · official clip, {owner}</span></div>
+      <div className="reel-controls">
+        <button className="btn sm" onClick={() => setSound((x) => !x)} aria-label={sound ? 'Mute' : 'Sound on'}>{sound ? '🔊' : '🔇'}</button>
+        <button className="btn sm" onClick={next} aria-label="Next fight">Next ▶</button>
+        <a className="btn sm ghost" href={`https://www.youtube.com/watch?v=${id}`} target="_blank" rel="noreferrer">YouTube</a>
+      </div>
     </div>
   );
 }

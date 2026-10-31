@@ -48,7 +48,7 @@
 .scene.still .scene-glow { animation: none; }
 
 /* ------------------------------------------------ home: fight scene reel (Home.tsx FightReel) */
-.fight-reel { position: relative; width: 100%; aspect-ratio: 16 / 10; max-height: 70vh; border-radius: 14px; overflow: hidden; border: 3px solid var(--ink, #0b0a0c); box-shadow: 10px 10px 0 var(--violet); transition: box-shadow 1.2s; background: #0b0a0c; }
+.fight-reel { background-size: cover; background-position: center; position: relative; width: 100%; aspect-ratio: 16 / 10; max-height: 70vh; border-radius: 14px; overflow: hidden; border: 3px solid var(--ink, #0b0a0c); box-shadow: 10px 10px 0 var(--violet); transition: box-shadow 1.2s; background: #0b0a0c; }
 .fight-reel img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; animation: reel-in 0.9s ease-out both, reel-pan 6.5s linear both; }
 .fight-reel img.pan-left { --pan-from: 4%; --pan-to: -4%; }
 .fight-reel img.pan-right { --pan-from: -4%; --pan-to: 4%; }
@@ -63,3 +63,9 @@
 .reel-dots span.on { background: var(--violet); }
 @media (max-width: 900px) { .fight-reel { box-shadow: 6px 6px 0 var(--violet); } }
 @media (prefers-reduced-motion: reduce) { .fight-reel img { animation: reel-in 0.9s ease-out both; transform: none; } .reel-caption { animation: none; } }
+/* Official clips in the fight reel */
+.fight-reel iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; animation: reel-in 0.9s ease-out both; }
+.reel-controls { position: absolute; right: 10px; top: 10px; display: flex; gap: 6px; z-index: 2; }
+.reel-controls .btn { min-height: 30px; padding: 0 10px; background: rgba(11, 10, 12, 0.8); }
+.fight-reel .reel-caption { z-index: 2; pointer-events: none; }
+.fight-reel .reel-video, .fight-reel .reel-video iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
