@@ -224,6 +224,9 @@ export function ArenaStage({ record, cur, done, fighters, momentum, players, cha
         {live?.type === 'environment' && <div className="fx-flash fx-full" style={{ ['--c' as string]: env.palette[2], ['--fo' as string]: 0.45 } as CSSProperties} />}
         {live?.type === 'verdict' && <div className="big-call" style={{ ['--c' as string]: '#f5c451' } as CSSProperties}>VICTORY!</div>}
         {live && <ImpactText e={live} at={to} actorAt={from} />}
+        {live?.type === 'twist' && String(live.context?.twist).startsWith('plot-') && (
+          <div className="plot-banner" key={live.seq}><b>PLOT TWIST!</b><span>{String(live.context?.title ?? '')}</span></div>
+        )}
       </div>
 
       {live?.type === 'rival' && live.actor && live.target && (

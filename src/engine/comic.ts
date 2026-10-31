@@ -159,7 +159,17 @@ function candidates(record: BattleRecord): Candidate[] {
       case 'injury': if (t && e.injury) out.push({ e, shot: 'injury', focus: t, score: e.injury.severity === 2 ? 6 : 2.5 }); break;
       case 'knockdown': if (t) out.push({ e, shot: 'knockdown', focus: t, score: 7.5 }); break;
       case 'awakening': if (a) out.push({ e, shot: 'awaken', focus: a, score: 8 }); break;
-      case 'twist': if (a && ['laststand', 'secondwind', 'avenge', 'hidden'].includes(String(e.context?.twist))) out.push({ e, shot: 'awaken', focus: a, score: 7 }); break;
+      case 'twist': {
+        const kind = String(e.context?.twist);
+        if (a && ['laststand', 'secondwind', 'avenge', 'hidden'].includes(kind)) out.push({ e, shot: 'awaken', focus: a, score: 7 });
+        // Plot twists always get a big panel: they are the moment people remember.
+        else if (kind.startsWith('plot-')) {
+          const who = t ?? a ?? record.input.sides[0].fighters[0].charId;
+          const shot: Shot = kind === 'plot-intruder' || kind === 'plot-betrayal' ? 'impact' : kind === 'plot-sealed' ? 'injury' : 'awaken';
+          out.push({ e, shot, focus: who, score: 11 });
+        }
+        break;
+      }
       case 'reinforcement': if (a) out.push({ e, shot: 'strike', focus: a, score: 7 }); break;
       case 'combo': if (a && e.context?.duo) out.push({ e, shot: 'strike', focus: a, score: 6.5 }); break;
       case 'defeat': {

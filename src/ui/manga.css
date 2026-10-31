@@ -56,3 +56,12 @@
 .auth-note { padding: 8px 10px; border-left: 4px solid var(--violet); background: var(--surface-2); font-size: 13px; }
 /* Pop-up windows in the manga style. */
 .modal { background: var(--surface); border: 2px solid var(--ink); box-shadow: 8px 8px 0 var(--violet); border-radius: 8px; }
+
+/* Plot twist stamp (Arena.tsx, ComicStage.tsx) */
+.plot-banner { position: absolute; left: 50%; top: 38%; z-index: 20; transform: translate(-50%, -50%) rotate(-4deg); display: flex; flex-direction: column; align-items: center; gap: 4px;
+  padding: 12px 22px; background: var(--violet); color: var(--btn-ink); border: 3px solid var(--ink); box-shadow: 8px 8px 0 var(--ink); animation: plot-stamp 0.5s cubic-bezier(.2,1.4,.4,1) both; pointer-events: none; }
+.plot-banner b { font-family: var(--font-display); font-weight: 400; font-size: clamp(30px, 5vw, 56px); letter-spacing: 0.03em; line-height: 1; }
+.plot-banner span { font-family: var(--font-display); font-size: clamp(14px, 2vw, 20px); letter-spacing: 0.04em; }
+.live-word.plot { color: var(--violet); -webkit-text-stroke: 3px var(--ink); }
+@keyframes plot-stamp { from { transform: translate(-50%, -50%) rotate(-4deg) scale(2.4); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .plot-banner { animation: none; } }

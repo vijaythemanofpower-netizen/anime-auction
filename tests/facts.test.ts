@@ -36,3 +36,23 @@ describe('roast badges', () => {
     for (const list of Object.values(b)) expect(list.length).toBeLessThanOrEqual(3);
   });
 });
+
+describe('plot twists', () => {
+  it('turn up in roughly a third of fights, with every kind possible', async () => {
+    const { makeGame, runAuction, runTournament } = await import('./helpers');
+    const kinds = new Set<string>(); let fights = 0, twisted = 0;
+    for (let s = 1; s <= 8; s++) {
+      const { g, vault } = makeGame(4, 3, 'live', 2000 + s) as never as { g: import('../src/engine/types').GameState; vault: never };
+      runAuction(g);
+      for (const r of runTournament(g, vault, s * 17)) {
+        fights++;
+        const t = r.result.events.filter((e) => e.type === 'twist' && String(e.context?.twist).startsWith('plot-'));
+        if (t.length) twisted++;
+        t.forEach((e) => kinds.add(String(e.context?.twist)));
+      }
+    }
+    expect(twisted / fights).toBeGreaterThan(0.15);
+    expect(twisted / fights).toBeLessThan(0.5);
+    expect(kinds.size).toBeGreaterThanOrEqual(4);
+  });
+});

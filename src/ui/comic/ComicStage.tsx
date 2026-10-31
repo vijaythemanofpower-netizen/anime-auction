@@ -295,10 +295,12 @@ function LiveOverlay({ e }: { e: BattleEvent }) {
     word = e.crit ? 'CRITICAL!' : impact === 'devastating' ? 'DOOM!' : impact === 'heavy' ? 'WHAM!' : impact === 'glancing' ? 'tsk' : e.type === 'counter' ? 'COUNTER!' : 'POW!';
   }
   if (e.type === 'defeat' && e.context?.how === 'stoppage') word = 'STOPPED!';
+  const plot = e.type === 'twist' && String(e.context?.twist).startsWith('plot-');
+  if (plot) word = 'PLOT TWIST!';
   const line = e.type === 'banter' ? String(e.context?.line ?? '') : e.type === 'call' ? String(e.context?.shout ?? '') : e.type === 'twist' ? String(e.context?.title ?? '') : '';
   return (
     <div className="live" key={e.seq}>
-      {word && (e.type === 'defeat' || e.type === 'verdict') && <div className="live-word big">{word}</div>}
+      {word && (e.type === 'defeat' || e.type === 'verdict' || plot) && <div className={`live-word big${plot ? ' plot' : ''}`}>{word}</div>}
       {line && <div className={`balloon${e.context?.kind === 'mock' ? ' spiky' : ''}`}>{line}</div>}
     </div>
   );

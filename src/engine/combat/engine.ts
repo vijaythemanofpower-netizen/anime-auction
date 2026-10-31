@@ -3,6 +3,7 @@
 // version) it produces an identical event log and result.
 import type {
   Ability, BattleEvent, BattleEventType, BattleInjury, BattleInput, BattleResult, BodyPart, CallKind, CoachCall, DefenseResponse, StatusType, Strategy, Synergy,
+  Tag,
 } from '../types';
 import { CALLS_PER_BATTLE, ENGINE_VERSION } from '../types';
 import { Rng, deriveSeed, hashString } from '../rng';
@@ -14,6 +15,10 @@ import { ABILITIES, BASIC_ATTACK, getAbility } from '../data/abilities';
 import { elementMultiplier, getEnvironment, getSynergy, type Environment } from '../data/world';
 import { type CombatFighter, INJURY_LIMIT, createFighter, hasStatus, hpPct, injuryLoad, injuryPenalty } from './fighter';
 
+
+type PlotKind = 'intruder' | 'shift' | 'sealed' | 'flashback' | 'suddendeath' | 'betrayal';
+/** Share of fights that get a plot twist. */
+const PLOT_CHANCE = 0.35;
 export const MAX_ACTIONS = 320;
 
 const STRATEGY: Record<Strategy, { dmg: number; def: number; attackW: number; abilityW: number; guardW: number; counter: number; crit: number; cost: number; speed: number }> = {
@@ -77,6 +82,9 @@ export class BattleSim {
   private pendingCorners: Array<{ side: 0 | 1; focus: string; reason: string; reserve?: string }> = [];
   // Banter, jump-ins and twists draw from their own random stream.
   private flavorRng: Rng;
+  /** Story events that change some fights midway (their own dice, so other rolls stay the same). */
+  private plotRng: Rng;
+  private plot: { kind: PlotKind; at: number; done: boolean } | null = null;
   private banterAt = new Map<string, number>();
   /** Lines already said this fight, and each fighter's last named move, for fresh trash talk. */
   private saidLines = new Set<string>();
@@ -96,6 +104,11 @@ export class BattleSim {
     this.sideFx = [this.buildSideFx(0), this.buildSideFx(1)];
     this.coachRng = new Rng(deriveSeed('coach', input.seed));
     this.flavorRng = new Rng(deriveSeed('flavor', input.seed));
+    this.plotRng = new Rng(deriveSeed('plot', input.seed));
+    if (this.plotRng.chance(PLOT_CHANCE)) {
+      const kinds: PlotKind[] = ['intruder', 'shift', 'sealed', 'flashback', 'suddendeath', ...(input.mode !== 'solo' ? ['betrayal' as const] : [])];
+      this.plot = { kind: this.plotRng.pick(kinds), at: this.plotRng.int(16, 44), done: false };
+    }
   }
 
   private buildSideFx(side: 0 | 1): SideEffects {
@@ -493,15 +506,103 @@ export class BattleSim {
     };
   }
 
-  private twist(key: string, title: string, text: string, actor?: CombatFighter) {
+  private twist(key: string, title: string, text: string, actor?: CombatFighter, target?: CombatFighter) {
     if (this.twists.has(key)) return false;
     this.twists.add(key);
-    this.emit('twist', `${title} ${text}`, { actor: actor?.id, context: { twist: key.split(':')[0], title } });
+    this.emit('twist', `${title} ${text}`, { actor: actor?.id, target: target?.id, context: { twist: key.split(':')[0], title } });
     return true;
+  }
+
+  /**
+   * Plot twists: about a third of fights get one story event at a random moment
+   * that really changes the fight. Rolled on its own dice (plotRng).
+   */
+  private plotTwist() {
+    const p = this.plot;
+    if (!p || p.done || this.turn < p.at) return;
+    const live = this.fighters.filter((f) => !f.defeated);
+    if (this.alive(0).length === 0 || this.alive(1).length === 0) return;
+    const R = this.plotRng;
+    const cap = (x: string) => x.charAt(0).toUpperCase() + x.slice(1);
+    // Every health change is logged after the twist itself, so the log matches the result.
+    const before = new Map(live.map((f) => [f, f.hp]));
+    const hit = (f: CombatFighter, share: number) => this.applyDamage(f, Math.max(1, Math.round(f.maxHp * share)));
+    switch (p.kind) {
+      case 'intruder': {
+        const who = R.pick(['a masked ronin', 'a rogue shinigami', 'a wandering demon', 'a mercenary from the stands', 'a cursed spirit', 'a rogue ninja', 'a fallen hero']);
+        const victim = live.slice().sort((a, b) => hpPct(b) - hpPct(a))[0];
+        for (const f of live) { hit(f, 0.1); f.guard = clamp(f.guard - 30, 0, 100); f.staggered = true; }
+        this.momentum = 0;
+        this.twist('plot-intruder', 'AN INTRUDER!', `${cap(who)} crashes into the battle and attacks everyone!`, victim, victim);
+        break;
+      }
+      case 'shift': {
+        const shifts: Array<[title: string, text: string, up: Tag[], down: Tag[]]> = [
+          ['THE SKY TURNS BLACK!', 'A sudden eclipse swallows the arena. Darkness feeds the shadows.', ['DARK', 'SHADOW', 'DEMON'], ['HOLY', 'DIVINE']],
+          ['THE ARENA FLOODS!', 'Water roars in from every side. Flames sputter out.', ['WATER', 'ICE'], ['FIRE', 'LIGHTNING']],
+          ['THE GROUND SPLITS OPEN!', 'Lava pours across the floor. The heat is unbearable.', ['FIRE', 'DRAGON', 'EARTH'], ['ICE', 'WATER']],
+          ['A BLIZZARD HITS!', 'Snow and wind tear across the battlefield.', ['ICE', 'WIND'], ['FIRE', 'EARTH']],
+          ['A STORM BREAKS!', 'Lightning strikes the arena again and again.', ['LIGHTNING', 'WIND'], ['WATER', 'EARTH']],
+        ];
+        const [title, text, up, down] = R.pick(shifts);
+        for (const f of live) {
+          if (f.snap.tags.some((t) => up.includes(t))) f.mods.dmg += 0.15;
+          if (f.snap.tags.some((t) => down.includes(t))) f.mods.dmg -= 0.1;
+        }
+        const favoured = live.find((f) => f.snap.tags.some((t) => up.includes(t)));
+        this.twist('plot-shift', title, favoured ? `${text} ${this.name(favoured)} thrives in it!` : text, favoured);
+        break;
+      }
+      case 'sealed': {
+        const target = live.slice().sort((a, b) => b.eff.attack - a.eff.attack)[0];
+        for (const id of target.snap.abilities) if (ABILITIES[id]?.kind === 'ultimate') target.cooldowns[id] = Math.max(target.cooldowns[id] ?? 0, 14);
+        this.twist('plot-sealed', 'TECHNIQUE SEALED!', `A binding seal locks away ${this.name(target)}'s strongest technique! They'll have to win without it.`, target, target);
+        break;
+      }
+      case 'flashback': {
+        const low = live.filter((f) => hpPct(f) < 0.3).sort((a, b) => hpPct(a) - hpPct(b))[0];
+        if (!low) { if (this.turn > p.at + 30) p.kind = 'intruder'; return; }
+        low.hp = Math.min(low.maxHp, low.hp + Math.round(low.maxHp * 0.2));
+        low.mods.dmg += 0.08;
+        low.statuses.push({ type: 'focus', duration: 3, magnitude: 0.2 });
+        this.shiftMomentum(low.side, 25, `${this.name(low)}'s flashback`);
+        this.twist('plot-flashback', 'A FLASHBACK!', `${this.name(low)} remembers why they fight, and rises with new power!`, low);
+        break;
+      }
+      case 'suddendeath': {
+        if (live.some((f) => hpPct(f) < 0.25)) { p.kind = 'intruder'; return; }
+        for (const f of live) f.hp = Math.min(f.hp, Math.max(1, Math.round(f.maxHp * 0.2)));
+        this.momentum = 0;
+        this.twist('plot-suddendeath', 'SUDDEN DEATH!', 'A shockwave drains everyone to their last reserves. The next clean hit could end it!');
+        break;
+      }
+      case 'betrayal': {
+        const side = (this.alive(0).length >= 2 ? (this.alive(1).length >= 2 && R.chance(0.5) ? 1 : 0) : 1) as 0 | 1;
+        const team = this.alive(side);
+        if (team.length < 2) { p.kind = 'intruder'; return; }
+        const traitor = R.pick(team);
+        const victim = R.pick(team.filter((f) => f !== traitor));
+        hit(victim, 0.12);
+        victim.staggered = true;
+        this.shiftMomentum(side === 0 ? 1 : 0, 25, 'the betrayal');
+        this.twist('plot-betrayal', 'BETRAYAL?!', `${this.name(traitor)} turns and strikes ${this.name(victim)}! Mind control? A grudge? Nobody knows!`, traitor, victim);
+        break;
+      }
+    }
+    p.done = true;
+    for (const [f, hp0] of before) {
+      if (f.hp < hp0) {
+        this.emit('attack', `${this.name(f)} is caught in it.`, { target: f.id, damage: hp0 - f.hp, hpBefore: hp0, hpAfter: f.hp, action: 'plot twist', context: { environmental: true } });
+        if (f.defeated || f.hp <= 0) this.onDefeat(f, null, 'collapse');
+      } else if (f.hp > hp0) {
+        this.emit('heal', `${this.name(f)} surges back.`, { target: f.id, heal: f.hp - hp0, hpBefore: hp0, hpAfter: f.hp });
+      }
+    }
   }
 
   /** Arena-wide twists and crowd rallies, checked between actions. */
   private worldTwists() {
+    this.plotTwist();
     // The arena only breaks in long, close fights.
     const close = Math.abs(this.momentum) < 25;
     if (this.turn >= 40 && close && !this.twists.has('arena') && this.flavorRng.chance(0.012)) {
