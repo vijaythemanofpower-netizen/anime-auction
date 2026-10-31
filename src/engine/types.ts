@@ -293,6 +293,8 @@ export interface FighterSnapshot {
   injuries: Injury[];
   price: number;
   vulnerability: Tag | null;
+  /** Raid bosses: health multiplied and damage boosted to take on a whole team. */
+  boss?: { hpScale: number; power: number };
 }
 
 export interface BattleInput {
@@ -411,7 +413,7 @@ export interface BattleRecord {
   input: BattleInput;
   result: BattleResult;
   matchId: string | null;
-  kind: 'tournament' | 'replay' | 'rematch';
+  kind: 'tournament' | 'replay' | 'rematch' | 'raid';
   narration: NarrationLine[];
   createdAt: number;
   postEffects: PostBattleEffect[];
@@ -533,6 +535,8 @@ export interface GameState {
   currentMatchId: string | null;
   prep: Record<string, PrepChoice>;
   battleIds: string[];
+  /** Raid Boss attempts, newest last (older saves lack it). */
+  raids?: RaidResult[];
   lastBattleId: string | null;
   rivalries: Record<string, Rivalry>;
   secret: number;
@@ -550,3 +554,6 @@ export interface HallEntry {
   detail: string;
   value: number;
 }
+
+export interface RaidContribution { charId: string; name: string; playerId: string; dealt: number; tanked: number; healed: number; finalBlow: boolean; score: number; role: string }
+export interface RaidResult { id: string; battleId: string; bossId: string; bossName: string; won: boolean; mvp: string | null; contributions: RaidContribution[]; at: number }

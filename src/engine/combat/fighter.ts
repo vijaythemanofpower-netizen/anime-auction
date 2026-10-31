@@ -71,7 +71,7 @@ export function createFighter(snap: FighterSnapshot): CombatFighter {
   const eff = effectiveStats(snap);
   // Max HP uses base stats so condition shows as reduced effectiveness, not
   // as a phantom HP loss; injuries to stamina still lower stamina pool.
-  const maxHp = maxHpFor(snap.stats);
+  const maxHp = Math.round(maxHpFor(snap.stats) * (snap.boss?.hpScale ?? 1));
   const maxSt = maxStFor(eff);
   return {
     snap,
@@ -102,7 +102,7 @@ export function createFighter(snap: FighterSnapshot): CombatFighter {
     form: 1,
     seen: {},
     adaptation: {},
-    mods: { dmg: 0, acc: 0, dodge: 0, crit: 0, def: 0, intimidated: 0, provokedTurns: 0, earlyDodgeTurns: 0 },
+    mods: { dmg: snap.boss ? snap.boss.power - 1 : 0, acc: 0, dodge: 0, crit: 0, def: 0, intimidated: 0, provokedTurns: 0, earlyDodgeTurns: 0 },
     res: {
       charId: snap.charId, side: snap.side, hp: maxHp, maxHp, stamina: maxSt, maxStamina: maxSt,
       defeated: false, damageDealt: 0, damageTaken: 0, crits: 0, abilitiesUsed: 0, minHpPct: 1, awakened: false, actions: 0, form: 1,

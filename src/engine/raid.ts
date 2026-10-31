@@ -1,0 +1,115 @@
+// Raid Boss: every player's strongest fighters team up against one real anime
+// villain, scaled to be hard for the size of the team. The fight runs on the same
+// engine; afterwards each fighter's contribution is scored and an MVP is crowned.
+// A raid never changes the tournament (no injuries, fatigue or money).
+import type { BattleInput, BattleRecord, FighterSnapshot, GameState, PublicCharacter, RaidContribution, RaidResult, Stats } from './types';
+import { ENGINE_VERSION, STAT_KEYS } from './types';
+import { simulateBattle } from './combat/engine';
+import { narrate } from './narration';
+import { Rng, uid } from './rng';
+import { buildSnapshot } from './game';
+import { generateHidden, truePower, type Vault } from './hidden';
+import { progressedStats } from './progression';
+import { canonFor } from './data/canonByName';
+import { ENVIRONMENTS } from './data/world';
+import { LEGEND_CHARACTERS } from './data/legends';
+import { registerCharacterMoves } from './data/abilities';
+
+/** Built-in villains that can be raid bosses. */
+export const RAID_VILLAINS = ['frieza', 'aizen', 'madara', 'pain', 'sukuna', 'akaza', 'shigaraki', 'meruem', 'dio', 'itachi', 'hisoka'].map((k) => `legend:${k}`);
+/** More villains looked up on AniList when online (they have canon stat sheets). */
+export const ANILIST_VILLAINS = ['Kaidou', 'Muzan Kibutsuji', 'Cell', 'Majin Buu', 'Yhwach', 'Donquixote Doflamingo', 'All For One', 'Makima', 'Mahito', 'Kokushibou', 'Douma', 'Griffith', 'Ulquiorra Cifer', 'Boros'];
+
+export const RAID_TEAM_PER_PLAYER = 2;
+export const RAID_MAX_TEAM = 6;
+
+/** How hard a boss is for a team of this size (tuned so raids are often lost). */
+export function bossScaling(teamSize: number) {
+  // Smaller parties have fewer ways to recover, so the boss scales more gently for them.
+  return teamSize <= 4 ? { hpScale: 1.1 * teamSize, power: 0.82 + 0.05 * teamSize } : { hpScale: 1.15 * teamSize + 0.6, power: 1.05 + 0.13 * teamSize };
+}
+
+export function legendVillains(): PublicCharacter[] {
+  return RAID_VILLAINS.map((id) => LEGEND_CHARACTERS.find((c) => c.id === id)).filter((c): c is PublicCharacter => !!c);
+}
+
+/** Each player's strongest fighters (by true power), up to the team limit. */
+export function raidTeam(g: GameState, vault: Vault): string[] {
+  const picks: string[] = [];
+  for (const p of g.players) {
+    const ranked = p.roster.slice().sort((a, b) => power(g, vault, b) - power(g, vault, a));
+    picks.push(...ranked.slice(0, RAID_TEAM_PER_PLAYER));
+  }
+  return picks.sort((a, b) => power(g, vault, b) - power(g, vault, a)).slice(0, RAID_MAX_TEAM);
+}
+
+function power(g: GameState, vault: Vault, id: string) {
+  const c = g.conditions[id];
+  return c ? truePower(progressedStats(vault.get(id), c)) : truePower(vault.get(id).stats);
+}
+
+/** The boss as a fighter: canon stats (or its profile) pushed up, health and damage scaled. */
+function bossSnapshot(boss: PublicCharacter, secret: number, teamSize: number): FighterSnapshot {
+  registerCharacterMoves(boss);
+  const h = generateHidden(boss, secret);
+  const canon = canonFor(boss);
+  const base: Stats = canon ?? h.stats;
+  const stats = Object.fromEntries(STAT_KEYS.map((k) => [k, Math.min(99, Math.round(base[k] + (teamSize <= 4 ? 0 : 6)))])) as Stats;
+  return {
+    charId: boss.id, name: boss.name, playerId: 'raid-boss', side: 1, archetype: boss.archetype, temperament: boss.temperament, reach: boss.reach,
+    tags: boss.tags, stats, traits: h.traits, abilities: [...boss.knownAbilities, h.hiddenAbility], position: 'front', fatigue: 0, injuries: [],
+    price: 0, vulnerability: null, boss: bossScaling(teamSize),
+  };
+}
+
+export function buildRaidInput(g: GameState, vault: Vault, boss: PublicCharacter, seed: number): BattleInput {
+  const team = raidTeam(g, vault);
+  const fighters = team.map((id, i) => ({ ...buildSnapshot(g, vault, id, 0, i < 3 ? 'front' : 'back'), injuries: [], fatigue: 0 }));
+  const env = new Rng(seed ^ 0x51ed).pick(ENVIRONMENTS).id;
+  return {
+    battleId: uid('raid'), engineVersion: ENGINE_VERSION, seed, mode: 'squad', environmentId: env, rivalry: null,
+    sides: [
+      { playerId: 'raid-team', strategy: 'balanced', mental: 'composure', fighters, synergies: [], coach: 'auto' },
+      { playerId: 'raid-boss', strategy: 'aggressive', mental: 'intimidate', fighters: [bossSnapshot(boss, g.secret, fighters.length)], synergies: [], coach: 'auto' },
+    ],
+  };
+}
+
+/** Who helped most: damage dealt, hits absorbed, healing, and the final blow. */
+export function raidContributions(record: BattleRecord): RaidContribution[] {
+  const team = record.input.sides[0].fighters;
+  const ev = record.result.events;
+  const bossId = record.input.sides[1].fighters[0].charId;
+  const defeat = ev.find((e) => e.type === 'defeat' && e.target === bossId);
+  let finisher: string | undefined;
+  if (defeat) for (let k = ev.indexOf(defeat) - 1; k >= 0; k--) if (ev[k].target === bossId && ev[k].actor && (ev[k].damage ?? 0) > 0) { finisher = ev[k].actor; break; }
+  const boss = record.result.fighters.find((f) => f.charId === bossId);
+  const out = team.map((f) => {
+    const r = record.result.fighters.find((x) => x.charId === f.charId);
+    const healed = ev.filter((e) => e.type === 'heal' && e.actor === f.charId).reduce((s, e) => s + (e.heal ?? 0), 0);
+    const dealt = r?.damageDealt ?? 0, tanked = r?.damageTaken ?? 0, finalBlow = finisher === f.charId;
+    const score = Math.round(dealt + tanked * 0.5 + healed + (finalBlow ? (boss?.maxHp ?? 0) * 0.1 : 0));
+    return { charId: f.charId, name: f.name, playerId: f.playerId, dealt, tanked, healed, finalBlow, score, role: '' };
+  }).sort((a, b) => b.score - a.score);
+  const best = (k: 'dealt' | 'tanked' | 'healed') => out.slice().sort((a, b) => b[k] - a[k])[0];
+  const roles: Array<[RaidContribution | undefined, string]> = [[out.find((c) => c.finalBlow), 'Final blow'], [best('dealt'), 'Top damage'], [best('tanked'), 'The wall'], [best('healed')?.healed ? best('healed') : undefined, 'Medic']];
+  for (const [c, role] of roles) if (c && !c.role) c.role = role;
+  return out;
+}
+
+/** Runs a raid and records it on the game. Never touches the tournament. */
+export function runRaid(g: GameState, vault: Vault, boss: PublicCharacter, seed: number): { record: BattleRecord; result: RaidResult } {
+  if (!g.characters[boss.id]) g.characters[boss.id] = boss;
+  const input = buildRaidInput(g, vault, boss, seed);
+  const result = simulateBattle(input);
+  const playerNames = { ...Object.fromEntries(g.players.map((p) => [p.id, p.name])), 'raid-team': 'The raid party', 'raid-boss': boss.name };
+  const narration = narrate(input, result, { prices: g.prices, playerNames, previousLoss: {}, stageName: `the raid on ${boss.name}` });
+  const record: BattleRecord = { battleId: input.battleId, input, result, matchId: null, kind: 'raid', narration, createdAt: Date.now(), postEffects: [] };
+  const contributions = raidContributions(record);
+  const raid: RaidResult = {
+    id: input.battleId, battleId: input.battleId, bossId: boss.id, bossName: boss.name, won: result.winnerSide === 0,
+    mvp: contributions[0]?.charId ?? null, contributions, at: Date.now(),
+  };
+  g.raids = [...(g.raids ?? []), raid];
+  return { record, result: raid };
+}
