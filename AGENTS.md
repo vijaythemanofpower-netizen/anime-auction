@@ -30,12 +30,13 @@ When Claude's usage limit runs out, Claude writes HANDOFF.md with one section pe
 - Phones matter: check new screens at 375 px wide (no sideways scroll, controls reachable).
 - Keep README.md current when behaviour changes; record open work below.
 
-## Open work (Oct 31 2026)
-Not yet checked in real play (owner to test): a full drawn comic via Start Game.bat; voices (hand-cast Kokoro voices, pacing); bench fighters dashing into the arena; facts on the drawing screen; private power ranking; "All anime" auction fill; career stats saving after an online game; guest "Keep my account" upgrade; chat/reactions with two players; phone layout on a real phone; Brevo emails (may land in spam).
+## Open work (Oct 31 2026, end of Claude session)
+Recently added (all committed): plot twists (engine), live predictions, Raid Boss (src/engine/raid.ts, 47 bosses in data/villains.ts + legends, picks via 'raidPick' move, Boss Raid game mode in setup + online lobby), Team Battle (src/engine/teambattle.ts, 'teamPick' move), healers mend/revive, fight length from matchup (setFightLength) + power edge, whole-fight comics (one panel per exchange), duo drawings for big hits, manga UI (identity.css, manga.css, scenes.css, PageArt), official clip reel on home, email+password sign-in (AccountMenu.tsx), roast badges, desktop shortcut icon (assets/).
+Owner reported "Boss raid not working" without details (last message). Not reproduced: in a local game the raid works end to end (pick fighters, choose villain, fight, MVP). Suspect the online path: test with two tabs (host + http://localhost:5173/?tab-session guest), Boss Raid mode, after the auction: guest picks fighters (Raid tab), host starts; check guest sees the raid record and result (battles sync), and that the hub/Raid tab shows for guests. Local dev helper: window.__dev.finishAuction() skips the auction.
+Not yet checked in real play: online raids/team battles with two people, a full drawn comic via Start Game.bat, voices, phone layout on a real phone, Brevo emails (may land in spam).
 Known limits:
-1. Drawings only work from the local version (Start Game.bat / localhost:5173): browsers block the public website from reaching ComfyUI on the PC. Guests in a room hosted locally get the host's panels.
-2. Stats: 76 built-ins + ~150 more popular characters have canon sheets (canonStats.ts, canonByName.ts); others use a profile-based guess, or AI-rated stats with the owner's Anthropic key (not tested, needs the key).
-3. Characters outside the built-ins have type-based moves unless the AI move writer is used.
-4. One drawing holds at most two fighters (three gets messy with NoobAI).
-5. Website and localhost keep separate sign-ins; career stats come from online games only.
-6. Supabase Web3 sign-in rate limit got set to 60 by mistake (default 30); harmless, owner can reset it.
+1. Drawings only work from the local version (Start Game.bat / localhost:5173); guests in a room hosted locally get the host's panels.
+2. Stats: built-ins + ~165 more characters have canon sheets (canonStats.ts, canonByName.ts); others use a profile-based guess.
+3. One drawing holds at most two fighters.
+4. Website and localhost keep separate sign-ins.
+5. Supabase Web3 sign-in rate limit got set to 60 by mistake (default 30); harmless.
