@@ -123,3 +123,10 @@
   .boss-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
   .raid-pick-card b, .boss-card b { font-size: 11px; overflow-wrap: anywhere; }
 }
+
+/* Pre-fight poll: picks shown as chips; green when the call was right after the fight. */
+.prepoll { border-color: var(--violet); }
+.prepoll .player-chip { padding: 4px 10px; font-size: 12px; }
+.prepoll .player-chip.ready { background: color-mix(in srgb, var(--good) 18%, transparent); border-color: var(--good); }
+.prepoll .player-chip.missed { opacity: 0.6; }
+.prepoll-answer { color: var(--good); }

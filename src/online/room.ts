@@ -56,6 +56,7 @@ type Msg =
   | { k: 'error'; text: string }
   | { k: 'chat'; name: string; text: string; at: number }
   | { k: 'react'; emoji: string }
+  | { k: 'guess'; battleId: string; q: string; pick: string }
   | { k: 'closed' };
 
 let room: RoomState | null = null;
@@ -192,6 +193,7 @@ async function receive(w: Wire) {
   // Chat goes straight from anyone to everyone; the host doesn't relay it.
   if (msg.k === 'chat') { addChat(w.from, msg); return; }
   if (msg.k === 'react') { addReaction(w.from, msg.emoji); return; }
+  if (msg.k === 'guess') { addGuess(w.from, msg); return; }
   if (room.role === 'host') hostReceive(w.from, msg);
   else if (w.from === room.hostId) guestReceive(msg);
 }
@@ -514,6 +516,28 @@ export function sendReaction(emoji: string) {
   lastReact = Date.now();
   addReaction(room.userId, emoji);
   void send({ k: 'react', emoji });
+}
+
+// Pre-fight poll picks (who wins, who falls first...): sent to everyone, like chat.
+export interface Guess { from: string; name: string; mine: boolean; pick: string }
+let guessMap: Record<string, Record<string, Guess>> = {}; // `${battleId}:${question}` -> by sender
+const guessListeners = new Set<() => void>();
+export const guesses = {
+  get: () => guessMap,
+  subscribe: (l: () => void) => { guessListeners.add(l); return () => { guessListeners.delete(l); }; },
+};
+function addGuess(from: string, m: { battleId: string; q: string; pick: string }) {
+  if (typeof m.battleId !== 'string' || typeof m.q !== 'string' || typeof m.pick !== 'string') return;
+  const key = `${m.battleId}:${m.q}`;
+  const mine = !room || from === room.userId;
+  const name = mine ? 'You' : room?.members.find((x) => x.userId === from)?.name ?? 'Player';
+  guessMap = { ...guessMap, [key]: { ...(guessMap[key] ?? {}), [from]: { from, name, mine, pick: m.pick.slice(0, 80) } } };
+  guessListeners.forEach((l) => l());
+}
+/** Records your pick and, in a room, tells everyone. */
+export function sendGuess(battleId: string, q: string, pick: string) {
+  addGuess(room?.userId ?? 'local', { battleId, q, pick });
+  if (room) void send({ k: 'guess', battleId, q, pick });
 }
 
 export function sendMove(move: PlayerMove) { void send({ k: 'move', move }); }

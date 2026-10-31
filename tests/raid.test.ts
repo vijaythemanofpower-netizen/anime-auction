@@ -62,3 +62,16 @@ describe('raid comics', () => {
     expect(withBoss / script.panels.length).toBeGreaterThan(0.5);
   });
 });
+
+describe('pre-fight poll', () => {
+  it('asks who wins, who falls first and who deals the most damage, with right answers', async () => {
+    const { preFightPoll } = await import('../src/engine/predictions');
+    const { g, vault } = makeGame(3, 3, 'live', 31) as never as { g: import('../src/engine/types').GameState; vault: import('../src/engine/hidden').Vault };
+    runAuction(g);
+    const { record } = runRaid(g, vault, legendVillains()[1], 5);
+    const qs = preFightPoll(record, ['Party', 'Boss']);
+    expect(qs.map((q) => q.id)).toContain('winner');
+    expect(qs.find((q) => q.id === 'winner')!.answer).toBe(String(record.result.winnerSide));
+    for (const q of qs) expect(q.options.some((o) => o.id === q.answer)).toBe(true);
+  });
+});

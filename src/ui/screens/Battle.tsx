@@ -1,5 +1,5 @@
 import { RaidCard } from '../components/Raid';
-import { Predictions } from '../components/Predictions';
+import { PreFightPoll, Predictions } from '../components/Predictions';
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import type { BattleEvent, BattleInput, BattleRecord, GameState } from '../../engine/types';
 import * as G from '../../engine/game';
@@ -278,6 +278,7 @@ export function BattleView({ record, exhibition }: { record: BattleRecord; exhib
       )}
       {pendingCorner && <CornerPanel e={pendingCorner} record={record} fighters={state.fs} players={g.players} characters={g.characters} onCall={(c) => store.makeCall(record, c)} />}
 
+      {(prepping || done) && record.kind !== 'replay' && <PreFightPoll record={record} sideNames={sideNames} done={done && !prepping} />}
       <Predictions record={record} idx={idx} done={done} gameId={g.id} active={!prepping && !skipped.current && record.kind !== 'replay'}
         sideNames={sideNames} />
       <div className="row battle-controls" style={{ justifyContent: 'space-between' }}>

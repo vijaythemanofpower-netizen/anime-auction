@@ -1,9 +1,10 @@
 // Live predictions during a fight (engine/predictions.ts): a question pops up with
 // a countdown while the fight keeps playing, the answer is revealed when that moment
 // arrives, and an "Oracle" score builds up over the whole game on this device.
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import type { BattleRecord } from '../../engine/types';
-import { predictionsFor, type Prediction } from '../../engine/predictions';
+import { predictionsFor, preFightPoll, type PollQuestion, type Prediction } from '../../engine/predictions';
+import { guesses, sendGuess, useRoom, type Guess } from '../../online/room';
 
 const ANSWER_MS = 7000;
 interface Oracle { points: number; correct: number; total: number; streak: number; scored: string[] }
@@ -78,4 +79,55 @@ export function Predictions({ record, idx, done, active, sideNames, gameId }: {
       <div className="predict-timer"><span style={{ width: `${(left / ANSWER_MS) * 100}%` }} /></div>
     </div>
   );
+}
+
+/** While the comic draws: everyone calls the fight (shared with the room), revealed at the end. */
+export function PreFightPoll({ record, sideNames, done }: { record: BattleRecord; sideNames: [string, string]; done: boolean }) {
+  const qs = useMemo(() => preFightPoll(record, sideNames), [record, sideNames]);
+  const all = useSyncExternalStore(guesses.subscribe, guesses.get);
+  const room = useRoom();
+  if (!qs.length) return null;
+  const picks = (q: string) => Object.values(all[`${record.battleId}:${q}`] ?? {});
+  const anyPick = qs.some((q) => picks(q.id).length);
+  if (done && !anyPick) return null;
+  return (
+    <div className="panel col prepoll" style={{ gap: 10 }}>
+      <div className="row" style={{ justifyContent: 'space-between', gap: 8, flexWrap: 'wrap' }}>
+        <strong>🔮 {done ? 'Who called it?' : 'Call the fight'}</strong>
+        <span className="faint">{done ? 'Answers are in.' : room?.connected ? 'Everyone in the room sees your picks. Answers at the end.' : 'Answers at the end.'}</span>
+      </div>
+      {qs.map((q) => {
+        const ps = picks(q.id);
+        const mine = ps.find((p) => p.mine)?.pick;
+        const label = (id: string) => q.options.find((o) => o.id === id)?.label ?? id;
+        return (
+          <div key={q.id} className="col" style={{ gap: 6 }}>
+            <span><b>{q.question}</b> <span className="faint">+{q.points}</span>{done && <> · <b className="prepoll-answer">{label(q.answer)}</b></>}</span>
+            {!done && (
+              <div className="predict-options">
+                {q.options.map((o) => <button key={o.id} className={`btn sm${mine === o.id ? ' primary' : ''}`} aria-pressed={mine === o.id} onClick={() => sendGuess(record.battleId, q.id, o.id)}>{o.label}</button>)}
+              </div>
+            )}
+            {ps.length > 0 && (
+              <div className="row" style={{ gap: 6, flexWrap: 'wrap' }}>
+                {ps.map((p) => <span key={p.from} className={`player-chip${done ? (p.pick === q.answer ? ' ready' : ' missed') : ''}`}>{p.name}: {label(p.pick)}{done ? (p.pick === q.answer ? ' ✓' : ' ✕') : ''}</span>)}
+              </div>
+            )}
+          </div>
+        );
+      })}
+      {done && <PollScores qs={qs} picks={picks} />}
+    </div>
+  );
+}
+
+function PollScores({ qs, picks }: { qs: PollQuestion[]; picks: (q: string) => Guess[] }) {
+  const score: Record<string, { name: string; pts: number }> = {};
+  for (const q of qs) for (const p of picks(q.id)) {
+    score[p.from] ??= { name: p.name, pts: 0 };
+    if (p.pick === q.answer) score[p.from].pts += q.points;
+  }
+  const rows = Object.values(score).sort((a, b) => b.pts - a.pts);
+  if (rows.length < 2) return null;
+  return <div className="faint">🏆 {rows.map((r) => `${r.name} ${r.pts}`).join(' · ')}</div>;
 }

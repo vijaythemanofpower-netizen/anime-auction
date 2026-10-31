@@ -59,3 +59,20 @@ export function predictionsFor(record: BattleRecord, sideNames: [string, string]
   out.sort((a, b) => a.askAt - b.askAt);
   return out.filter((p, i) => i === 0 || p.askAt > out[i - 1].askAt + 3);
 }
+
+/** A question answered before the fight plays (while the comic is drawing); revealed at the end. */
+export interface PollQuestion { id: string; question: string; options: Array<{ id: string; label: string }>; answer: string; points: number }
+
+/** The pre-fight poll: who wins, who falls first, who deals the most damage. */
+export function preFightPoll(record: BattleRecord, sideNames: [string, string]): PollQuestion[] {
+  const fighters = record.input.sides.flatMap((s) => s.fighters);
+  const opt = (id: string) => ({ id, label: fighters.find((f) => f.charId === id)?.name ?? id });
+  const out: PollQuestion[] = [{ id: 'winner', question: 'Who wins?', options: [{ id: '0', label: sideNames[0] }, { id: '1', label: sideNames[1] }], answer: String(record.result.winnerSide), points: 3 }];
+  if (fighters.length > 2) {
+    const first = record.result.events.find((e) => e.type === 'defeat' && e.target)?.target;
+    if (first) out.push({ id: 'firstdown', question: 'Who falls first?', options: fighters.map((f) => opt(f.charId)), answer: first, points: 2 });
+  }
+  const top = record.result.fighters.slice().sort((a, b) => b.damageDealt - a.damageDealt)[0];
+  if (top && fighters.length > 1) out.push({ id: 'topdamage', question: 'Who deals the most damage?', options: fighters.map((f) => opt(f.charId)), answer: top.charId, points: 2 });
+  return out;
+}
