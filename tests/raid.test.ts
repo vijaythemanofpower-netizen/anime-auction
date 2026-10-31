@@ -49,3 +49,16 @@ describe('healers', () => {
     expect(revives).toBeGreaterThan(0);
   });
 });
+
+describe('raid comics', () => {
+  it('draw the boss in a good share of the panels', async () => {
+    const { buildComic, COMIC_LENGTHS } = await import('../src/engine/comic');
+    const { g, vault } = makeGame(3, 3, 'live', 777) as never as { g: import('../src/engine/types').GameState; vault: import('../src/engine/hidden').Vault };
+    runAuction(g);
+    const boss = legendVillains()[0];
+    const { record } = runRaid(g, vault, boss, 12);
+    const script = buildComic(record, g.characters, { max: COMIC_LENGTHS.whole });
+    const withBoss = script.panels.filter((p) => p.focus === boss.id || p.other === boss.id).length;
+    expect(withBoss / script.panels.length).toBeGreaterThan(0.5);
+  });
+});
