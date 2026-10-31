@@ -1,3 +1,4 @@
+import { Predictions } from '../components/Predictions';
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import type { BattleEvent, BattleRecord } from '../../engine/types';
 import * as G from '../../engine/game';
@@ -228,6 +229,7 @@ export function BattleView({ record, exhibition }: { record: BattleRecord; exhib
   }, [idx, events, input, result]);
 
   const cur = events[Math.max(0, Math.min(idx, events.length) - 1)];
+  const sideNames = useMemo(() => input.sides.map((s) => g.players.find((p) => p.id === s.playerId)?.name ?? 'Side') as [string, string], [input, g.players]);
   const shownLines = narration.filter((l) => l.seq <= (cur?.seq ?? 0) && idx > 0);
   const pname = (id: string) => g.players.find((p) => p.id === id);
 
@@ -267,6 +269,8 @@ export function BattleView({ record, exhibition }: { record: BattleRecord; exhib
       )}
       {pendingCorner && <CornerPanel e={pendingCorner} record={record} fighters={state.fs} players={g.players} characters={g.characters} onCall={(c) => store.makeCall(record, c)} />}
 
+      <Predictions record={record} idx={idx} done={done} gameId={g.id} active={!prepping && !skipped.current && record.kind !== 'replay'}
+        sideNames={sideNames} />
       <div className="row battle-controls" style={{ justifyContent: 'space-between' }}>
         <div className="row">
           <button className="btn primary" onClick={() => setPlaying((p) => !p)} disabled={done} aria-label={playing ? 'Pause' : 'Resume'}>{playing ? '❚❚ Pause' : '▶ Resume'}</button>

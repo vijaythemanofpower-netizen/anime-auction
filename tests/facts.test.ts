@@ -56,3 +56,24 @@ describe('plot twists', () => {
     expect(kinds.size).toBeGreaterThanOrEqual(4);
   });
 });
+
+describe('live predictions', () => {
+  it('asks questions in order whose answers match the fight', async () => {
+    const { predictionsFor } = await import('../src/engine/predictions');
+    const { makeGame, runAuction, runTournament } = await import('./helpers');
+    const { g, vault } = makeGame(4, 3, 'live', 3001) as never as { g: import('../src/engine/types').GameState; vault: never };
+    runAuction(g);
+    let asked = 0;
+    for (const r of runTournament(g, vault, 5)) {
+      const qs = predictionsFor(r, ['A', 'B']);
+      for (let i = 1; i < qs.length; i++) expect(qs[i].askAt).toBeGreaterThan(qs[i - 1].askAt);
+      for (const q of qs) {
+        asked++;
+        expect(q.revealAt).toBeGreaterThan(q.askAt);
+        expect(q.options.some((o) => o.id === q.answer)).toBe(true);
+        if (q.id === 'winner') expect(q.answer).toBe(String(r.result.winnerSide));
+      }
+    }
+    expect(asked).toBeGreaterThan(5);
+  });
+});

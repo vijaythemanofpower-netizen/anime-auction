@@ -65,3 +65,18 @@
 .live-word.plot { color: var(--violet); -webkit-text-stroke: 3px var(--ink); }
 @keyframes plot-stamp { from { transform: translate(-50%, -50%) rotate(-4deg) scale(2.4); opacity: 0; } }
 @media (prefers-reduced-motion: reduce) { .plot-banner { animation: none; } }
+
+/* Live predictions (components/Predictions.tsx) */
+.predict { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 10px 12px; background: var(--surface); border: 2px solid var(--ink); box-shadow: 4px 4px 0 var(--violet); border-radius: 8px; font-size: 14px; }
+.predict.ask { flex-direction: column; align-items: stretch; animation: predict-pop 0.35s cubic-bezier(.2,1.4,.4,1) both; }
+.predict-head { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+.predict-head b { font-family: var(--font-display); font-weight: 400; font-size: 18px; letter-spacing: 0.02em; }
+.predict-options { display: flex; flex-wrap: wrap; gap: 8px; }
+.predict-options .btn { flex: 1 1 140px; min-height: 40px; font-weight: 700; }
+.predict-timer { height: 5px; border-radius: 3px; background: var(--surface-3); overflow: hidden; }
+.predict-timer span { display: block; height: 100%; background: var(--violet); transition: width 0.25s linear; }
+.predict.right { box-shadow: 4px 4px 0 var(--good); } .predict.right b { color: var(--good); }
+.predict.wrong { box-shadow: 4px 4px 0 var(--bad); }
+.oracle-chip { padding: 2px 9px; border-radius: 999px; background: var(--violet); color: var(--btn-ink); font-weight: 700; font-size: 12px; border: 2px solid var(--ink); white-space: nowrap; }
+@keyframes predict-pop { from { transform: scale(0.92); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .predict.ask { animation: none; } }
