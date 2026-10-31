@@ -118,7 +118,7 @@ function NotAdmin({ id, email }: { id: string; email: string | null }) {
   );
 }
 
-type Tab = 'dashboard' | 'rooms' | 'players' | 'cleanup' | 'admins';
+type Tab = 'dashboard' | 'rooms' | 'players' | 'leaderboard' | 'games' | 'cleanup' | 'admins';
 
 function Portal() {
   const [tab, setTab] = useState<Tab>('dashboard');
@@ -131,7 +131,7 @@ function Portal() {
   const act = async (label: string, fn: () => Promise<unknown>) => {
     try { await fn(); say(label); refresh(); } catch (e) { say((e as Error).message, true); }
   };
-  const tabs: Array<[Tab, string]> = [['dashboard', 'Dashboard'], ['rooms', 'Rooms'], ['players', 'Players'], ['cleanup', 'Cleanup'], ['admins', 'Admins']];
+  const tabs: Array<[Tab, string]> = [['dashboard', 'Dashboard'], ['rooms', 'Rooms'], ['players', 'Players'], ['leaderboard', 'Leaderboard'], ['games', 'Games'], ['cleanup', 'Cleanup'], ['admins', 'Admins']];
   return (
     <div className="col" style={{ gap: 16 }}>
       <div className="row" style={{ justifyContent: 'space-between' }}>
@@ -144,6 +144,8 @@ function Portal() {
       {tab === 'dashboard' && <Dashboard tick={tick} />}
       {tab === 'rooms' && <Rooms tick={tick} act={act} />}
       {tab === 'players' && <Players tick={tick} act={act} />}
+      {tab === 'leaderboard' && <Leaderboard tick={tick} />}
+      {tab === 'games' && <Games tick={tick} />}
       {tab === 'cleanup' && <Cleanup act={act} />}
       {tab === 'admins' && <Admins tick={tick} act={act} />}
     </div>
@@ -180,11 +182,69 @@ function Dashboard({ tick }: { tick: number }) {
           <div key={label} className="panel admin-card"><div className="label">{label}</div><div className="admin-big">{value}</div><div className="faint">{sub}</div></div>
         ))}
       </div>
+      <Activity tick={tick} />
       <div className="panel col" style={{ gap: 8 }}>
         <div className="row" style={{ justifyContent: 'space-between' }}><strong>Comic panel storage</strong><span className="faint">{o.panels} panels · {mb(o.panel_bytes)} of 1 GB free plan</span></div>
         <div className="hp" style={{ height: 10 }}><span style={{ width: `${pct}%`, background: pct > 80 ? 'var(--bad, #ef4444)' : 'linear-gradient(90deg, #22d3ee, #a78bfa)' }} /></div>
         <div className="faint">Rooms delete their panels when the host closes them. Use Cleanup for rooms nobody closed.</div>
       </div>
+    </div>
+  );
+}
+
+interface Day { day: string; new_players: number; games: number; rooms: number }
+/** The last 7 days: new players, games saved and rooms opened (needs supabase/admin-extra.sql). */
+function Activity({ tick }: { tick: number }) {
+  const { data, error } = useData<Day[]>('admin_activity', tick);
+  if (error) return <div className="panel faint">Activity: run supabase/admin-extra.sql in the SQL Editor to turn this on.</div>;
+  if (!data) return null;
+  const top = Math.max(1, ...data.flatMap((d) => [d.new_players, d.games, d.rooms]));
+  return (
+    <div className="panel col" style={{ gap: 8 }}>
+      <strong>Last 7 days</strong>
+      <div className="activity">
+        {data.map((d) => (
+          <div key={d.day} className="activity-day" title={`${d.day}: ${d.new_players} new players, ${d.rooms} rooms, ${d.games} games`}>
+            <div className="bars">
+              <span className="b-players" style={{ height: `${(d.new_players / top) * 100}%` }} />
+              <span className="b-rooms" style={{ height: `${(d.rooms / top) * 100}%` }} />
+              <span className="b-games" style={{ height: `${(d.games / top) * 100}%` }} />
+            </div>
+            <span className="faint">{new Date(d.day).toLocaleDateString([], { weekday: 'short' })}</span>
+          </div>
+        ))}
+      </div>
+      <div className="row faint" style={{ gap: 14, fontSize: 12 }}><span><i className="key b-players" /> New players</span><span><i className="key b-rooms" /> Rooms</span><span><i className="key b-games" /> Games saved</span></div>
+    </div>
+  );
+}
+
+interface Leader { id: string; display_name: string; games_played: number; wins: number; win_rate: number; best_iq: number | null; last_sign_in: string | null }
+function Leaderboard({ tick }: { tick: number }) {
+  const { data, error } = useData<Leader[]>('admin_leaderboard', tick);
+  if (!data) return <Loading error={error} />;
+  if (!data.length) return <div className="panel empty">No finished online games yet.</div>;
+  return (
+    <div className="panel table-wrap">
+      <table className="standings">
+        <thead><tr><th>#</th><th>Player</th><th>Wins</th><th>Played</th><th>Win rate</th><th>Best coach IQ</th><th>Last seen</th></tr></thead>
+        <tbody>{data.map((p, i) => <tr key={p.id}><td>{i + 1}</td><td><strong>{p.display_name}</strong></td><td>{p.wins}</td><td>{p.games_played}</td><td>{p.win_rate}%</td><td>{p.best_iq ?? '—'}</td><td className="faint">{p.last_sign_in ? new Date(p.last_sign_in).toLocaleString() : '—'}</td></tr>)}</tbody>
+      </table>
+    </div>
+  );
+}
+
+interface SavedGame { id: string; name: string; room_code: string | null; host: string; updated_at: string; size_kb: number }
+function Games({ tick }: { tick: number }) {
+  const { data, error } = useData<SavedGame[]>('admin_games', tick);
+  if (!data) return <Loading error={error} />;
+  if (!data.length) return <div className="panel empty">No online games saved yet.</div>;
+  return (
+    <div className="panel table-wrap">
+      <table className="standings">
+        <thead><tr><th>Game</th><th>Host</th><th>Room</th><th>Last played</th><th>Size</th></tr></thead>
+        <tbody>{data.map((g) => <tr key={g.id}><td><strong>{g.name}</strong></td><td>{g.host}</td><td>{g.room_code ?? '—'}</td><td className="faint">{new Date(g.updated_at).toLocaleString()}</td><td className="faint">{g.size_kb} KB</td></tr>)}</tbody>
+      </table>
     </div>
   );
 }

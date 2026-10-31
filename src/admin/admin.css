@@ -10,3 +10,10 @@
 .tag.live { color: var(--good, #34d399); border-color: currentColor; }
 .tag.bad { color: #fca5a5; border-color: currentColor; }
 a.btn { text-decoration: none; display: inline-flex; align-items: center; }
+/* Last 7 days chart */
+.activity { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; align-items: end; }
+.activity-day { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.activity-day .bars { height: 90px; width: 100%; display: flex; align-items: flex-end; justify-content: center; gap: 3px; }
+.activity-day .bars span { width: 26%; min-height: 2px; border-radius: 3px 3px 0 0; }
+.b-players { background: var(--violet); } .b-rooms { background: var(--gold); } .b-games { background: var(--good); }
+.key { display: inline-block; width: 10px; height: 10px; border-radius: 2px; vertical-align: middle; margin-right: 4px; }
