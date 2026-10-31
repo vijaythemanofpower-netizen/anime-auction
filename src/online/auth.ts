@@ -79,6 +79,10 @@ export async function createAccount(email: string, password: string, name?: stri
   }
   const { data, error } = await sb.auth.signUp({ email: email.trim(), password, options: { emailRedirectTo: redirect, data: name?.trim() ? { display_name: name.trim() } : undefined } });
   if (error) throw new Error(/already|registered|exists/i.test(error.message) ? 'That email already has an account. Sign in instead.' : error.message);
+  // An existing email comes back as a user with no identities and no email is sent.
+  if (data.user && !data.session && (data.user.identities?.length ?? 0) === 0) {
+    throw new Error('That email already has an account (maybe from an email-link sign-in, with no password yet). Use "Forgot password?" to set one.');
+  }
   if (data.session && name?.trim()) await saveDisplayName(name);
   return !data.session;
 }
