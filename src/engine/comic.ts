@@ -272,6 +272,15 @@ export function buildComic(record: BattleRecord, characters: Record<string, Publ
     chosen.push(pool.splice(bestI, 1)[0]);
   }
   chosen.sort((x, y) => x.e.seq - y.e.seq || order(x.shot) - order(y.shot));
+  // Raids: the boss is in every exchange, so a party member's panel draws the boss with them.
+  if (input.sides[1]?.playerId === 'raid-boss') {
+    const boss = input.sides[1].fighters[0]?.charId;
+    for (const c of chosen) {
+      if (!boss || c.other || c.shot === 'victory') continue;
+      if (c.focus !== boss && (c.e.actor === boss || c.e.target === boss)) c.other = boss;
+      else if (c.focus === boss && c.e.target && c.e.target !== boss && c.shot !== 'awaken') c.other = c.e.target;
+    }
+  }
 
   const winner = result.fighters.filter((f) => f.side === result.winnerSide).sort((a, b) => b.hp / b.maxHp - a.hp / a.maxHp)[0]?.charId ?? leads[result.winnerSide];
   const verdict = ev.find((e) => e.type === 'verdict') ?? ev[ev.length - 1];
