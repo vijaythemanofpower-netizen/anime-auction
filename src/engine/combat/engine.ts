@@ -621,6 +621,12 @@ export class BattleSim {
     const closeness = clamp(1 - Math.abs(a - b) / 18, 0, 1);
     const level = clamp(((a + b) / 2 - 55) / 40, 0, 1);
     this.lengthMult = Math.round((0.8 + 0.9 * closeness * level) * 100) / 100;
+    // The stronger side gets a small edge in proportion to the gap, so a clearly stronger
+    // fighter wins most of the time while upsets still happen. Raid bosses are tuned separately.
+    if (!this.fighters.some((f) => f.snap.boss)) {
+      const edge = clamp((a - b) * 0.012, -0.12, 0.12);
+      for (const f of this.fighters) f.mods.dmg += f.side === 0 ? edge : -edge;
+    }
     for (const f of this.fighters) {
       f.maxHp = Math.max(1, Math.round(f.maxHp * this.lengthMult));
       f.hp = f.maxHp;
@@ -828,6 +834,8 @@ export class BattleSim {
         case 'aoe': w *= (0.7 + a.power * 0.3) * Math.pow(enemies.length, 0.7); break;
         case 'ultimate': w *= 2.2; break;
         case 'heal': {
+          // A pure healer on their own can't stall a fight forever: two self-heals, then they must fight.
+          if (f.snap.archetype === 'Support' && allies.length === 0 && f.selfHeals >= 2) { w = 0; break; }
           const targets = a.target === 'self' ? [f] : [f, ...allies];
           const missing = Math.max(...targets.map((t) => 1 - hpPct(t)));
           w *= missing > 0.35 ? 1 + missing * 3 : 0.05;
@@ -970,6 +978,7 @@ export class BattleSim {
       this.emit(isDesperation ? 'desperation' : 'ability', `${this.name(f)} uses ${a.name}${targets.length > 1 ? ' on the whole team' : targets[0] !== f ? ` on ${this.name(targets[0])}` : ''}.`, {
         actor: f.id, ability: a.id, action: a.name, staminaDelta: -cost, context: { shout: a.shout, kind: a.kind },
       });
+      if (a.kind === 'heal' && targets.every((t) => t === f)) f.selfHeals++;
       for (const t of targets) {
         if (a.kind === 'heal') {
           const amt = Math.round(t.maxHp * a.power * this.sideFx[f.side].healMult * (1 + f.eff.technique / 300));

@@ -34,6 +34,8 @@ export interface CombatFighter {
   /** Healers: turns until they can mend again, and whether their one revive is used. */
   mendCd: number;
   reviveUsed: boolean;
+  /** How many times this fighter has healed only themselves. */
+  selfHeals: number;
   criticalShown: boolean;
   guarding: boolean;
   protecting: string | null;
@@ -98,6 +100,7 @@ export function createFighter(snap: FighterSnapshot): CombatFighter {
     ironWillUsed: false,
     mendCd: 0,
     reviveUsed: false,
+    selfHeals: 0,
     criticalShown: false,
     guarding: false,
     protecting: null,
