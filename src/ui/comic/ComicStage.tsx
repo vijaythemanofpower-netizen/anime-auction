@@ -2,6 +2,7 @@
 // the page as the engine's events are reached. Panels are drawn by the local
 // anime model when it is running; until a drawing arrives (or without the
 // model) the panel uses the character's portrait in comic style.
+import { store } from '../../store/store';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore, type CSSProperties } from 'react';
 import type { BattleEvent, BattleRecord, PublicCharacter } from '../../engine/types';
 import { factsFor } from '../../engine/data/characterFacts';
@@ -74,7 +75,7 @@ export function useComicHold(script: ComicScript, nextSeq: number | null, enable
   useEffect(() => {
     if (!waiting || nextSeq === null) { since.current = null; return; }
     if (since.current?.seq !== nextSeq) since.current = { seq: nextSeq, t: Date.now() };
-    const left = 25_000 - (Date.now() - since.current.t);
+    const left = 40_000 - (Date.now() - since.current.t);
     const t = setTimeout(() => setExpired(nextSeq), Math.max(0, left));
     return () => clearTimeout(t);
   }, [waiting, nextSeq]);
@@ -116,7 +117,7 @@ export function ComicStage({ record, script, cur, done, characters, waiting, red
     if (stale.length) void drawer.cancel(stale);
     let live = true;
     void drawer.restore(keys).then(async () => {
-      if (live && aiDrawings && !remoteArt && (await drawer.check()) === 'ready' && live) drawer.request(script.panels.flatMap((p) => p.drawings));
+      if (live && aiDrawings && !remoteArt && (await drawer.check()) === 'ready' && live) { drawer.quality = store.getState().settings.drawQuality ?? 'fast'; drawer.request(script.panels.flatMap((p) => p.drawings)); }
     });
     return () => { live = false; };
   }, [script, aiDrawings, remoteArt]);
@@ -174,7 +175,7 @@ export function ComicStage({ record, script, cur, done, characters, waiting, red
   );
 }
 
-const SECONDS_PER_DRAWING = 9;
+const secondsPerDrawing = () => (drawer.quality === 'best' ? 27 : 9);
 
 /** Facts about the fighters in this fight: hand-written for built-in characters, otherwise from their profile. */
 export function fightFacts(record: BattleRecord, characters: Record<string, PublicCharacter>): Array<{ who: string; text: string; image?: string }> {
@@ -206,7 +207,7 @@ function FactCard({ facts }: { facts: ReturnType<typeof fightFacts> }) {
 /** "Drawing your fight": the finished panels appear one by one until the comic is ready. */
 function PrepScreen({ script, prep, onStartNow, remote, facts }: { script: ComicScript; prep: { done: number; total: number }; onStartNow?: () => void; remote?: boolean; facts: ReturnType<typeof fightFacts> }) {
   const urls = script.panels.flatMap((p) => p.drawings.map((d) => drawer.url(d.key))).filter((u): u is string => !!u);
-  const left = Math.max(0, prep.total - prep.done) * SECONDS_PER_DRAWING;
+  const left = Math.max(0, prep.total - prep.done) * secondsPerDrawing();
   const pct = prep.total ? Math.round((prep.done / prep.total) * 100) : 0;
   return (
     <div className="comic-prep" role="status" aria-live="polite">

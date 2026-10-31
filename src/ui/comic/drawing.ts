@@ -20,6 +20,8 @@ class Drawer {
   status: DrawStatus = 'off';
   model = '';
   speedLora = '';
+  /** 'best' skips the speed add-on and takes full steps (set from Settings). */
+  quality: 'fast' | 'best' = 'fast';
   /** The portrait-reference add-on (ComfyUI_IPAdapter_plus) is installed. */
   reference = false;
   private uploaded = new Map<string, Promise<string | null>>();
@@ -139,39 +141,54 @@ class Drawer {
       for (const w of entry.waiters) w(url);
       this.emit();
     };
-    try {
-      const cached = await cacheGet(d.key);
-      if (cached) { finish(URL.createObjectURL(cached)); this.drawn(d.key, cached); return; }
-      if (this.status !== 'ready' && (await this.check()) !== 'ready') { finish(null); return; }
-      const res = await fetch(`${COMFY_URL}/prompt`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt: workflow(d, this.model, this.speedLora, this.reference && d.ref ? await this.upload(d.ref) : null), client_id: this.clientId }),
-      });
-      if (!res.ok) { finish(null); return; }
-      const { prompt_id: promptId } = (await res.json()) as { prompt_id: string };
-      entry.promptId = promptId;
-      const started = Date.now();
-      // Poll until done; the queue may hold the rest of the fight's panels ahead of this one.
-      while (this.pending.get(d.key) === entry && Date.now() - started < 10 * 60_000) {
-        await wait(700);
-        const h = await fetch(`${COMFY_URL}/history/${promptId}`).then((r) => r.json() as Promise<Record<string, HistoryItem>>).catch(() => null);
-        const item = h?.[promptId];
-        if (!item) continue;
-        if (item.status?.status_str === 'error') { finish(null); return; }
-        const img = Object.values(item.outputs ?? {}).flatMap((o) => o.images ?? [])[0];
-        if (!img) { if (item.status?.completed) { finish(null); return; } continue; }
-        const raw = await fetch(`${COMFY_URL}/view?${new URLSearchParams({ filename: img.filename, subfolder: img.subfolder ?? '', type: img.type ?? 'temp' })}`).then((r) => r.blob());
-        const small = await compress(raw);
-        void cachePut(d.key, small);
-        finish(URL.createObjectURL(small));
-        this.drawn(d.key, small);
-        return;
-      }
-      finish(null);
-    } catch {
-      this.set('unreachable');
-      finish(null);
+    // Best-quality drawings are stored apart from fast ones.
+    const cacheKey = this.quality === 'best' ? `${d.key}:best` : d.key;
+    const cached = await cacheGet(cacheKey).catch(() => null);
+    if (cached) { finish(URL.createObjectURL(cached)); this.drawn(d.key, cached); return; }
+    // A panel is tried up to three times (the last two without the portrait reference),
+    // so one hiccup never ends the wait and starts the fight before the comic is drawn.
+    for (let attempt = 0; attempt < 3 && this.pending.get(d.key) === entry; attempt++) {
+      if (attempt) await wait(1500);
+      if (this.status !== 'ready' && (await this.check(true)) !== 'ready') break;
+      try {
+        const ref = attempt === 0 && this.reference && d.ref ? await this.upload(d.ref) : null;
+        const blob = await this.drawOnce(d, entry, ref);
+        if (blob) {
+          void cachePut(cacheKey, blob);
+          finish(URL.createObjectURL(blob));
+          this.drawn(d.key, blob);
+          return;
+        }
+      } catch { /* try again */ }
     }
+    // Only call the drawing app unreachable if it really stopped answering.
+    if ((await this.check(true)) !== 'ready') this.set('unreachable');
+    finish(null);
+  }
+
+  /** One attempt at a panel: queue it, wait for the picture, return it small. */
+  private async drawOnce(d: ComicDrawing, entry: { promptId?: string }, ref: string | null): Promise<Blob | null> {
+    const res = await fetch(`${COMFY_URL}/prompt`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prompt: workflow(d, this.model, this.speedLora, ref, this.quality), client_id: this.clientId }),
+    });
+    if (!res.ok) return null;
+    const { prompt_id: promptId } = (await res.json()) as { prompt_id: string };
+    entry.promptId = promptId;
+    const started = Date.now();
+    // Poll until done; the queue may hold the rest of the fight's panels ahead of this one.
+    while (this.pending.has(d.key) && Date.now() - started < 20 * 60_000) {
+      await wait(700);
+      const h = await fetch(`${COMFY_URL}/history/${promptId}`).then((r) => r.json() as Promise<Record<string, HistoryItem>>).catch(() => null);
+      const item = h?.[promptId];
+      if (!item) continue;
+      if (item.status?.status_str === 'error') return null;
+      const img = Object.values(item.outputs ?? {}).flatMap((o) => o.images ?? [])[0];
+      if (!img) { if (item.status?.completed) return null; continue; }
+      const raw = await fetch(`${COMFY_URL}/view?${new URLSearchParams({ filename: img.filename, subfolder: img.subfolder ?? '', type: img.type ?? 'temp' })}`).then((r) => r.blob());
+      return compress(raw);
+    }
+    return null;
   }
 }
 
@@ -197,8 +214,9 @@ async function options(node: string, field: string): Promise<string[]> {
  * With a portrait reference, IP-Adapter copies the character's face, hair and
  * outfit from their portrait while the prompt sets the pose and action.
  */
-export function workflow(d: ComicDrawing, model: string, speedLora: string, ref: string | null = null): Record<string, unknown> {
-  const fast = !!speedLora;
+export function workflow(d: ComicDrawing, model: string, speedLora: string, ref: string | null = null, quality: 'fast' | 'best' = 'fast'): Record<string, unknown> {
+  // Best quality: full steps without the speed add-on (tested: far richer scenes, ~27 s a panel).
+  const fast = !!speedLora && quality === 'fast';
   const base = fast ? 'lora' : 'ckpt';
   // NoobAI/Illustrious read their own quality tags.
   const text = /noob|illustrious/i.test(model) ? d.prompt.replace('high score, great score', 'best quality, newest, very aesthetic') : d.prompt;
@@ -210,7 +228,7 @@ export function workflow(d: ComicDrawing, model: string, speedLora: string, ref:
     sample: {
       class_type: 'KSampler',
       inputs: {
-        seed: d.seed, steps: fast ? 8 : 24, cfg: fast ? 1 : 5, sampler_name: fast ? 'lcm' : 'euler_ancestral', scheduler: fast ? 'sgm_uniform' : 'normal', denoise: 1,
+        seed: d.seed, steps: fast ? 8 : 28, cfg: fast ? 1 : 5.5, sampler_name: fast ? 'lcm' : 'euler_ancestral', scheduler: fast ? 'sgm_uniform' : 'normal', denoise: 1,
         model: [ref ? 'ipa' : base, 0], positive: ['pos', 0], negative: ['neg', 0], latent_image: ['latent', 0],
       },
     },

@@ -30,6 +30,8 @@ export interface Settings {
   music: boolean;
   /** Panels per comic, and colour anime or black-and-white manga drawings. */
   comicLength: 'short' | 'full' | 'epic';
+  /** Drawing quality: fast (~7 s a panel) or best (~27 s, full detail). */
+  drawQuality?: 'fast' | 'best';
   comicStyle: 'color' | 'manga';
 }
 /** True when the game runs on this computer (npm run dev / Start Game.bat), not from a website. */

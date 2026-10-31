@@ -149,6 +149,10 @@ export function SettingsScreen() {
           <span className="faint" style={{ fontSize: 12 }}>Every battle is drawn as its own comic by a free anime drawing model running on this computer (ComfyUI, started by Start Game.bat). Nothing is sent online. Without it, panels use the characters&apos; portraits.{!RUNNING_LOCALLY && ' Playing on a website: turn this on only if you run the drawing app yourself; your browser will ask to let this page reach it.'}</span>
         </div>
         <div className="field">
+          <span className="label">Drawing quality</span>
+          <Seg value={s.drawQuality ?? 'fast'} onChange={(v) => store.updateSettings({ drawQuality: v })} label="Drawing quality"
+            options={[{ v: 'fast', label: 'Fast (~7 s a panel)' }, { v: 'best', label: 'Best (~27 s a panel)' }]} />
+          <span className="faint" style={{ fontSize: 12 }}>Best draws far richer scenes. Pair it with Short comics, or press "Start now" and let it finish during the fight.</span>
           <span className="label">Comic length</span>
           <Seg value={s.comicLength} onChange={(v) => store.updateSettings({ comicLength: v })} label="Comic length"
             options={[{ v: 'short', label: 'Short (16 panels)' }, { v: 'full', label: 'Full (32)' }, { v: 'epic', label: 'Epic (50)' }]} />

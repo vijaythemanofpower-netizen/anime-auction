@@ -18,9 +18,8 @@ export function RoomChat() {
   useEffect(() => { if (open) chat.markRead(); }, [open, lines]);
   useEffect(() => { listRef.current?.scrollTo({ top: listRef.current.scrollHeight }); }, [open, lines]);
   const screen = useApp((st) => st.screen);
-  // Only inside a live room with someone else there, on the room or game screens.
-  const others = room ? room.members.filter((m) => m.online && m.userId !== room.userId).length : 0;
-  if (!room || !room.connected || others === 0 || (screen !== 'online' && screen !== 'game')) {
+  // Only once you've joined a room (connected), on the room and game screens.
+  if (!room || !room.connected || (screen !== 'online' && screen !== 'game')) {
     return floating.length ? <div className="reaction-float" aria-hidden="true">{floating.map((r) => <span key={r.id} style={{ right: `${r.x}%` }}><b>{r.emoji}</b><small>{r.name}</small></span>)}</div> : null;
   }
 
