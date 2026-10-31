@@ -146,7 +146,9 @@ function candidates(record: BattleRecord): Candidate[] {
         const impact = String(e.context?.impact ?? '');
         const big = impact === 'devastating' || e.crit;
         const heavy = impact === 'heavy';
-        out.push({ e, shot: 'strike', focus: a, score: (big ? 6 : heavy ? 4.5 : ab ? 3 : 1.6) + (ab?.kind === 'ultimate' ? 2 : 0) });
+        // Big hits and signature moves show both fighters: the attacker landing it on the target.
+        const both = big || heavy || ab?.kind === 'ultimate';
+        out.push({ e, shot: 'strike', focus: a, other: both && t !== a ? t : undefined, score: (big ? 6 : heavy ? 4.5 : ab ? 3 : 1.6) + (ab?.kind === 'ultimate' ? 2 : 0) });
         if (big || heavy) out.push({ e, shot: 'impact', focus: t, score: big ? 4 : 2.2 });
         break;
       }
@@ -178,7 +180,7 @@ function candidates(record: BattleRecord): Candidate[] {
         let k = i - 1;
         while (k >= 0 && !(ev[k].target === t && (ev[k].type === 'attack' || ev[k].type === 'counter' || ev[k].type === 'reinforcement'))) k--;
         const finisher = k >= 0 ? ev[k].actor : undefined;
-        if (finisher && finisher !== t) out.push({ e: k >= 0 ? ev[k] : e, shot: 'finisher', focus: finisher, score: 10 });
+        if (finisher && finisher !== t) out.push({ e: k >= 0 ? ev[k] : e, shot: 'finisher', focus: finisher, other: t, score: 10 });
         out.push({ e, shot: 'knockdown', focus: t, score: 9 });
         break;
       }
@@ -323,9 +325,15 @@ function duoDrawing(c: Candidate, characters: Record<string, PublicCharacter>, n
   const strip = (tags: string) => tags.split(', ').filter((t) => !/^1(boy|girl)$/.test(t)).join(', ');
   const girls = [a, b].filter((x) => x?.gender === 'female').length;
   const count = girls === 2 ? '2girls' : girls === 1 ? '1boy, 1girl' : '2boys';
+  const ab = c.e.ability ? ABILITIES[c.e.ability] : undefined;
+  const move = ab ? `(${ab.name.toLowerCase().replace(/[!?:"()]/g, '')}:0.7), ` : '';
+  const elem = ab?.element ? `${ELEMENT_TAGS[ab.element] ?? ''}, ` : '';
+  // The first fighter named is the attacker; the second takes the hit.
   const what = c.shot === 'versus' ? 'face-to-face, glaring at each other, intense, upper body, close-up'
-    : 'fighting each other, clash, fists colliding, shockwave, sparks, dynamic angle, cowboy shot, motion lines';
-  const prompt = [count, `(${strip(characterTags(a, names.get(c.focus) ?? c.focus))}:1.1)`, `(${strip(characterTags(b, names.get(c.other!) ?? c.other!))}:1.1)`, what, style, SAFE, QUALITY].join(', ');
+    : c.shot === 'strike' ? `fighting, attacking, landing a hit, ${move}${elem}opponent getting hit, impact, shockwave, dynamic angle, cowboy shot, motion lines`
+      : c.shot === 'finisher' ? `final blow, ultimate attack, ${move}${elem}opponent knocked back, massive explosion, dramatic, dynamic angle, cowboy shot, motion lines`
+        : 'fighting each other, clash, fists colliding, shockwave, sparks, dynamic angle, cowboy shot, motion lines';
+  const prompt = [count, `(${strip(characterTags(a, names.get(c.focus) ?? c.focus))}:1.1)`, `(${strip(characterTags(b, names.get(c.other!) ?? c.other!))}:1.1)`, what, style.replace('solo, ', ''), SAFE, QUALITY].join(', ');
   const [w, h] = size === 'tall' ? sizeFor.tall : sizeFor.wide;
   const seed = hashString(`${fightSeed}:duo:${i}:${c.focus}:${c.other}`) >>> 0;
   return { key: `${battleId}:${hashString(`${prompt}|${seed}|${w}x${h}`).toString(36)}`, prompt, seed, width: w, height: h };
