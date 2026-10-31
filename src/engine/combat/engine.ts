@@ -330,6 +330,8 @@ export class BattleSim {
         this.emit('status_tick', `${this.name(f)}'s body knits itself back together.`, { target: f.id, heal: f.hp - before, hpBefore: before, hpAfter: f.hp, status: { type: 'regen', applied: true } });
       }
     }
+    if (f.mendCd > 0) f.mendCd--;
+    if (this.healerTurn(f)) return;
     const stunned = hasStatus(f, 'stun') || (hasStatus(f, 'freeze') && this.rng.chance(0.5));
     for (const s of f.statuses) if (s.type !== 'shield') s.duration--;
     f.statuses = f.statuses.filter((s) => s.duration > 0 || (s.type === 'shield' && s.magnitude > 0));
@@ -598,6 +600,43 @@ export class BattleSim {
         this.emit('heal', `${this.name(f)} surges back.`, { target: f.id, heal: f.hp - hp0, hpBefore: hp0, hpAfter: f.hp });
       }
     }
+  }
+
+  /**
+   * Healers (Support fighters, or anyone with a healing technique) look after the team:
+   * once per fight they can pull a knocked-out teammate back to their feet, and every few
+   * turns they mend the most hurt teammate (a solid chunk, never a full refill).
+   * Uses the plot dice so ordinary fights keep their other rolls.
+   */
+  private healerTurn(f: CombatFighter): boolean {
+    const healer = f.snap.archetype === 'Support' || f.snap.abilities.some((id) => ABILITIES[id]?.kind === 'heal');
+    if (!healer || f.defeated || hasStatus(f, 'stun')) return false;
+    const skill = 1 + f.eff.technique / 300;
+    const down = this.fighters.filter((x) => x.side === f.side && x.defeated && x !== f);
+    if (!f.reviveUsed && down.length && this.plotRng.chance(0.6)) {
+      const ally = down.sort((a, b) => b.maxHp - a.maxHp)[0];
+      f.reviveUsed = true;
+      ally.defeated = false;
+      ally.res.defeated = false;
+      ally.res.howDown = undefined;
+      ally.staggered = false;
+      ally.guard = 60;
+      ally.knockdowns = 0;
+      const before = ally.hp;
+      ally.hp = Math.max(1, Math.round(ally.maxHp * 0.25 * skill));
+      this.twist(`revive:${ally.id}`, 'BACK ON THEIR FEET!', `${this.name(f)} pours everything into ${this.name(ally)}, who stands up and rejoins the fight!`, f, ally);
+      this.emit('heal', `${this.name(f)} revives ${this.name(ally)}.`, { actor: f.id, target: ally.id, heal: ally.hp - before, hpBefore: before, hpAfter: ally.hp, context: { revive: true } });
+      this.shiftMomentum(f.side, 20, `${this.name(ally)}'s return`);
+      return true;
+    }
+    if (f.mendCd > 0) return false;
+    const hurt = this.alive(f.side).filter((x) => x !== f && hpPct(x) < 0.45).sort((a, b) => hpPct(a) - hpPct(b))[0];
+    if (!hurt || !this.plotRng.chance(0.55)) return false;
+    const before = hurt.hp;
+    hurt.hp = Math.min(hurt.maxHp, hurt.hp + Math.round(hurt.maxHp * 0.16 * skill * this.sideFx[f.side].healMult));
+    f.mendCd = 3;
+    this.emit('heal', `${this.name(f)} patches up ${this.name(hurt)}.`, { actor: f.id, target: hurt.id, heal: hurt.hp - before, hpBefore: before, hpAfter: hurt.hp, context: { mend: true } });
+    return true;
   }
 
   /** Arena-wide twists and crowd rallies, checked between actions. */

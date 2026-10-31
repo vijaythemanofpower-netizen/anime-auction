@@ -193,6 +193,8 @@ export function narrate(input: BattleInput, result: BattleResult, ctx: Narration
         break;
       }
       case 'heal':
+        if (e.context?.revive) break; // announced by its twist
+        if (e.context?.mend && e.actor) { say(e, `${nm(e.actor)} patches up ${nm(e.target)}! Back in it!`, 'tense'); break; }
         if ((e.heal ?? 0) > 0) say(e, `${nm(e.target)} finds a second wind.`, 'calm');
         break;
       case 'status':

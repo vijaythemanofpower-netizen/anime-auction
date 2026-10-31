@@ -3,7 +3,7 @@
 // them and see the results (engine/raid.ts).
 import { useEffect, useMemo, useState } from 'react';
 import type { GameState, PublicCharacter, RaidResult } from '../../engine/types';
-import { ANILIST_VILLAINS, RAID_MAX_TEAM, RAID_TEAM_PER_PLAYER, legendVillains } from '../../engine/raid';
+import { ANILIST_VILLAINS, RAID_MAX_TEAM, legendVillains, raidSlots } from '../../engine/raid';
 import { aniListProvider } from '../../engine/providers/anilist';
 import { store, useApp } from '../../store/store';
 import { CharArt } from './Portrait';
@@ -30,16 +30,19 @@ export function RaidHub({ g }: { g: GameState }) {
   const raids = (g.raids ?? []).slice().reverse();
   const record = useApp((s) => s.battles);
   const wins = (g.raids ?? []).filter((r) => r.won).length;
+  const waiting = g.players.filter((p) => p.kind === 'human' && !(g.raidPicks?.[p.id]?.length));
 
   return (
     <div className="col" style={{ gap: 14 }}>
       <div className="panel col" style={{ gap: 8 }}>
         <h3 style={{ margin: 0 }}>Raid Boss</h3>
-        <p className="muted" style={{ margin: 0 }}>Everyone's strongest fighters ({RAID_TEAM_PER_PLAYER} per player, up to {RAID_MAX_TEAM}) team up against a real anime villain. Bosses are scaled to your party and win more often than not. Raids never change the tournament: no injuries, fatigue or coins.</p>
+        <p className="muted" style={{ margin: 0 }}>Every player sends up to {raidSlots(g)} of their own fighters (a party of up to {RAID_MAX_TEAM}) against a real anime villain. Healers mend the team and can bring a fallen teammate back once. Bosses are scaled to your party and win more often than not. Raids never change the tournament: no injuries, fatigue or coins.</p>
         {(g.raids?.length ?? 0) > 0 && <div className="faint">Record: {wins} won, {(g.raids?.length ?? 0) - wins} lost</div>}
       </div>
 
-      {guest ? <div className="panel faint">The host chooses the boss and starts the raid. You'll be able to watch it here.</div> : (
+      <TeamPicker g={g} />
+
+      {guest ? <div className="panel faint">The host chooses the boss and starts the raid once everyone has picked. You'll be able to watch it here.</div> : (
         <div className="panel col" style={{ gap: 10 }}>
           <strong>Choose your villain</strong>
           <div className="boss-grid">
@@ -51,13 +54,55 @@ export function RaidHub({ g }: { g: GameState }) {
             ))}
             {!extra.length && <span className="faint">Loading more villains from AniList…</span>}
           </div>
+          {waiting.length > 0 && <div className="faint">Still choosing: {waiting.map((p) => p.name).join(', ')}. Anyone who hasn't picked sends their strongest fighters.</div>}
           <button className="btn primary lg" disabled={!chosen} onClick={() => chosen && store.startRaid(chosen)}>
-            {chosen ? `⚔ Raid ${chosen.name}` : 'Pick a villain'}
+            {chosen ? `⚔ Raid ${chosen.name}${waiting.length ? ' anyway' : ''}` : 'Pick a villain'}
           </button>
         </div>
       )}
 
       {raids.map((r) => <RaidCard key={r.id} r={r} g={g} canWatch={!!record[r.battleId]} />)}
+    </div>
+  );
+}
+
+/** Each player picks which of their own fighters go into the raid; everyone sees who's ready. */
+function TeamPicker({ g }: { g: GameState }) {
+  const slots = raidSlots(g);
+  const mine = g.players.filter((p) => p.kind === 'human' && store.isLocalPlayer(p));
+  return (
+    <div className="panel col" style={{ gap: 12 }}>
+      <strong>Raid party</strong>
+      {mine.map((p) => {
+        const picked = g.raidPicks?.[p.id] ?? [];
+        const toggle = (id: string) => {
+          const next = picked.includes(id) ? picked.filter((x) => x !== id) : [...picked, id].slice(-slots);
+          store.move(p.id, { t: 'raidPick', ids: next });
+        };
+        return (
+          <div key={p.id} className="col" style={{ gap: 6 }}>
+            <span className="faint">{mine.length > 1 ? `${p.name}: ` : 'You: '}choose up to {slots} ({picked.length}/{slots})</span>
+            <div className="raid-pick">
+              {p.roster.map((id) => {
+                const c = g.characters[id];
+                const on = picked.includes(id);
+                return (
+                  <button key={id} className={`raid-pick-card${on ? ' on' : ''}`} onClick={() => toggle(id)} aria-pressed={on}>
+                    <span className="boss-art">{c && <CharArt c={c} />}</span>
+                    <b>{c?.name ?? id}</b>{c?.archetype === 'Support' && <span className="tag">HEALER</span>}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })}
+      <div className="raid-ready">
+        {g.players.map((p) => {
+          const n = g.raidPicks?.[p.id]?.length ?? 0;
+          return <span key={p.id} className={`player-chip${n ? ' ready' : ''}`} style={{ borderColor: p.color }}>{p.name}: {n ? `${n} picked ✓` : p.kind === 'npc' ? 'sends its best' : 'choosing…'}</span>;
+        })}
+      </div>
     </div>
   );
 }

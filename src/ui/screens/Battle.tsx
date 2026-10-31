@@ -222,6 +222,7 @@ export function BattleView({ record, exhibition }: { record: BattleRecord; exhib
       if (e.type === 'knockdown' && tgt) { tgt.knockdowns++; tgt.floored = true; tgt.staggered = true; }
       if (e.type === 'get_up' && act) act.floored = false;
       if (e.type === 'defeat' && tgt) { tgt.down = true; tgt.floored = false; tgt.howDown = String(e.context?.how ?? ''); }
+      if (e.type === 'heal' && e.context?.revive && tgt) { tgt.down = false; tgt.floored = false; tgt.howDown = undefined; }
       if (e.type === 'call' && e.context?.call === 'callback' && act && e.hpAfter !== undefined) act.hp = e.hpAfter;
       if (e.type === 'replacement' && e.actor) { fs.get(e.actor)!.position = 'front'; if (e.action === 'tag' && e.target) fs.get(e.target)!.position = 'back'; }
     }

@@ -29,7 +29,9 @@ export interface Settings {
   /** Battle music. */
   music: boolean;
   /** Panels per comic, and colour anime or black-and-white manga drawings. */
-  comicLength: 'short' | 'full' | 'epic';
+  comicLength: 'short' | 'full' | 'epic' | 'whole';
+  /** Set once the comic length was moved to the whole fight. */
+  wholeFightV1?: boolean;
   /** Drawing quality: fast (~7 s a panel) or best (~27 s, full detail). */
   drawQuality?: 'fast' | 'best';
   comicStyle: 'color' | 'manga';
@@ -37,7 +39,7 @@ export interface Settings {
 /** True when the game runs on this computer (npm run dev / Start Game.bat), not from a website. */
 export const RUNNING_LOCALLY = typeof location === 'undefined' || ['localhost', '127.0.0.1', '[::1]'].includes(location.hostname);
 
-export const DEFAULT_SETTINGS: Settings = { narrationSpeed: 1, reducedMotion: 'system', useOnlineProvider: true, privacyDefault: true, sound: true, voice: true, voiceQuality: 'system', battleView: 'comic', aiDrawings: RUNNING_LOCALLY, music: true, comicLength: 'full', comicStyle: 'color' };
+export const DEFAULT_SETTINGS: Settings = { narrationSpeed: 1, reducedMotion: 'system', useOnlineProvider: true, privacyDefault: true, sound: true, voice: true, voiceQuality: 'system', battleView: 'comic', aiDrawings: RUNNING_LOCALLY, music: true, comicLength: 'whole', comicStyle: 'color' };
 
 export interface SaveSummary { id: string; name: string; phase: string; updatedAt: number; players: string[]; archived: boolean }
 
@@ -167,7 +169,10 @@ export class Persistence {
 
   async loadSettings(): Promise<Settings> {
     const s = await this.backend.get<Settings>('settings', 'settings');
-    return { ...DEFAULT_SETTINGS, ...(s ?? {}) };
+    const merged: Settings = { ...DEFAULT_SETTINGS, ...(s ?? {}) };
+    // Comics used to stop at a fixed number of panels; move everyone to the whole fight once.
+    if (!merged.wholeFightV1) { merged.comicLength = 'whole'; merged.wholeFightV1 = true; }
+    return merged;
   }
 
   async saveSettings(s: Settings): Promise<void> {

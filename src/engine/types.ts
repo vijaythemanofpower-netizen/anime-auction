@@ -3,7 +3,7 @@
 // read hidden game data by accident.
 
 export const SCHEMA_VERSION = 1;
-export const ENGINE_VERSION = '2.4.0';
+export const ENGINE_VERSION = '2.5.0';
 export const STARTING_COINS = 10_000;
 
 export type Archetype =
@@ -535,6 +535,8 @@ export interface GameState {
   currentMatchId: string | null;
   prep: Record<string, PrepChoice>;
   battleIds: string[];
+  /** Who each player sends into the next raid (their own fighters); missing means "pick my best". */
+  raidPicks?: Record<string, string[]>;
   /** Raid Boss attempts, newest last (older saves lack it). */
   raids?: RaidResult[];
   lastBattleId: string | null;

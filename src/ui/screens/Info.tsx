@@ -155,7 +155,7 @@ export function SettingsScreen() {
           <span className="faint" style={{ fontSize: 12 }}>Best draws far richer scenes. Pair it with Short comics, or press "Start now" and let it finish during the fight.</span>
           <span className="label">Comic length</span>
           <Seg value={s.comicLength} onChange={(v) => store.updateSettings({ comicLength: v })} label="Comic length"
-            options={[{ v: 'short', label: 'Short (16 panels)' }, { v: 'full', label: 'Full (32)' }, { v: 'epic', label: 'Epic (50)' }]} />
+            options={[{ v: 'short', label: 'Short (16 panels)' }, { v: 'full', label: 'Full (32)' }, { v: 'epic', label: 'Epic (50)' }, { v: 'whole', label: 'Whole fight (every exchange)' }]} />
           <span className="faint" style={{ fontSize: 12 }}>Longer comics take longer to draw before the fight starts: roughly 1½, 3 or 4½ minutes.</span>
         </div>
         <div className="field">

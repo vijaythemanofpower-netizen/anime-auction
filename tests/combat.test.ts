@@ -86,13 +86,15 @@ describe('combat engine', () => {
     }
   });
 
-  it('defeated fighters never act again', () => {
+  it('defeated fighters never act again (unless a healer revives them)', () => {
     for (let s = 0; s < 60; s++) {
       const r = simulateBattle(input('squad', s, [0, 1, 2], [3, 4, 5]));
       const dead = new Set<string>();
       for (const e of r.events) {
         if (e.actor && dead.has(e.actor) && !['defeat'].includes(e.type)) throw new Error(`defeated ${e.actor} acted: ${e.type}`);
         if (e.type === 'defeat' && e.target) dead.add(e.target);
+        // A healer can bring one knocked-out teammate back; after that they fight again.
+        if (e.type === 'heal' && e.context?.revive && e.target) dead.delete(e.target);
       }
     }
   });
@@ -246,8 +248,9 @@ describe('combat engine', () => {
       for (const r of battles) for (const f of r.fighters) {
         expect(new Set(f.injuries.map((i) => i.part)).size).toBe(f.injuries.length);
         const sw = r.events.some((e) => e.type === 'twist' && e.context?.twist === 'secondwind' && e.actor === f.charId);
-        expect(f.knockdowns).toBeLessThanOrEqual(sw ? 4 : 3);
-        if (f.knockdowns === (sw ? 4 : 3)) expect(f.howDown).toBe('stoppage');
+        const revived = r.events.some((e) => e.type === 'heal' && e.context?.revive && e.target === f.charId);
+        expect(f.knockdowns).toBeLessThanOrEqual((sw ? 4 : 3) + (revived ? 3 : 0));
+        if (f.knockdowns === (sw ? 4 : 3) && !revived) expect(f.howDown).toBe('stoppage');
       }
     });
 

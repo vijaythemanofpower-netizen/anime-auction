@@ -31,6 +31,9 @@ export interface CombatFighter {
   defeated: boolean;
   awakened: boolean;
   ironWillUsed: boolean;
+  /** Healers: turns until they can mend again, and whether their one revive is used. */
+  mendCd: number;
+  reviveUsed: boolean;
   criticalShown: boolean;
   guarding: boolean;
   protecting: string | null;
@@ -93,6 +96,8 @@ export function createFighter(snap: FighterSnapshot): CombatFighter {
     defeated: false,
     awakened: false,
     ironWillUsed: false,
+    mendCd: 0,
+    reviveUsed: false,
     criticalShown: false,
     guarding: false,
     protecting: null,

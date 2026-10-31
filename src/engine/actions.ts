@@ -1,6 +1,7 @@
 // Player moves as plain data, so they can travel over the network. In an
 // online room every move is sent to the host, whose browser runs the game; the
 // host applies it here for the player who sent it, never for anyone else.
+import { setRaidPick } from './raid';
 import type { GameState, PrepChoice } from './types';
 import type { Vault } from './hidden';
 import * as A from './auction';
@@ -13,9 +14,10 @@ export type PlayerMove =
   | { t: 'revealed' }
   | { t: 'prep'; patch: Partial<Pick<PrepChoice, 'fighters' | 'front' | 'strategy' | 'mental' | 'jumpIn'>> }
   | { t: 'prepAction'; act: G.PrepAction }
-  | { t: 'lock' };
+  | { t: 'lock' }
+  | { t: 'raidPick'; ids: string[] };
 
-const KINDS = new Set(['bid', 'pass', 'scout', 'revealed', 'prep', 'prepAction', 'lock']);
+const KINDS = new Set(['bid', 'pass', 'scout', 'revealed', 'prep', 'prepAction', 'lock', 'raidPick']);
 
 /** Rejects anything that is not a well-formed move (messages from the network are untrusted). */
 export function isPlayerMove(x: unknown): x is PlayerMove {
@@ -24,6 +26,7 @@ export function isPlayerMove(x: unknown): x is PlayerMove {
   if (typeof m.t !== 'string' || !KINDS.has(m.t)) return false;
   if (m.t === 'bid') return typeof m.amount === 'number' && Number.isFinite(m.amount);
   if (m.t === 'prep') return !!m.patch && typeof m.patch === 'object';
+  if (m.t === 'raidPick') return Array.isArray(m.ids) && m.ids.length <= 6 && m.ids.every((x) => typeof x === 'string');
   if (m.t === 'prepAction') return !!m.act && typeof m.act === 'object' && typeof (m.act as { charId?: unknown }).charId === 'string';
   return true;
 }
@@ -39,5 +42,6 @@ export function applyMove(g: GameState, vault: Vault, playerId: string, move: Pl
     case 'prep': return G.setPrep(g, playerId, move.patch);
     case 'prepAction': return G.prepAction(g, playerId, move.act);
     case 'lock': return G.lockPrep(g, playerId);
+    case 'raidPick': return setRaidPick(g, playerId, move.ids);
   }
 }

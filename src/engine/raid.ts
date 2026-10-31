@@ -25,26 +25,43 @@ export const ANILIST_VILLAINS: Array<[name: string, series: string]> = [
 ];
 
 export const RAID_TEAM_PER_PLAYER = 2;
-export const RAID_MAX_TEAM = 6;
+export const RAID_MAX_TEAM = 8;
 
 /** How hard a boss is for a team of this size (tuned so raids are often lost). */
 export function bossScaling(teamSize: number) {
   // Smaller parties have fewer ways to recover, so the boss scales more gently for them.
-  return teamSize <= 4 ? { hpScale: 1.1 * teamSize, power: 0.82 + 0.05 * teamSize } : { hpScale: 1.15 * teamSize + 0.6, power: 1.05 + 0.13 * teamSize };
+  return teamSize <= 4 ? { hpScale: 1.1 * teamSize, power: 0.82 + 0.05 * teamSize } : { hpScale: 1.0 * teamSize + 0.6, power: 1.0 + 0.11 * teamSize };
 }
 
 export function legendVillains(): PublicCharacter[] {
   return RAID_VILLAINS.map((id) => LEGEND_CHARACTERS.find((c) => c.id === id)).filter((c): c is PublicCharacter => !!c);
 }
 
-/** Each player's strongest fighters (by true power), up to the team limit. */
+/** How many fighters each player may send: shares six places, at least two each. */
+export function raidSlots(g: GameState): number {
+  return Math.min(3, Math.max(1, Math.floor(RAID_MAX_TEAM / Math.max(1, g.players.length))));
+}
+
+/** A player chooses who they send into the raid (from their own roster). */
+export function setRaidPick(g: GameState, playerId: string, ids: string[]) {
+  const p = g.players.find((x) => x.id === playerId);
+  if (!p) return { ok: false as const, error: 'Unknown player.' };
+  const mine = [...new Set(ids)].filter((id) => p.roster.includes(id));
+  if (mine.length > raidSlots(g)) return { ok: false as const, error: `Send at most ${raidSlots(g)} fighters.` };
+  g.raidPicks = { ...(g.raidPicks ?? {}), [playerId]: mine };
+  return { ok: true as const };
+}
+
+/** The raid party: each player's picks, or their strongest fighters if they didn't choose. */
 export function raidTeam(g: GameState, vault: Vault): string[] {
-  const picks: string[] = [];
+  const slots = raidSlots(g);
+  const team: string[] = [];
   for (const p of g.players) {
+    const chosen = (g.raidPicks?.[p.id] ?? []).filter((id) => p.roster.includes(id));
     const ranked = p.roster.slice().sort((a, b) => power(g, vault, b) - power(g, vault, a));
-    picks.push(...ranked.slice(0, RAID_TEAM_PER_PLAYER));
+    team.push(...(chosen.length ? chosen : ranked).slice(0, slots));
   }
-  return picks.sort((a, b) => power(g, vault, b) - power(g, vault, a)).slice(0, RAID_MAX_TEAM);
+  return team.slice(0, RAID_MAX_TEAM);
 }
 
 function power(g: GameState, vault: Vault, id: string) {

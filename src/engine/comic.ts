@@ -41,7 +41,8 @@ export interface ComicScript { battleId: string; panels: ComicPanel[] }
 
 export type ComicStyle = 'color' | 'manga';
 /** Panels per fight for each comic length setting. */
-export const COMIC_LENGTHS = { short: 16, full: 32, epic: 50 } as const;
+// 'whole' draws every exchange of the fight, however many that takes (300 is only a safety stop).
+export const COMIC_LENGTHS = { short: 16, full: 32, epic: 50, whole: 300 } as const;
 export type ComicLength = keyof typeof COMIC_LENGTHS;
 export const MAX_PANELS = COMIC_LENGTHS.full;
 
@@ -251,7 +252,13 @@ export function buildComic(record: BattleRecord, characters: Record<string, Publ
   const reserved = 2 + 1; // two establishing shots and the victory panel
   const budget = Math.max(1, max - reserved);
   const pool = [...all].sort((x, y) => y.score - x.score || x.e.seq - y.e.seq);
-  while (chosen.length < budget && pool.length) {
+  if (max >= COMIC_LENGTHS.whole) {
+    // Whole fight: one panel for every exchange (its strongest shot), start to finish.
+    const bySeq = new Map<number, Candidate>();
+    for (const c of pool) if (!bySeq.has(c.e.seq)) bySeq.set(c.e.seq, c);
+    chosen.push(...[...bySeq.values()].slice(0, budget));
+  }
+  while (max < COMIC_LENGTHS.whole && chosen.length < budget && pool.length) {
     let bestI = 0, best = -Infinity;
     for (let i = 0; i < pool.length; i++) {
       const c = pool[i];
