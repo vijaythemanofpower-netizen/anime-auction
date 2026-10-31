@@ -9,6 +9,7 @@ import { CALLS_PER_BATTLE, ENGINE_VERSION } from '../types';
 import { Rng, deriveSeed, hashString } from '../rng';
 import { duoOf, rivalryBetween, type Rivalry } from '../data/rivals';
 import { EAGERNESS, reactionTo } from '../data/banter';
+import { truePower } from '../hidden';
 import { writeTaunt, type TauntContext, type TauntKind } from '../data/flavor';
 import { ARCHETYPES, TEMPERAMENTS } from '../data/archetypes';
 import { ABILITIES, BASIC_ATTACK, getAbility } from '../data/abilities';
@@ -84,6 +85,8 @@ export class BattleSim {
   private flavorRng: Rng;
   /** Story events that change some fights midway (their own dice, so other rolls stay the same). */
   private plotRng: Rng;
+  /** Health multiplier from the matchup (see setFightLength). */
+  private lengthMult = 1;
   private plot: { kind: PlotKind; at: number; done: boolean } | null = null;
   private banterAt = new Map<string, number>();
   /** Lines already said this fight, and each fighter's last named move, for fresh trash talk. */
@@ -101,6 +104,7 @@ export class BattleSim {
     this.rng = new Rng(input.seed);
     this.env = getEnvironment(input.environmentId);
     for (const side of input.sides) for (const f of side.fighters) this.fighters.push(createFighter(f));
+    this.setFightLength();
     this.sideFx = [this.buildSideFx(0), this.buildSideFx(1)];
     this.coachRng = new Rng(deriveSeed('coach', input.seed));
     this.flavorRng = new Rng(deriveSeed('flavor', input.seed));
@@ -599,6 +603,29 @@ export class BattleSim {
       } else if (f.hp > hp0) {
         this.emit('heal', `${this.name(f)} surges back.`, { target: f.id, heal: f.hp - hp0, hpBefore: hp0, hpAfter: f.hp });
       }
+    }
+  }
+
+  /**
+   * How long a fight lasts comes from the matchup, not from who is playing: a mismatch
+   * ends quickly, an even fight runs longer, and the stronger both sides are, the
+   * longer it goes (two monsters trade blows for a while). Everyone's health pool is
+   * scaled by the same amount, so it changes the length, not who is favoured.
+   */
+  private setFightLength() {
+    const sidePower = (side: 0 | 1) => {
+      const list = this.fighters.filter((f) => f.side === side);
+      return list.reduce((n, f) => n + truePower(f.snap.stats), 0) / Math.max(1, list.length);
+    };
+    const a = sidePower(0), b = sidePower(1);
+    const closeness = clamp(1 - Math.abs(a - b) / 18, 0, 1);
+    const level = clamp(((a + b) / 2 - 55) / 40, 0, 1);
+    this.lengthMult = Math.round((0.8 + 0.9 * closeness * level) * 100) / 100;
+    for (const f of this.fighters) {
+      f.maxHp = Math.max(1, Math.round(f.maxHp * this.lengthMult));
+      f.hp = f.maxHp;
+      f.res.maxHp = f.maxHp;
+      f.res.hp = f.maxHp;
     }
   }
 

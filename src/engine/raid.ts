@@ -30,7 +30,7 @@ export const RAID_MAX_TEAM = 8;
 /** How hard a boss is for a team of this size (tuned so raids are often lost). */
 export function bossScaling(teamSize: number) {
   // Smaller parties have fewer ways to recover, so the boss scales more gently for them.
-  return teamSize <= 4 ? { hpScale: 1.1 * teamSize, power: 0.82 + 0.05 * teamSize } : { hpScale: 1.0 * teamSize + 0.6, power: 1.0 + 0.11 * teamSize };
+  return teamSize <= 4 ? { hpScale: 0.95 * teamSize, power: 0.8 + 0.05 * teamSize } : { hpScale: 0.95 * teamSize + 0.4, power: 0.98 + 0.105 * teamSize };
 }
 
 export function legendVillains(): PublicCharacter[] {
