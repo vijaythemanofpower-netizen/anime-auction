@@ -147,7 +147,7 @@ export function ComicStage({ record, script, cur, done, characters, waiting, red
         <span className="comic-title">{record.input.mode === 'solo' ? 'SOLO DUEL' : record.input.mode === 'tag' ? 'TAG TEAM' : 'SQUAD BATTLE'} · PAGE {pageIdx + 1}/{pages.length}</span>
         <ArtistStatus remote={remoteArt} />
       </div>
-      <div ref={pageRef} className={`comic-page${reduced ? ' still' : ''}`}>
+      <div ref={pageRef} className={`comic-page${reduced ? ' still' : ''}${prep ? ' drawing' : ''}`}>
         {page.map((pl) => {
           const p = pl.panel;
           const i = script.panels.indexOf(p);

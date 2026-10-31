@@ -113,3 +113,13 @@
 @media (max-width: 1150px) { .brand-kana { display: none; } }
 @media (max-width: 1000px) { .save-indicator { display: none; } .account-chip .hide-phone { display: none; } }
 @media (max-width: 760px) { .topbar nav .btn.hide-phone { display: none; } }
+
+/* Phones: the hub's six views scroll sideways as one row of tabs (instead of
+   squeezing into three-line labels), and fighter and boss picks fit three a row. */
+@media (max-width: 640px) {
+  .seg[aria-label='Hub view'] { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
+  .seg[aria-label='Hub view'] button { flex: 0 0 auto; white-space: nowrap; padding: 8px 12px; }
+  .raid-pick { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .boss-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+  .raid-pick-card b, .boss-card b { font-size: 11px; overflow-wrap: anywhere; }
+}

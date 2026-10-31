@@ -48,6 +48,8 @@
 }
 .comic-page.still .cpanel { animation: none; }
 .cpanel.blank { background: transparent; border: 3px dashed rgba(0,0,0,0.15); box-shadow: none; animation: none; }
+/* While drawing, the page keeps its size (phones hide blank panels) so the progress card fits. */
+.comic-page.drawing { min-height: 440px; }
 .cpanel.current { box-shadow: 4px 4px 0 #0b0b0b, 0 0 0 3px #facc15; z-index: 2; }
 @keyframes panel-slam { 0% { transform: scale(1.25) rotate(calc(var(--tilt) * 4)); opacity: 0; } 60% { opacity: 1; } 100% { transform: scale(1) rotate(var(--tilt)); opacity: 1; } }
 

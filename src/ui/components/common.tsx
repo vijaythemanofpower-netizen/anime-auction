@@ -1,4 +1,4 @@
-import { useEffect, type ReactNode } from 'react';
+import { useEffect, useRef, type ReactNode } from 'react';
 import type { GamePhase, HiddenProfile, Player, PublicCharacter, Stats } from '../../engine/types';
 import { STAT_KEYS } from '../../engine/types';
 import { STAT_LABELS, TRAIT_INFO, truePower } from '../../engine/hidden';
@@ -211,8 +211,14 @@ export function Modal({ title, onClose, children, wide }: { title: ReactNode; on
 }
 
 export function Seg<T extends string | number>({ value, options, onChange, label }: { value: T; options: Array<{ v: T; label: string; title?: string }>; onChange: (v: T) => void; label?: string }) {
+  // When the row scrolls sideways (phones), keep the chosen option in view.
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const row = ref.current, on = row?.querySelector<HTMLElement>('[aria-pressed="true"]');
+    if (row && on && row.scrollWidth > row.clientWidth) row.scrollLeft += on.getBoundingClientRect().left - row.getBoundingClientRect().left - (row.clientWidth - on.offsetWidth) / 2;
+  }, [value]);
   return (
-    <div className="seg" role="group" aria-label={label}>
+    <div ref={ref} className="seg" role="group" aria-label={label}>
       {options.map((o) => <button key={String(o.v)} type="button" aria-pressed={o.v === value} title={o.title} onClick={() => onChange(o.v)}>{o.label}</button>)}
     </div>
   );
