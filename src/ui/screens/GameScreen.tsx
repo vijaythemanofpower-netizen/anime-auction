@@ -342,8 +342,8 @@ function History({ g, battles }: { g: GameState; battles: Record<string, import(
             <div className="faint">{b.input.sides.map((s) => s.fighters.map((f) => f.name).join(' & ')).join(' vs ')} · {getEnvironment(b.input.environmentId).name} · winner {p(b.input.sides[b.result.winnerSide].playerId)} ({b.result.decision === 'ko' ? 'KO' : 'judges'}, {b.result.turns} actions) · seed {b.input.seed}</div>
           </div>
           <div className="row">
-            <button className="btn sm" onClick={() => store.replay(b.battleId)}>Exact replay</button>
-            <button className="btn sm" onClick={() => store.rematch(b.battleId)}>Fresh rematch</button>
+            <button className="btn sm" onClick={() => store.replay(b.battleId)} title="Plays the same fight again, move for move">Watch again</button>
+            <button className="btn sm" onClick={() => store.rematch(b.battleId)} title="Same fighters, a new fight; does not affect the tournament">Rematch (just for fun)</button>
           </div>
         </div>
       ))}

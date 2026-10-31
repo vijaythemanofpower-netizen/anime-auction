@@ -74,14 +74,14 @@ export function TeamBattleHub({ g }: { g: GameState }) {
         </div>
       )}
 
-      {history.map((r) => <TeamResult key={r.id} r={r} g={g} canWatch={!!battles[r.battleId]} />)}
+      {history.map((r, i) => <TeamResult key={r.id} r={r} g={g} canWatch={!!battles[r.battleId]} latest={i === 0} />)}
     </div>
   );
 }
 
-function TeamResult({ r, g, canWatch }: { r: TeamBattleResult; g: GameState; canWatch: boolean }) {
+function TeamResult({ r, g, canWatch, latest }: { r: TeamBattleResult; g: GameState; canWatch: boolean; latest: boolean }) {
   const names = (ids: string[]) => ids.map((id) => g.players.find((p) => p.id === id)?.name ?? id).join(' & ');
   const winners = r.winner === 'A' ? r.teamA : r.teamB;
   // Reuses the raid result card: win frame, MVP and everyone's share.
-  return <RaidCard g={g} canWatch={canWatch} r={{ id: r.id, battleId: r.battleId, bossId: '', bossName: names(r.winner === 'A' ? r.teamB : r.teamA), won: true, mvp: r.mvp, contributions: r.contributions, at: r.at, title: `Team ${r.winner} wins: ${names(winners)}` }} />;
+  return <RaidCard g={g} canWatch={canWatch} r={{ id: r.id, battleId: r.battleId, bossId: '', bossName: names(r.winner === 'A' ? r.teamB : r.teamA), won: true, mvp: r.mvp, contributions: r.contributions, at: r.at, title: `Team ${r.winner} wins: ${names(winners)}` }} again={latest ? { label: 'Rematch', run: () => store.startTeamBattle() } : undefined} />;
 }

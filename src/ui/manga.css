@@ -107,3 +107,9 @@
 .raid-ready .player-chip.ready { background: color-mix(in srgb, var(--good) 18%, transparent); }
 .team-panel.team-A { box-shadow: 5px 5px 0 #3b82f6, 0 0 0 1px var(--line); }
 .team-panel.team-B { box-shadow: 5px 5px 0 #ef4444, 0 0 0 1px var(--line); }
+/* Keep the header on one line: drop the extras first as space runs out. */
+.brand-name, .brand-kana, .topbar nav .btn { white-space: nowrap; }
+.topbar nav { flex-wrap: nowrap; }
+@media (max-width: 1150px) { .brand-kana { display: none; } }
+@media (max-width: 1000px) { .save-indicator { display: none; } .account-chip .hide-phone { display: none; } }
+@media (max-width: 760px) { .topbar nav .btn.hide-phone { display: none; } }

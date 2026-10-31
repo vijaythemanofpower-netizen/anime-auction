@@ -47,7 +47,10 @@ export function RaidHub({ g }: { g: GameState }) {
         </div>
       )}
 
-      {raids.map((r) => <RaidCard key={r.id} r={r} g={g} canWatch={!!record[r.battleId]} />)}
+      {raids.map((r, i) => {
+        const boss = bosses.find((b) => b.id === r.bossId) ?? g.characters[r.bossId];
+        return <RaidCard key={r.id} r={r} g={g} canWatch={!!record[r.battleId]} again={i === 0 && boss ? { label: r.won ? `Raid ${boss.name} again` : `Try ${boss.name} again`, run: () => store.startRaid(boss) } : undefined} />;
+      })}
     </div>
   );
 }
@@ -94,7 +97,7 @@ function TeamPicker({ g }: { g: GameState }) {
 }
 
 /** One raid's result: won or lost, the MVP, and everyone's share of the work. */
-export function RaidCard({ r, g, canWatch }: { r: RaidResult & { title?: string }; g: GameState; canWatch?: boolean }) {
+export function RaidCard({ r, g, canWatch, again }: { r: RaidResult & { title?: string }; g: GameState; canWatch?: boolean; again?: { label: string; run: () => void } }) {
   const top = Math.max(1, ...r.contributions.map((c) => c.score));
   const owner = (pid: string) => g.players.find((p) => p.id === pid);
   const mvp = r.contributions.find((c) => c.charId === r.mvp);
@@ -102,7 +105,10 @@ export function RaidCard({ r, g, canWatch }: { r: RaidResult & { title?: string 
     <div className={`panel col raid-card ${r.won ? 'won' : 'lost'}`} style={{ gap: 10 }}>
       <div className="row" style={{ justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
         <h3 style={{ margin: 0 }}>{r.title ?? (r.won ? `${r.bossName} defeated!` : `${r.bossName} wins.`)}</h3>
-        {canWatch && <button className="btn sm" onClick={() => store.watch(r.battleId)}>Watch</button>}
+        <span className="row" style={{ gap: 6 }}>
+          {again && !store.isGuest() && <button className="btn sm primary" onClick={again.run}>{again.label}</button>}
+          {canWatch && <button className="btn sm" onClick={() => store.watch(r.battleId)}>Watch</button>}
+        </span>
       </div>
       {mvp && (
         <div className="raid-mvp">

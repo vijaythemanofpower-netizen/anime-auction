@@ -246,7 +246,7 @@ export function BattleView({ record, exhibition }: { record: BattleRecord; exhib
     <div className="col" style={{ gap: 16 }}>
       {exhibition && (
         <div className="panel row" style={{ justifyContent: 'space-between', borderColor: 'var(--cyan)' }}>
-          <span><strong>{record.kind === 'raid' ? `⚔ Raid: ${input.sides[1].fighters[0].name}` : record.kind === 'team' ? '🤝 Team battle' : record.kind === 'replay' ? 'Exact replay' : 'Fresh rematch (exhibition)'}</strong> <span className="faint">· seed {input.seed} · engine {input.engineVersion} · does not affect the tournament</span></span>
+          <span><strong>{record.kind === 'raid' ? `⚔ Raid: ${input.sides[1].fighters[0].name}` : record.kind === 'team' ? '🤝 Team battle' : record.kind === 'replay' ? 'Exact replay' : 'Fresh rematch (exhibition)'}</strong> <span className="faint">· does not affect the tournament</span></span>
           <button className="btn sm" onClick={() => store.closeExhibition()}>Close</button>
         </div>
       )}
@@ -324,13 +324,17 @@ export function BattleView({ record, exhibition }: { record: BattleRecord; exhib
         )}
       </div>
 
-      {done && record.kind === 'raid' && g.raids?.find((r) => r.battleId === record.battleId) && <RaidCard r={g.raids.find((r) => r.battleId === record.battleId)!} g={g} />}
+      {done && record.kind === 'raid' && g.raids?.find((r) => r.battleId === record.battleId) && (() => {
+        const r = g.raids!.find((x) => x.battleId === record.battleId)!;
+        const boss = g.characters[r.bossId];
+        return <RaidCard r={r} g={g} again={boss ? { label: r.won ? `Raid ${boss.name} again` : `Try ${boss.name} again`, run: () => store.startRaid(boss) } : undefined} />;
+      })()}
       {done && record.kind === 'team' && (() => {
         const t = g.teamBattles?.find((x) => x.battleId === record.battleId);
         if (!t) return null;
         const win = t.winner === 'A' ? t.teamA : t.teamB, lose = t.winner === 'A' ? t.teamB : t.teamA;
         const nm = (ids: string[]) => ids.map((id) => g.players.find((p) => p.id === id)?.name ?? id).join(' & ');
-        return <RaidCard g={g} r={{ ...t, bossId: '', bossName: nm(lose), won: true, title: `Team ${t.winner} wins: ${nm(win)}` }} />;
+        return <RaidCard g={g} r={{ ...t, bossId: '', bossName: nm(lose), won: true, title: `Team ${t.winner} wins: ${nm(win)}` }} again={{ label: 'Rematch', run: () => store.startTeamBattle() }} />;
       })()}
       {done && <Verdict record={record} exhibition={exhibition} />}
     </div>
@@ -405,8 +409,7 @@ function Verdict({ record, exhibition }: { record: BattleRecord; exhibition?: bo
           </tbody>
         </table>
       </div>
-      {!exhibition && <div className="row"><button className="btn sm" onClick={() => store.replay(record.battleId)}>Exact replay</button><button className="btn sm" onClick={() => store.rematch(record.battleId)}>Fresh rematch (exhibition)</button></div>}
-      <div className="faint">Seed {input.seed} · engine {input.engineVersion} · event hash {result.hash}. Every statistic above comes from the engine&apos;s event log.</div>
+      <details className="faint"><summary>Technical details</summary>Seed {input.seed} · engine {input.engineVersion} · event hash {result.hash}. Every statistic above comes from the engine&apos;s event log.</details>
     </div>
   );
 }

@@ -12,11 +12,15 @@ export function HowTo() {
     ['Create a game', 'Pick 2–6 players (humans or NPC bidders), a roster size of 3 or 4, and your auction and tournament rules. Everyone starts with 10,000 coins.'],
     ['Build the auction pool', 'Browse the Character Explorer and add fighters to this game\'s pool, or auto-fill it. Browsing never adds a character on its own.'],
     ['Bid', 'Fighters are auctioned one at a time. In Live mode everyone bids from one screen and late bids extend the timer. In Turn mode the device passes around and each player bids or passes. You must always keep enough coins to fill your remaining slots.'],
-    ['Scout', 'The Scout Advisor rates each lot TAKE, MIGHT TAKE or LEAVE from public information and your situation. Spend a scout token to get a vague hint about a hidden attribute.'],
+    ['Should you bid?', 'Your bidding card says Recommended, Maybe or Not recommended, judged on price, your budget and your team (not on how strong the fighter is). Spend a scout token for a vague hint about a hidden attribute.'],
     ['Reveal', 'After the auction, each player privately sees the true stats, hidden traits, hidden ability and evolution path of the fighters they bought.'],
     ['Prepare', 'Before each match choose fighters, frontline, strategy and mental approach, and spend 2 preparation points on training, recovery, treatment or scouting an opponent.'],
     ['Battle', 'The combat engine simulates every action from stats, abilities, personality, strategy, environment, synergies and seeded randomness. The narrator only describes what the engine decided.'],
     ['Win the tournament', 'Group rounds of solo duels and tag-team battles lead into a squad-battle knockout. Fatigue, injuries, evolutions and rivalries carry forward.'],
+    ['Raid Boss', 'Everyone picks fighters and teams up against a real anime villain (47 of them, from Frieza to Kaido and Acnologia). Bosses are scaled to the party and win most raids. The most useful fighter is crowned MVP. Raids never change the tournament.'],
+    ['Team Battle', 'Split into Team A and Team B (2v2, 3v3, or 2 vs 1) and send your own fighters into one team fight. Online, everyone picks on their own device.'],
+    ['Watch and predict', 'Every fight is played out first, then narrated and drawn as a comic, one panel per exchange. Predictions pop up while you watch: call the winner or the next clean hit for Oracle points. About a third of fights get a plot twist.'],
+    ['Healers', 'Healers mend the most hurt teammate every few turns and can bring a knocked-out teammate back once per fight. A pure healer alone against a real fighter loses quickly.'],
   ];
   return (
     <div className="col" style={{ gap: 20, maxWidth: 960 }}>

@@ -22,8 +22,7 @@ function AccountCard() {
   return (
     <div className="account-card">
       <div style={{ flexBasis: '100%' }}><strong>Sign in</strong> <span className="faint">to keep your wins and play online. Email and password, no waiting for links.</span></div>
-      <button className="btn primary" onClick={() => openAccountDialog('signin')}>Sign in</button>
-      <button className="btn" onClick={() => openAccountDialog('create')}>Create account</button>
+      <button className="btn primary" onClick={() => openAccountDialog('signin')}>Sign in or create an account</button>
       <button type="button" className="btn ghost" disabled={busy} onClick={async () => { setBusy(true); try { await signInAsGuest(); store.go('online'); } catch (err) { store.toast((err as Error).message, 'error'); } finally { setBusy(false); } }}>Play as guest</button>
     </div>
   );
@@ -144,11 +143,13 @@ export function Home() {
           {game && <button className="btn primary lg" onClick={() => store.go('game')}>▶ Return to “{game.config.name}”</button>}
           <button className={`btn lg ${game ? '' : 'primary'}`} onClick={() => store.go('setup')}>✦ Create New Game</button>
           {ONLINE_AVAILABLE && <button className="btn lg" onClick={() => store.go('online')}>🌐 Play Online with Friends</button>}
-          <button className="btn" onClick={() => store.go('saves')} disabled={!saves.length}>⟲ Continue Saved Game {resumable.length ? <span className="tag">{resumable.length}</span> : null}</button>
-          <button className="btn" onClick={() => store.go('explorer')}>◎ Character Explorer</button>
-          <button className="btn" onClick={() => store.go('howto')}>? How to Play</button>
-          <button className="btn" onClick={() => store.go('hall')}>♛ Hall of Legends</button>
-          <button className="btn" onClick={() => store.go('settings')}>⚙ Settings</button>
+          {saves.length > 0 && <button className="btn" onClick={() => store.go('saves')}>⟲ Continue Saved Game {resumable.length ? <span className="tag">{resumable.length}</span> : null}</button>}
+          {/* Everything else lives in the top bar (Characters, Hall, Settings) or here, once. */}
+          <div className="row home-links" style={{ gap: 8 }}>
+            <button className="btn sm ghost" onClick={() => store.go('howto')}>? How to Play</button>
+            <button className="btn sm ghost" onClick={() => store.go('explorer')}>◎ Characters</button>
+            <button className="btn sm ghost" onClick={() => store.go('hall')}>♛ Hall of Legends</button>
+          </div>
         </div>
       </div>
       <FightReel />
