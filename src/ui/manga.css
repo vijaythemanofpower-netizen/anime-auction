@@ -45,3 +45,14 @@
 .seg button[aria-pressed='true'] { background: var(--violet); color: var(--btn-ink); transition: background-color 1.2s; }
 .topbar .btn.active { background: var(--violet); color: var(--btn-ink); border-color: var(--ink); }
 @media (max-width: 640px) { .brand-name { display: none; } }
+
+/* Account button and menu, top right (components/AccountMenu.tsx) */
+.account-menu { position: relative; }
+.account-chip { display: inline-flex; align-items: center; gap: 6px; }
+.account-chip .avatar { width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; background: var(--violet); color: var(--btn-ink); font-weight: 700; font-size: 12px; border: 2px solid var(--ink); }
+.account-pop { position: absolute; right: 0; top: calc(100% + 8px); z-index: 60; min-width: 220px; display: flex; flex-direction: column; gap: 8px; padding: 12px; background: var(--surface); border: 2px solid var(--ink); box-shadow: 5px 5px 0 var(--violet); border-radius: 8px; }
+.account-pop .btn { justify-content: flex-start; }
+.auth-form .input { font-size: 16px; }
+.auth-note { padding: 8px 10px; border-left: 4px solid var(--violet); background: var(--surface-2); font-size: 13px; }
+/* Pop-up windows in the manga style. */
+.modal { background: var(--surface); border: 2px solid var(--ink); box-shadow: 8px 8px 0 var(--violet); border-radius: 8px; }

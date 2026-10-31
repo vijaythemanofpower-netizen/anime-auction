@@ -1,13 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { store, useApp } from '../../store/store';
 import { ONLINE_AVAILABLE } from '../../online/client';
-import { sendSignInLink, signInAsGuest, useAuth } from '../../online/auth';
+import { signInAsGuest, useAuth } from '../../online/auth';
+import { openAccountDialog } from '../components/AccountMenu';
 
 /** Sign in right from the start, so your record follows you; or a welcome back with your record. */
 function AccountCard() {
   const a = useAuth();
-  const [email, setEmail] = useState('');
-  const [sent, setSent] = useState(false);
   const [busy, setBusy] = useState(false);
   if (!ONLINE_AVAILABLE || !a.ready) return null;
   if (a.userId) {
@@ -20,17 +19,13 @@ function AccountCard() {
       </div>
     );
   }
-  if (sent) return <div className="account-card"><div><strong>Check your email</strong><div className="faint">Open the link we sent to {email} on this device and you&apos;re in, for good.</div></div></div>;
   return (
-    <form className="account-card" onSubmit={async (e) => {
-      e.preventDefault(); setBusy(true);
-      try { await sendSignInLink(email); setSent(true); } catch (err) { store.toast((err as Error).message, 'error'); } finally { setBusy(false); }
-    }}>
-      <div style={{ flexBasis: '100%' }}><strong>Sign in</strong> <span className="faint">to keep your wins and play online. One email link, then you stay signed in.</span></div>
-      <input className="input" type="email" required placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} aria-label="Email" style={{ flex: '1 1 200px', minHeight: 40 }} />
-      <button className="btn primary" disabled={busy}>Send link</button>
+    <div className="account-card">
+      <div style={{ flexBasis: '100%' }}><strong>Sign in</strong> <span className="faint">to keep your wins and play online. Email and password, no waiting for links.</span></div>
+      <button className="btn primary" onClick={() => openAccountDialog('signin')}>Sign in</button>
+      <button className="btn" onClick={() => openAccountDialog('create')}>Create account</button>
       <button type="button" className="btn ghost" disabled={busy} onClick={async () => { setBusy(true); try { await signInAsGuest(); store.go('online'); } catch (err) { store.toast((err as Error).message, 'error'); } finally { setBusy(false); } }}>Play as guest</button>
-    </form>
+    </div>
   );
 }
 

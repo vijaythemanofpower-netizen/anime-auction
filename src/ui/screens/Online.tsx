@@ -3,7 +3,8 @@
 import { useEffect, useState } from 'react';
 import { ONLINE_AVAILABLE, PUBLIC_SITE } from '../../online/client';
 import { RUNNING_LOCALLY } from '../../store/persistence';
-import { saveDisplayName, sendSignInLink, signInAsGuest, signOut, useAuth } from '../../online/auth';
+import { saveDisplayName, signInAsGuest, signOut, useAuth } from '../../online/auth';
+import { openAccountDialog } from '../components/AccountMenu';
 import { MAX_PLAYERS, createRoom, joinRoom, leaveRoom, listCloudSaves, resumeCloudSave, startOnlineGame, updateLobby, useRoom, type CloudSave } from '../../online/room';
 import { matchOrder } from '../../engine/tournament';
 import { store, useApp } from '../../store/store';
@@ -35,55 +36,22 @@ function Panel({ title, eyebrow, children }: { title: string; eyebrow?: string; 
   );
 }
 
-/** Guests can attach an email to keep this same account, with its record, on any device. */
+/** Guests can attach an email and password to keep this same account, with its record. */
 function KeepAccount() {
-  const [email, setEmail] = useState('');
-  const [state, setState] = useState<'idle' | 'busy' | 'sent'>('idle');
-  if (state === 'sent') return <p className="faint" style={{ margin: 0 }}>Check <strong>{email}</strong> and open the link to confirm. Your record stays with you.</p>;
-  return (
-    <form className="row" style={{ gap: 6, flexWrap: 'wrap' }} onSubmit={async (e) => {
-      e.preventDefault(); setState('busy');
-      try { await sendSignInLink(email); setState('sent'); } catch (err) { store.toast((err as Error).message, 'error'); setState('idle'); }
-    }}>
-      <input className="input" style={{ minHeight: 32, flex: '1 1 180px' }} type="email" required placeholder="Add your email to keep this account" value={email} onChange={(e) => setEmail(e.target.value)} aria-label="Email to keep this account" />
-      <button className="btn sm primary" disabled={state === 'busy'}>Keep my account</button>
-    </form>
-  );
+  return <button className="btn sm primary" onClick={() => openAccountDialog('create')}>Save this account (email + password)</button>;
 }
 
 function SignIn() {
-  const [email, setEmail] = useState('');
-  const [sent, setSent] = useState(false);
   const [busy, setBusy] = useState(false);
-  const send = async () => {
-    setBusy(true);
-    try { await sendSignInLink(email); setSent(true); } catch (e) { store.toast((e as Error).message, 'error'); } finally { setBusy(false); }
-  };
-  if (sent) {
-    return (
-      <Panel title="Check your email">
-        <p>We sent a sign-in link to <strong>{email}</strong>. Open it on this device and you&apos;ll come straight back here, signed in.</p>
-        <p className="faint">No email after a minute? Check your spam folder, or send it again.</p>
-        <button className="btn" onClick={() => setSent(false)}>Use a different email</button>
-      </Panel>
-    );
-  }
   return (
-    <Panel title="Sign in">
-      <div className="col" style={{ gap: 8 }}>
-        <button className="btn primary lg" disabled={busy} onClick={async () => {
-          setBusy(true);
-          try { await signInAsGuest(); } catch (e) { store.toast((e as Error).message, 'error'); } finally { setBusy(false); }
-        }}>Play as guest</button>
-        <span className="faint">Just pick a name, no email. Your guest account stays in this browser.</span>
+    <Panel title="Sign in to play online" eyebrow="Online">
+      <p>Sign in with your email and password so your wins follow you. No waiting for an email each time.</p>
+      <div className="row" style={{ gap: 8, flexWrap: 'wrap' }}>
+        <button className="btn primary" onClick={() => openAccountDialog('signin')}>Sign in</button>
+        <button className="btn" onClick={() => openAccountDialog('create')}>Create account</button>
+        <button className="btn ghost" disabled={busy} onClick={async () => { setBusy(true); try { await signInAsGuest(); } catch (e) { store.toast((e as Error).message, 'error'); } finally { setBusy(false); } }}>Play as guest</button>
       </div>
-      <div className="row" style={{ gap: 8, alignItems: 'center' }}><hr style={{ flex: 1, borderColor: 'var(--line)' }} /><span className="faint">or keep your account on every device</span><hr style={{ flex: 1, borderColor: 'var(--line)' }} /></div>
-      <p className="muted" style={{ margin: 0 }}>No password: we email you a one-time sign-in link.</p>
-      <form className="row" style={{ gap: 8 }} onSubmit={(e) => { e.preventDefault(); if (email.includes('@')) void send(); }}>
-        <input className="input" style={{ flex: 1, minWidth: 220 }} type="email" autoComplete="email" placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} aria-label="Email address" required />
-        <button className="btn primary" disabled={busy || !email.includes('@')}>{busy ? 'Sending…' : 'Email me a sign-in link'}</button>
-      </form>
-      <p className="faint">Your email is only used to sign you in. Other players see just the name you choose.</p>
+      <span className="faint">Guest accounts stay in this browser only; you can save one with an email and password later.</span>
     </Panel>
   );
 }

@@ -13,8 +13,8 @@ import { OnlineScreen } from './screens/Online';
 import { RoomChat } from './components/RoomChat';
 import { SceneBackdrop } from './components/SceneBackdrop';
 import { PageArt } from './components/PageArt';
+import { AccountMenu } from './components/AccountMenu';
 import { ONLINE_AVAILABLE } from '../online/client';
-import { useAuth } from '../online/auth';
 
 export function App() {
   const screen = useApp((s) => s.screen);
@@ -29,7 +29,6 @@ export function App() {
   const lastSaved = useApp((s) => s.lastSaved);
   const durable = useApp((s) => s.durable);
   const online = useApp((s) => s.online);
-  const account = useAuth();
 
   return (
     <>
@@ -47,12 +46,13 @@ export function App() {
         <nav className="row" style={{ gap: 6 }}>
           {ONLINE_AVAILABLE && (
             <button className={`btn sm ${screen === 'online' ? 'active' : 'ghost'}`} onClick={() => store.go('online')}>
-              {online ? `🌐 Room ${online.code}` : account.profile ? `👤 ${account.profile.display_name}` : '🌐 Play online'}
+              {online ? `🌐 Room ${online.code}` : '🌐 Play online'}
             </button>
           )}
           <button className={`btn sm ghost hide-phone${screen === 'explorer' ? ' active' : ''}`} onClick={() => store.go('explorer')}>Characters</button>
           <button className={`btn sm ghost hide-phone${screen === 'hall' ? ' active' : ''}`} onClick={() => store.go('hall')}>Hall</button>
           <button className={`btn sm ghost${screen === 'settings' ? ' active' : ''}`} onClick={() => store.go('settings')} aria-label="Settings">⚙</button>
+          <AccountMenu />
         </nav>
       </header>
       <main className={`main${screen === 'game' ? ' wide' : ''}`}>

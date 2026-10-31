@@ -4,7 +4,7 @@ import { useSyncExternalStore } from 'react';
 import { ONLINE_AVAILABLE, supabase } from './client';
 
 export interface Profile { id: string; display_name: string; games_played: number; wins: number; best_iq: number | null }
-export interface AuthState { ready: boolean; userId: string | null; email: string | null; profile: Profile | null; guest: boolean }
+export interface AuthState { ready: boolean; userId: string | null; email: string | null; profile: Profile | null; guest: boolean; /** Arrived from a password-reset email. */ recovery?: boolean }
 
 let state: AuthState = { ready: !ONLINE_AVAILABLE, userId: null, email: null, profile: null, guest: false };
 const listeners = new Set<() => void>();
@@ -30,7 +30,8 @@ export async function initAuth(): Promise<void> {
     };
     const { data } = await sb.auth.getSession();
     await apply(data.session?.user ?? null);
-    sb.auth.onAuthStateChange((_event, session) => {
+    sb.auth.onAuthStateChange((event, session) => {
+      if (event === 'PASSWORD_RECOVERY') set({ recovery: true });
       if ((session?.user?.id ?? null) !== state.userId) void apply(session?.user ?? null);
     });
     // Drop the login token from the address bar after the email link signs you in.
@@ -53,6 +54,49 @@ export async function sendSignInLink(email: string): Promise<void> {
   }
   const { error } = await sb.auth.signInWithOtp({ email: email.trim(), options: { emailRedirectTo: redirect } });
   if (error) throw new Error(error.message);
+}
+
+/** Email and password: no link to wait for on each visit. */
+export async function signInWithPassword(email: string, password: string): Promise<void> {
+  const sb = await supabase();
+  const { error } = await sb.auth.signInWithPassword({ email: email.trim(), password });
+  if (error) throw new Error(/invalid login/i.test(error.message) ? 'Wrong email or password.' : /not confirmed/i.test(error.message) ? 'Confirm your email first: open the link we sent when you created the account.' : error.message);
+}
+
+/**
+ * Creates an account with a password. A guest keeps their account and record (email
+ * and password are added to it). Returns true when a one-time confirmation email was sent.
+ */
+export async function createAccount(email: string, password: string, name?: string): Promise<boolean> {
+  if (password.length < 8) throw new Error('Use at least 8 characters for your password.');
+  const sb = await supabase();
+  const redirect = location.origin + location.pathname;
+  if (state.guest) {
+    const { error } = await sb.auth.updateUser({ email: email.trim(), password }, { emailRedirectTo: redirect });
+    if (error) throw new Error(/already|registered|exists/i.test(error.message) ? 'That email already has an account. Sign in instead.' : error.message);
+    if (name?.trim()) await saveDisplayName(name);
+    return true;
+  }
+  const { data, error } = await sb.auth.signUp({ email: email.trim(), password, options: { emailRedirectTo: redirect, data: name?.trim() ? { display_name: name.trim() } : undefined } });
+  if (error) throw new Error(/already|registered|exists/i.test(error.message) ? 'That email already has an account. Sign in instead.' : error.message);
+  if (data.session && name?.trim()) await saveDisplayName(name);
+  return !data.session;
+}
+
+/** Emails a link to choose a new password. */
+export async function sendPasswordReset(email: string): Promise<void> {
+  const sb = await supabase();
+  const { error } = await sb.auth.resetPasswordForEmail(email.trim(), { redirectTo: location.origin + location.pathname });
+  if (error) throw new Error(error.message);
+}
+
+/** Sets a new password for the signed-in player (after a reset link, or from their account). */
+export async function setNewPassword(password: string): Promise<void> {
+  if (password.length < 8) throw new Error('Use at least 8 characters for your password.');
+  const sb = await supabase();
+  const { error } = await sb.auth.updateUser({ password });
+  if (error) throw new Error(error.message);
+  set({ recovery: false });
 }
 
 /** Plays without an email: a guest account that lives in this browser only. */
