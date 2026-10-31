@@ -41,7 +41,8 @@ export function RaidHub({ g }: { g: GameState }) {
             ))}
           </div>
           {waiting.length > 0 && <div className="faint">Still choosing: {waiting.map((p) => p.name).join(', ')}. Anyone who hasn't picked sends their strongest fighters.</div>}
-          <button className="btn primary lg" disabled={!chosen} onClick={() => chosen && store.startRaid(chosen)}>
+          {/* Stays in view while scrolling the villain list. */}
+          <button className="btn primary lg" style={{ position: 'sticky', bottom: 8, zIndex: 2 }} disabled={!chosen} onClick={() => chosen && store.startRaid(chosen)}>
             {chosen ? `⚔ Raid ${chosen.name}${waiting.length ? ' anyway' : ''}` : 'Pick a villain'}
           </button>
         </div>

@@ -240,7 +240,8 @@ function HubPhase({ g }: { g: GameState }) {
   const humans = g.players.filter((p) => p.kind === 'human');
   return (
     <div className="col" style={{ gap: 18 }}>
-      <div className="panel row" style={{ justifyContent: 'space-between' }}>
+      {/* The tournament's next match only shows on the tournament views, so a raid or team battle is never mistaken for it. */}
+      {tab !== 'raid' && tab !== 'team' && <div className="panel row" style={{ justifyContent: 'space-between' }}>
         <div>
           <div className="eyebrow">{t.stages[t.currentStage]?.name ?? 'Tournament'}</div>
           {next ? <h3 style={{ margin: '4px 0' }}>Next: {pname(next.players[0]).name} vs {pname(next.players[1]).name} <span className="tag">{next.label}</span></h3> : <h3>Stage complete</h3>}
@@ -250,7 +251,7 @@ function HubPhase({ g }: { g: GameState }) {
         </div>
         {store.isGuest() ? <span className="faint">The host starts each match.</span>
           : <button className="btn primary lg" disabled={!next} onClick={() => { store.setViewer(null); store.act((d, v) => G.startMatch(d, v)); }}>Prepare match</button>}
-      </div>
+      </div>}
       <Seg value={tab} onChange={setTab} label="Hub view" options={[{ v: 'bracket', label: 'Bracket & standings' }, { v: 'rosters', label: 'Rosters' }, { v: 'history', label: 'Battle history' }, { v: 'rivalries', label: 'Rivalries' }, { v: 'raid', label: '⚔ Raid Boss' }, { v: 'team', label: '🤝 Team Battle' }]} />
       {tab === 'bracket' && <Bracket g={g} />}
       {tab === 'rosters' && <RosterTabs g={g} viewer={viewer} privacy={g.config.privacyScreens && humans.length > 1} />}

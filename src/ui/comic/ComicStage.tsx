@@ -151,7 +151,8 @@ export function ComicStage({ record, script, cur, done, characters, waiting, red
         {page.map((pl) => {
           const p = pl.panel;
           const i = script.panels.indexOf(p);
-          if (i >= shown) return <div key={p.id} className="cpanel blank" style={at(pl)} />;
+          // While drawing, every panel stays blank: nothing is revealed until the comic is ready.
+          if (prep || i >= shown) return <div key={p.id} className="cpanel blank" style={at(pl)} />;
           return <Panel key={p.id} p={p} place={at(pl)} characters={characters} live={p === current && !done ? cur : null} current={p === current && !done} />;
         })}
         {prep && <PrepScreen script={script} prep={prep} onStartNow={onStartNow} remote={remoteArt} facts={facts} />}
