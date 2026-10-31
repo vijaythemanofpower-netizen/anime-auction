@@ -35,6 +35,7 @@ export interface GameSetup {
   auction: AuctionConfig;
   tournament: TournamentConfig;
   privacyScreens: boolean;
+  focus?: 'tournament' | 'raid';
 }
 
 export const DEFAULT_AUCTION: AuctionConfig = { mode: 'live', openingBid: 100, timerSeconds: 15, antiSnipeSeconds: 6, scoutTokens: 3 };
@@ -65,7 +66,7 @@ export function newGame(s: GameSetup, secret = freshSeed()): GameState {
     createdAt: now,
     updatedAt: now,
     phase: 'pool',
-    config: { name: s.name.trim(), rosterSize: s.rosterSize, auction: s.auction, tournament: s.tournament, privacyScreens: s.privacyScreens },
+    config: { name: s.name.trim(), rosterSize: s.rosterSize, auction: s.auction, tournament: s.tournament, privacyScreens: s.privacyScreens, focus: s.focus ?? 'tournament' },
     players: s.players.map((p, i) => ({
       id: `p${i + 1}`, name: p.name.trim(), color: p.color, emblem: p.emblem, kind: p.kind,
       coins: STARTING_COINS, roster: [], scoutTokens: s.auction.scoutTokens, prepPoints: 0,

@@ -233,7 +233,7 @@ function HubPhase({ g }: { g: GameState }) {
   const t = g.tournament!;
   const viewer = useApp((s) => s.viewer);
   const battles = useApp((s) => s.battles);
-  const [tab, setTab] = useState<string>('bracket');
+  const [tab, setTab] = useState<string>(g.config.focus === 'raid' ? 'raid' : 'bracket');
   const next = t.stages[t.currentStage]?.matches.find((m) => !m.winner) ?? null;
   const pname = (id: string) => g.players.find((p) => p.id === id)!;
   const humans = g.players.filter((p) => p.kind === 'human');

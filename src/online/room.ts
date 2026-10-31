@@ -19,7 +19,7 @@ import type { ComicLength, ComicStyle } from '../engine/comic';
 export interface Member { userId: string; name: string; online: boolean }
 /** Whether the host is drawing comics for the room, and the comic settings everyone should use. */
 export interface ArtistInfo { active: boolean; length: ComicLength; style: ComicStyle }
-export interface LobbySettings { name: string; rosterSize: 3 | 4; npcs: number; timerSeconds: number; soloRounds: number; tagRound: boolean }
+export interface LobbySettings { name: string; rosterSize: 3 | 4; npcs: number; timerSeconds: number; soloRounds: number; tagRound: boolean; focus?: 'tournament' | 'raid' }
 export interface RoomState {
   code: string;
   role: 'host' | 'guest';
@@ -353,6 +353,7 @@ export async function startOnlineGame(): Promise<void> {
     privacyScreens: false,
     auction: { ...DEFAULT_AUCTION, mode: 'live', timerSeconds: s.timerSeconds },
     tournament: { ...DEFAULT_TOURNAMENT, soloRounds: s.soloRounds, tagRound: s.tagRound },
+    focus: s.focus ?? 'tournament',
     players: [
       ...humans.map((m, i) => ({ name: m.name, kind: 'human' as const, color: COLORS[i % COLORS.length], emblem: EMBLEMS[i % EMBLEMS.length] })),
       ...Array.from({ length: npcs }, (_, i) => ({ name: NPC_NAMES[i % NPC_NAMES.length], kind: 'npc' as const, color: COLORS[(humans.length + i) % COLORS.length], emblem: EMBLEMS[(humans.length + i) % EMBLEMS.length] })),

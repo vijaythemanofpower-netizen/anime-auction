@@ -1,31 +1,18 @@
 // Raid Boss: pick a real anime villain, send the party's strongest fighters in, and
 // see who carried the fight. The host starts raids; everyone in the room can watch
 // them and see the results (engine/raid.ts).
-import { useEffect, useMemo, useState } from 'react';
-import type { GameState, PublicCharacter, RaidResult } from '../../engine/types';
-import { ANILIST_VILLAINS, RAID_MAX_TEAM, legendVillains, raidSlots } from '../../engine/raid';
-import { aniListProvider } from '../../engine/providers/anilist';
+import { useMemo, useState } from 'react';
+import type { GameState, RaidResult } from '../../engine/types';
+import { RAID_MAX_TEAM, legendVillains, raidSlots } from '../../engine/raid';
+import { VILLAINS } from '../../engine/data/villains';
 import { store, useApp } from '../../store/store';
 import { CharArt } from './Portrait';
 
-/** AniList villains, looked up once per session (they come with canon stats when we have a sheet). */
-let extraVillains: Promise<PublicCharacter[]> | null = null;
-function loadExtraVillains(): Promise<PublicCharacter[]> {
-  // A few results per name, keeping only the one from the right anime (a plain name search
-  // found Shun Kaidou for "Kaidou" and Bruno Bucciarati for "Cell").
-  extraVillains ??= Promise.all(ANILIST_VILLAINS.map(([name, series]) => aniListProvider.search({ text: name, field: 'name', sort: 'popular', page: 1, perPage: 8 })
-    .then((r) => r.items.find((c) => c.series.toLowerCase().includes(series) && c.name.toLowerCase().replace(/[^a-z]/g, '').includes(name.toLowerCase().split(' ')[0].replace(/[^a-z]/g, '').replace(/u$/, ''))))
-    .catch(() => undefined)))
-    .then((list) => list.filter((c): c is PublicCharacter => !!c));
-  return extraVillains;
-}
 
 export function RaidHub({ g }: { g: GameState }) {
   const guest = store.isGuest();
-  const [extra, setExtra] = useState<PublicCharacter[]>([]);
   const [pick, setPick] = useState<string | null>(null);
-  useEffect(() => { void loadExtraVillains().then(setExtra); }, []);
-  const bosses = useMemo(() => [...legendVillains(), ...extra.filter((c) => !c.id.startsWith('legend:'))], [extra]);
+  const bosses = useMemo(() => [...legendVillains(), ...VILLAINS], []);
   const chosen = bosses.find((b) => b.id === pick);
   const raids = (g.raids ?? []).slice().reverse();
   const record = useApp((s) => s.battles);
@@ -52,7 +39,6 @@ export function RaidHub({ g }: { g: GameState }) {
                 <b>{b.name}</b><span className="faint">{b.series}</span>
               </button>
             ))}
-            {!extra.length && <span className="faint">Loading more villains from AniList…</span>}
           </div>
           {waiting.length > 0 && <div className="faint">Still choosing: {waiting.map((p) => p.name).join(', ')}. Anyone who hasn't picked sends their strongest fighters.</div>}
           <button className="btn primary lg" disabled={!chosen} onClick={() => chosen && store.startRaid(chosen)}>

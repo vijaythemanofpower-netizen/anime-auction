@@ -74,6 +74,12 @@ const BY_NAME: Record<string, number[]> = {
   'Kiyotaka Ayanokouji': [85, 75, 85, 90, 99, 80, 95, 55, 80], 'Osamu Dazai': [55, 55, 60, 75, 99, 55, 92, 65, 75], 'Sakura Matou': [70, 60, 55, 80, 70, 65, 70, 40, 90],
   'Arataka Reigen': [40, 45, 50, 70, 90, 50, 92, 70, 60], 'Kurisu Makise': [25, 30, 40, 60, 97, 40, 80, 55, 75], 'Maomao': [25, 30, 45, 75, 95, 45, 85, 60, 65],
   'Marin Kitagawa': [20, 25, 40, 45, 60, 45, 75, 70, 55], 'Chika Fujiwara': [20, 25, 45, 45, 65, 50, 80, 75, 55], 'Itsuki Nakano': [20, 25, 35, 40, 60, 40, 60, 55, 55],
+  // More raid-boss villains
+  'Kaguya Otsutsuki': [97, 95, 90, 96, 85, 97, 90, 60, 90], 'Marshall D. Teach': [95, 92, 80, 85, 88, 95, 90, 85, 92], 'Zamasu': [93, 97, 92, 92, 90, 99, 92, 55, 90],
+  'Kenjaku': [88, 85, 85, 97, 99, 82, 92, 60, 90], 'Kai Chisaki': [86, 80, 85, 95, 92, 78, 88, 50, 80], 'Father': [97, 97, 85, 97, 96, 95, 92, 55, 85],
+  'Zeref Dragneel': [96, 90, 85, 97, 95, 95, 90, 55, 90], 'Acnologia': [99, 96, 92, 85, 80, 99, 90, 55, 95], 'Lucius Zogratis': [94, 92, 92, 96, 98, 90, 95, 60, 92],
+  'Kishou Arima': [92, 88, 95, 98, 96, 88, 92, 60, 85], 'Kars': [92, 92, 92, 90, 93, 97, 99, 55, 95], 'Yoshikage Kira': [80, 82, 80, 90, 95, 75, 88, 90, 80],
+  'Zeke Jaeger': [88, 82, 70, 88, 92, 82, 80, 50, 78],
   // Strategists and non-fighters (they still have to fight in the arena)
   'Light Yagami': [35, 40, 45, 60, 99, 45, 85, 70, 70], 'L Lawliet': [55, 50, 60, 70, 99, 45, 90, 55, 70], 'Senkuu Ishigami': [35, 35, 45, 85, 97, 45, 92, 60, 85],
   'Kaguya Shinomiya': [40, 40, 55, 70, 92, 45, 80, 55, 70], 'Rintarou Okabe': [30, 35, 45, 60, 90, 45, 85, 70, 75], 'Mai Sakurajima': [25, 30, 40, 50, 80, 40, 75, 60, 60],

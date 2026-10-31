@@ -19,9 +19,30 @@ import { registerCharacterMoves } from './data/abilities';
 export const RAID_VILLAINS = ['frieza', 'aizen', 'madara', 'pain', 'sukuna', 'akaza', 'shigaraki', 'meruem', 'dio', 'itachi', 'hisoka'].map((k) => `legend:${k}`);
 /** More villains looked up on AniList when online (they have canon stat sheets). */
 export const ANILIST_VILLAINS: Array<[name: string, series: string]> = [
-  ['Kaidou', 'one piece'], ['Muzan Kibutsuji', 'kimetsu'], ['Cell', 'dragon ball'], ['Majin Buu', 'dragon ball'], ['Yhwach', 'bleach'],
-  ['Doflamingo', 'one piece'], ['All For One', 'hero academia'], ['Makima', 'chainsaw'], ['Mahito', 'jujutsu'], ['Kokushibou', 'kimetsu'],
-  ['Douma', 'kimetsu'], ['Griffith', 'berserk'], ['Ulquiorra', 'bleach'], ['Boros', 'punch'],
+  // One Piece
+  ['Kaidou', 'one piece'], ['Charlotte Linlin', 'one piece'], ['Marshall Teach', 'one piece'], ['Sakazuki', 'one piece'], ['Doflamingo', 'one piece'], ['Crocodile', 'one piece'],
+  // Dragon Ball
+  ['Cell', 'dragon ball'], ['Majin', 'dragon ball'], ['Beerus', 'dragon ball'], ['Jiren', 'dragon ball'], ['Zamasu', 'dragon ball'],
+  // Naruto
+  ['Kaguya Ootsutsuki', 'naruto'], ['Obito Uchiha', 'naruto'], ['Orochimaru', 'naruto'],
+  // Bleach
+  ['Yhwach', 'bleach'], ['Ulquiorra', 'bleach'],
+  // Demon Slayer
+  ['Muzan Kibutsuji', 'kimetsu'], ['Kokushibou', 'kimetsu'], ['Douma', 'kimetsu'],
+  // Jujutsu Kaisen
+  ['Mahito', 'jujutsu'], ['Kenjaku', 'jujutsu'],
+  // My Hero Academia
+  ['All For One', 'hero academia'], ['Kai Chisaki', 'hero academia'],
+  // Hunter x Hunter
+  ['Chrollo', 'hunter'], ['Neferpitou', 'hunter'],
+  // Fullmetal Alchemist
+  ['Father', 'fullmetal'], ['King Bradley', 'fullmetal'],
+  // Fairy Tail, Black Clover
+  ['Zeref', 'fairy tail'], ['Acnologia', 'fairy tail'], ['Lucius Zogratis', 'black clover'],
+  // JoJo
+  ['Kars', 'jojo'], ['Yoshikage Kira', 'jojo'],
+  // Others
+  ['Makima', 'chainsaw'], ['Griffith', 'berserk'], ['Boros', 'punch'], ['Garou', 'punch'], ['Kishou Arima', 'tokyo ghoul'], ['Zeke', 'titan'], ['Ainz Ooal Gown', 'overlord'], ['Alucard', 'hellsing'],
 ];
 
 export const RAID_TEAM_PER_PLAYER = 2;

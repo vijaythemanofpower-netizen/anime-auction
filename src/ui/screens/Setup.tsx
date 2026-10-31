@@ -29,6 +29,7 @@ export function Setup() {
   const [events, setEvents] = useState(true);
   const [privacy, setPrivacy] = useState(privacyDefault);
   const [poolSource, setPoolSource] = useState<'mix' | 'all' | 'builtin'>('mix');
+  const [focus, setFocus] = useState<'tournament' | 'raid'>('tournament');
   const hasKey = !!getApiKey();
   const [aiRate, setAiRate] = useState(hasKey);
 
@@ -36,6 +37,7 @@ export function Setup() {
     name, players, rosterSize, privacyScreens: privacy,
     auction: { ...G.DEFAULT_AUCTION, mode, openingBid, timerSeconds: timer, scoutTokens },
     tournament: { soloRounds, tagRound, persistentConditions: persistent, specialEvents: events },
+    focus,
   };
   const errors = G.validateSetup(setup);
 
@@ -125,6 +127,10 @@ export function Setup() {
         <div className="col">
           <div className="panel col">
             <h3>Auction</h3>
+            <div className="field">
+              <span className="label">Game mode</span>
+              <Seg value={focus} onChange={setFocus} label="Game mode" options={[{ v: 'tournament', label: '🏆 Tournament' }, { v: 'raid', label: '⚔ Boss Raid' }]} />
+            </div>
             <div className="field">
               <span className="label">Fighters in the auction</span>
               <Seg value={poolSource} onChange={setPoolSource} label="Fighters in the auction" options={[

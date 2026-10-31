@@ -511,6 +511,8 @@ export interface GameConfig {
   auction: AuctionConfig;
   tournament: TournamentConfig;
   privacyScreens: boolean;
+  /** 'raid': after the auction the game opens on Raid Boss (the tournament is still there). */
+  focus?: 'tournament' | 'raid';
 }
 
 export interface GameState {
