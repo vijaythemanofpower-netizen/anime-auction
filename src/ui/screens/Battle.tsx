@@ -327,7 +327,7 @@ function Verdict({ record, exhibition }: { record: BattleRecord; exhibition?: bo
   const { input, result } = record;
   const w = result.winnerSide;
   const l = (1 - w) as 0 | 1;
-  const pn = (id: string) => g.players.find((p) => p.id === id)?.name ?? id;
+  const pn = (id: string) => g.players.find((p) => p.id === id)?.name ?? (id === 'raid-team' ? 'Your party' : id === 'raid-boss' ? input.sides[1].fighters[0]?.name ?? 'The boss' : id);
   const fname = (id: string) => input.sides.flatMap((s) => s.fighters).find((f) => f.charId === id)?.name ?? id;
   const winners = result.fighters.filter((f) => f.side === w);
   const losers = result.fighters.filter((f) => f.side === l);

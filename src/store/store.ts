@@ -9,6 +9,7 @@ import type { BattleRecord, CoachCall, GameState, HallEntry, HiddenProfile, Play
 import { applyMove, type PlayerMove } from '../engine/actions';
 import { Vault } from '../engine/hidden';
 import * as G from '../engine/game';
+import * as A from '../engine/auction';
 import { registerCharacterMoves } from '../engine/data/abilities';
 import { buildHallEntries } from '../engine/hall';
 import { Persistence, type SaveSummary, type Settings, DEFAULT_SETTINGS } from './persistence';
@@ -386,4 +387,30 @@ export const store = new Store();
 
 export function useApp<T>(sel: (s: AppState) => T): T {
   return useSyncExternalStore(store.subscribe, () => sel(store.getState()));
+}
+
+// Local development only (never in the published site): lets the browser console
+// fast-forward a game, e.g. finish an auction instantly to test later screens.
+if (import.meta.env.DEV && typeof window !== 'undefined') {
+  (window as unknown as { __dev: unknown }).__dev = {
+    store,
+    /** Sells every lot at the opening bid to a rotating buyer, like the tests do. */
+    finishAuction() {
+      return store.act((g) => {
+        let t = Date.now();
+        if (g.phase === 'pool') { const r = G.startAuction(g, t); if (!r.ok) return r; }
+        for (let guard = 0; g.phase === 'auction' && guard < 2000; guard++) {
+          const lot = g.auction!.lot!;
+          if (lot.status === 'open') {
+            const eligible = g.players.filter((p) => A.canBid(g, p));
+            const buyer = eligible[lot.lotNumber % Math.max(1, eligible.length)];
+            if (buyer) A.placeBid(g, buyer.id, A.minNextBid(lot, g.auction!.config), t);
+            t += 60_000; A.tick(g, t);
+          }
+          t += 100; G.advanceLot(g, t);
+        }
+        return { ok: true };
+      });
+    },
+  };
 }

@@ -18,7 +18,11 @@ import { registerCharacterMoves } from './data/abilities';
 /** Built-in villains that can be raid bosses. */
 export const RAID_VILLAINS = ['frieza', 'aizen', 'madara', 'pain', 'sukuna', 'akaza', 'shigaraki', 'meruem', 'dio', 'itachi', 'hisoka'].map((k) => `legend:${k}`);
 /** More villains looked up on AniList when online (they have canon stat sheets). */
-export const ANILIST_VILLAINS = ['Kaidou', 'Muzan Kibutsuji', 'Cell', 'Majin Buu', 'Yhwach', 'Donquixote Doflamingo', 'All For One', 'Makima', 'Mahito', 'Kokushibou', 'Douma', 'Griffith', 'Ulquiorra Cifer', 'Boros'];
+export const ANILIST_VILLAINS: Array<[name: string, series: string]> = [
+  ['Kaidou', 'one piece'], ['Muzan Kibutsuji', 'kimetsu'], ['Cell', 'dragon ball'], ['Majin Buu', 'dragon ball'], ['Yhwach', 'bleach'],
+  ['Doflamingo', 'one piece'], ['All For One', 'hero academia'], ['Makima', 'chainsaw'], ['Mahito', 'jujutsu'], ['Kokushibou', 'kimetsu'],
+  ['Douma', 'kimetsu'], ['Griffith', 'berserk'], ['Ulquiorra', 'bleach'], ['Boros', 'punch'],
+];
 
 export const RAID_TEAM_PER_PLAYER = 2;
 export const RAID_MAX_TEAM = 6;

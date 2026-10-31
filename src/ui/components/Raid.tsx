@@ -11,7 +11,11 @@ import { CharArt } from './Portrait';
 /** AniList villains, looked up once per session (they come with canon stats when we have a sheet). */
 let extraVillains: Promise<PublicCharacter[]> | null = null;
 function loadExtraVillains(): Promise<PublicCharacter[]> {
-  extraVillains ??= Promise.all(ANILIST_VILLAINS.map((name) => aniListProvider.search({ text: name, field: 'name', sort: 'popular', page: 1, perPage: 1 }).then((r) => r.items[0]).catch(() => undefined)))
+  // A few results per name, keeping only the one from the right anime (a plain name search
+  // found Shun Kaidou for "Kaidou" and Bruno Bucciarati for "Cell").
+  extraVillains ??= Promise.all(ANILIST_VILLAINS.map(([name, series]) => aniListProvider.search({ text: name, field: 'name', sort: 'popular', page: 1, perPage: 8 })
+    .then((r) => r.items.find((c) => c.series.toLowerCase().includes(series) && c.name.toLowerCase().replace(/[^a-z]/g, '').includes(name.toLowerCase().split(' ')[0].replace(/[^a-z]/g, '').replace(/u$/, ''))))
+    .catch(() => undefined)))
     .then((list) => list.filter((c): c is PublicCharacter => !!c));
   return extraVillains;
 }
