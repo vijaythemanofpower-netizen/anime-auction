@@ -80,3 +80,22 @@
 .oracle-chip { padding: 2px 9px; border-radius: 999px; background: var(--violet); color: var(--btn-ink); font-weight: 700; font-size: 12px; border: 2px solid var(--ink); white-space: nowrap; }
 @keyframes predict-pop { from { transform: scale(0.92); opacity: 0; } }
 @media (prefers-reduced-motion: reduce) { .predict.ask { animation: none; } }
+
+/* Raid Boss (components/Raid.tsx) */
+.boss-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 10px; }
+.boss-card { display: flex; flex-direction: column; gap: 3px; padding: 6px; text-align: left; background: var(--surface-2); color: var(--text); border: 2px solid var(--ink); border-radius: 8px; cursor: pointer; font: inherit; font-size: 12px; }
+.boss-card b { font-size: 13px; line-height: 1.15; }
+.boss-card.picked { box-shadow: 4px 4px 0 var(--violet); border-color: var(--violet); }
+.boss-art { display: block; aspect-ratio: 3 / 4; border-radius: 5px; overflow: hidden; background: #000; }
+.boss-art img, .boss-art svg { width: 100%; height: 100%; object-fit: cover; object-position: 50% 15%; filter: saturate(0.85) contrast(1.1); }
+.raid-card.won { box-shadow: 5px 5px 0 var(--good), 0 0 0 1px var(--line); }
+.raid-card.lost { box-shadow: 5px 5px 0 var(--bad), 0 0 0 1px var(--line); }
+.raid-mvp { display: flex; align-items: center; gap: 12px; padding: 8px; background: var(--surface-2); border-radius: 8px; border: 2px solid var(--gold); }
+.raid-mvp .mvp-art { width: 64px; height: 84px; flex: none; border-radius: 6px; overflow: hidden; }
+.raid-mvp .mvp-art img, .raid-mvp .mvp-art svg { width: 100%; height: 100%; object-fit: cover; object-position: 50% 15%; }
+.raid-mvp b { font-family: var(--font-display); font-weight: 400; font-size: 22px; }
+.raid-row { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(60px, 2fr) 92px; gap: 10px; align-items: center; font-size: 13px; }
+.raid-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.raid-bar { height: 9px; border-radius: 5px; background: var(--surface-3); overflow: hidden; }
+.raid-bar span { display: block; height: 100%; background: var(--violet); }
+.raid-role { font-size: 11px; font-weight: 700; color: var(--gold); text-align: right; }

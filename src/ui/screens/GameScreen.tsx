@@ -1,3 +1,4 @@
+import { RaidHub } from '../components/Raid';
 import { BadgeChips, HallOfShame, useBadges } from '../components/Badges';
 import { useEffect, useMemo, useState } from 'react';
 import type { GameState, Player } from '../../engine/types';
@@ -249,11 +250,12 @@ function HubPhase({ g }: { g: GameState }) {
         {store.isGuest() ? <span className="faint">The host starts each match.</span>
           : <button className="btn primary lg" disabled={!next} onClick={() => { store.setViewer(null); store.act((d, v) => G.startMatch(d, v)); }}>Prepare match</button>}
       </div>
-      <Seg value={tab} onChange={setTab} label="Hub view" options={[{ v: 'bracket', label: 'Bracket & standings' }, { v: 'rosters', label: 'Rosters' }, { v: 'history', label: 'Battle history' }, { v: 'rivalries', label: 'Rivalries' }]} />
+      <Seg value={tab} onChange={setTab} label="Hub view" options={[{ v: 'bracket', label: 'Bracket & standings' }, { v: 'rosters', label: 'Rosters' }, { v: 'history', label: 'Battle history' }, { v: 'rivalries', label: 'Rivalries' }, { v: 'raid', label: '⚔ Raid Boss' }]} />
       {tab === 'bracket' && <Bracket g={g} />}
       {tab === 'rosters' && <RosterTabs g={g} viewer={viewer} privacy={g.config.privacyScreens && humans.length > 1} />}
       {tab === 'history' && <History g={g} battles={battles} />}
       {tab === 'rivalries' && <Rivalries g={g} />}
+      {tab === 'raid' && <RaidHub g={g} />}
     </div>
   );
 }

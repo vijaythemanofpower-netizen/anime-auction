@@ -2,6 +2,8 @@
 // (private to this module; exposed only through permission-checked getters),
 // battle records, settings and navigation. Every mutation clones state, runs
 // an engine function, and autosaves.
+import { runRaid } from '../engine/raid';
+import { freshSeed } from '../engine/rng';
 import { useSyncExternalStore } from 'react';
 import type { BattleRecord, CoachCall, GameState, HallEntry, HiddenProfile, Player, PublicCharacter } from '../engine/types';
 import { applyMove, type PlayerMove } from '../engine/actions';
@@ -320,6 +322,24 @@ class Store {
     this.set({ exhibition: r, battles: { ...this.state.battles, [r.battleId]: r } });
     if (!this.isGuest()) void this.db.saveBattle(g.id, r);
   }
+
+  /** Host: the party takes on a raid boss. Saved on the game, shared with the room, and opened to watch. */
+  startRaid(boss: PublicCharacter): boolean {
+    let record: BattleRecord | null = null;
+    const r = this.act((g, v) => {
+      if (g.phase === 'setup' || g.phase === 'pool' || g.phase === 'auction') return { ok: false, error: 'The raid opens once everyone has a team (after the auction).' };
+      record = runRaid(g, v, boss, freshSeed()).record;
+      return { ok: true };
+    });
+    if (!r.ok || !record) return false;
+    const rec: BattleRecord = record;
+    this.set({ exhibition: rec, battles: { ...this.state.battles, [rec.battleId]: rec } });
+    void this.db.saveBattle(this.state.game!.id, rec);
+    return true;
+  }
+
+  /** Opens a saved battle (a raid, for example) to watch. */
+  watch(battleId: string) { const rec = this.state.battles[battleId]; if (rec) this.set({ exhibition: rec }); }
 
   closeExhibition() { this.set({ exhibition: null }); }
 

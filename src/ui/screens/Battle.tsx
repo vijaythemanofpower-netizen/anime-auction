@@ -1,3 +1,4 @@
+import { RaidCard } from '../components/Raid';
 import { Predictions } from '../components/Predictions';
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import type { BattleEvent, BattleRecord } from '../../engine/types';
@@ -229,7 +230,7 @@ export function BattleView({ record, exhibition }: { record: BattleRecord; exhib
   }, [idx, events, input, result]);
 
   const cur = events[Math.max(0, Math.min(idx, events.length) - 1)];
-  const sideNames = useMemo(() => input.sides.map((s) => g.players.find((p) => p.id === s.playerId)?.name ?? 'Side') as [string, string], [input, g.players]);
+  const sideNames = useMemo(() => input.sides.map((s) => g.players.find((p) => p.id === s.playerId)?.name ?? (s.playerId === 'raid-team' ? 'Your party' : s.fighters[0]?.name ?? 'Side')) as [string, string], [input, g.players]);
   const shownLines = narration.filter((l) => l.seq <= (cur?.seq ?? 0) && idx > 0);
   const pname = (id: string) => g.players.find((p) => p.id === id);
 
@@ -237,7 +238,7 @@ export function BattleView({ record, exhibition }: { record: BattleRecord; exhib
     <div className="col" style={{ gap: 16 }}>
       {exhibition && (
         <div className="panel row" style={{ justifyContent: 'space-between', borderColor: 'var(--cyan)' }}>
-          <span><strong>{record.kind === 'replay' ? 'Exact replay' : 'Fresh rematch (exhibition)'}</strong> <span className="faint">· seed {input.seed} · engine {input.engineVersion} · does not affect the tournament</span></span>
+          <span><strong>{record.kind === 'raid' ? `⚔ Raid: ${input.sides[1].fighters[0].name}` : record.kind === 'replay' ? 'Exact replay' : 'Fresh rematch (exhibition)'}</strong> <span className="faint">· seed {input.seed} · engine {input.engineVersion} · does not affect the tournament</span></span>
           <button className="btn sm" onClick={() => store.closeExhibition()}>Close</button>
         </div>
       )}
@@ -248,7 +249,7 @@ export function BattleView({ record, exhibition }: { record: BattleRecord; exhib
             <div key={side} className="row" style={{ gap: 6, flexDirection: side === 1 ? 'row-reverse' : 'row', textAlign: side === 1 ? 'right' : 'left' }}>
               {p && <Emblem p={p} size={26} />}
               <div>
-                <strong>{p?.name}</strong>
+                <strong>{p?.name ?? sideNames[side]}</strong>
                 <div className="faint">{idx > 2 ? `${STRATEGIES.find((s) => s.v === input.sides[side].strategy)?.label} · ${MENTALS.find((s) => s.v === input.sides[side].mental)?.label}` : 'Strategy hidden until the bell'}
                   {input.sides[side].synergies.length > 0 && idx > 3 ? ` · ✦ ${input.sides[side].synergies.map((x) => getSynergy(x)?.name).join(', ')}` : ''}</div>
               </div>
@@ -315,6 +316,7 @@ export function BattleView({ record, exhibition }: { record: BattleRecord; exhib
         )}
       </div>
 
+      {done && record.kind === 'raid' && g.raids?.find((r) => r.battleId === record.battleId) && <RaidCard r={g.raids.find((r) => r.battleId === record.battleId)!} g={g} />}
       {done && <Verdict record={record} exhibition={exhibition} />}
     </div>
   );
