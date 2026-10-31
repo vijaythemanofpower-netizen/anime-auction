@@ -94,14 +94,14 @@ function TeamPicker({ g }: { g: GameState }) {
 }
 
 /** One raid's result: won or lost, the MVP, and everyone's share of the work. */
-export function RaidCard({ r, g, canWatch }: { r: RaidResult; g: GameState; canWatch?: boolean }) {
+export function RaidCard({ r, g, canWatch }: { r: RaidResult & { title?: string }; g: GameState; canWatch?: boolean }) {
   const top = Math.max(1, ...r.contributions.map((c) => c.score));
   const owner = (pid: string) => g.players.find((p) => p.id === pid);
   const mvp = r.contributions.find((c) => c.charId === r.mvp);
   return (
     <div className={`panel col raid-card ${r.won ? 'won' : 'lost'}`} style={{ gap: 10 }}>
       <div className="row" style={{ justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
-        <h3 style={{ margin: 0 }}>{r.won ? `${r.bossName} defeated!` : `${r.bossName} wins.`}</h3>
+        <h3 style={{ margin: 0 }}>{r.title ?? (r.won ? `${r.bossName} defeated!` : `${r.bossName} wins.`)}</h3>
         {canWatch && <button className="btn sm" onClick={() => store.watch(r.battleId)}>Watch</button>}
       </div>
       {mvp && (

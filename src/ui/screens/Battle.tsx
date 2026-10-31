@@ -1,7 +1,7 @@
 import { RaidCard } from '../components/Raid';
 import { Predictions } from '../components/Predictions';
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
-import type { BattleEvent, BattleRecord } from '../../engine/types';
+import type { BattleEvent, BattleInput, BattleRecord, GameState } from '../../engine/types';
 import * as G from '../../engine/game';
 import { getSynergy } from '../../engine/data/world';
 import { getAbility } from '../../engine/data/abilities';
@@ -47,6 +47,13 @@ function delayFor(e: BattleEvent, hasLine: boolean): number {
     case 'verdict': case 'conclusion': return 1500;
     default: return e.crit ? 1100 : 780;
   }
+}
+
+/** A team battle side is named after its players, e.g. "Ana & Ben". */
+function teamSideName(g: GameState, input: BattleInput, id: string): string {
+  const side = input.sides.find((s) => s.playerId === id);
+  const owners = [...new Set(side?.fighters.map((f) => f.playerId) ?? [])];
+  return owners.map((o) => g.players.find((p) => p.id === o)?.name ?? o).join(' & ') || id;
 }
 
 export function BattleView({ record, exhibition }: { record: BattleRecord; exhibition?: boolean }) {
@@ -231,7 +238,7 @@ export function BattleView({ record, exhibition }: { record: BattleRecord; exhib
   }, [idx, events, input, result]);
 
   const cur = events[Math.max(0, Math.min(idx, events.length) - 1)];
-  const sideNames = useMemo(() => input.sides.map((s) => g.players.find((p) => p.id === s.playerId)?.name ?? (s.playerId === 'raid-team' ? 'Your party' : s.fighters[0]?.name ?? 'Side')) as [string, string], [input, g.players]);
+  const sideNames = useMemo(() => input.sides.map((s) => g.players.find((p) => p.id === s.playerId)?.name ?? (s.playerId === 'raid-team' ? 'Your party' : s.playerId.startsWith('team-') ? teamSideName(g, input, s.playerId) : s.fighters[0]?.name ?? 'Side')) as [string, string], [input, g.players]);
   const shownLines = narration.filter((l) => l.seq <= (cur?.seq ?? 0) && idx > 0);
   const pname = (id: string) => g.players.find((p) => p.id === id);
 
@@ -239,7 +246,7 @@ export function BattleView({ record, exhibition }: { record: BattleRecord; exhib
     <div className="col" style={{ gap: 16 }}>
       {exhibition && (
         <div className="panel row" style={{ justifyContent: 'space-between', borderColor: 'var(--cyan)' }}>
-          <span><strong>{record.kind === 'raid' ? `⚔ Raid: ${input.sides[1].fighters[0].name}` : record.kind === 'replay' ? 'Exact replay' : 'Fresh rematch (exhibition)'}</strong> <span className="faint">· seed {input.seed} · engine {input.engineVersion} · does not affect the tournament</span></span>
+          <span><strong>{record.kind === 'raid' ? `⚔ Raid: ${input.sides[1].fighters[0].name}` : record.kind === 'team' ? '🤝 Team battle' : record.kind === 'replay' ? 'Exact replay' : 'Fresh rematch (exhibition)'}</strong> <span className="faint">· seed {input.seed} · engine {input.engineVersion} · does not affect the tournament</span></span>
           <button className="btn sm" onClick={() => store.closeExhibition()}>Close</button>
         </div>
       )}
@@ -318,6 +325,13 @@ export function BattleView({ record, exhibition }: { record: BattleRecord; exhib
       </div>
 
       {done && record.kind === 'raid' && g.raids?.find((r) => r.battleId === record.battleId) && <RaidCard r={g.raids.find((r) => r.battleId === record.battleId)!} g={g} />}
+      {done && record.kind === 'team' && (() => {
+        const t = g.teamBattles?.find((x) => x.battleId === record.battleId);
+        if (!t) return null;
+        const win = t.winner === 'A' ? t.teamA : t.teamB, lose = t.winner === 'A' ? t.teamB : t.teamA;
+        const nm = (ids: string[]) => ids.map((id) => g.players.find((p) => p.id === id)?.name ?? id).join(' & ');
+        return <RaidCard g={g} r={{ ...t, bossId: '', bossName: nm(lose), won: true, title: `Team ${t.winner} wins: ${nm(win)}` }} />;
+      })()}
       {done && <Verdict record={record} exhibition={exhibition} />}
     </div>
   );
@@ -328,7 +342,7 @@ function Verdict({ record, exhibition }: { record: BattleRecord; exhibition?: bo
   const { input, result } = record;
   const w = result.winnerSide;
   const l = (1 - w) as 0 | 1;
-  const pn = (id: string) => g.players.find((p) => p.id === id)?.name ?? (id === 'raid-team' ? 'Your party' : id === 'raid-boss' ? input.sides[1].fighters[0]?.name ?? 'The boss' : id);
+  const pn = (id: string) => g.players.find((p) => p.id === id)?.name ?? (id === 'raid-team' ? 'Your party' : id === 'raid-boss' ? input.sides[1].fighters[0]?.name ?? 'The boss' : id.startsWith('team-') ? teamSideName(g, input, id) : id);
   const fname = (id: string) => input.sides.flatMap((s) => s.fighters).find((f) => f.charId === id)?.name ?? id;
   const winners = result.fighters.filter((f) => f.side === w);
   const losers = result.fighters.filter((f) => f.side === l);

@@ -3,6 +3,7 @@
 // battle records, settings and navigation. Every mutation clones state, runs
 // an engine function, and autosaves.
 import { runRaid } from '../engine/raid';
+import { runTeamBattle } from '../engine/teambattle';
 import { freshSeed } from '../engine/rng';
 import { useSyncExternalStore } from 'react';
 import type { BattleRecord, CoachCall, GameState, HallEntry, HiddenProfile, Player, PublicCharacter } from '../engine/types';
@@ -330,6 +331,21 @@ class Store {
     const r = this.act((g, v) => {
       if (g.phase === 'setup' || g.phase === 'pool' || g.phase === 'auction') return { ok: false, error: 'The raid opens once everyone has a team (after the auction).' };
       record = runRaid(g, v, boss, freshSeed()).record;
+      return { ok: true };
+    });
+    if (!r.ok || !record) return false;
+    const rec: BattleRecord = record;
+    this.set({ exhibition: rec, battles: { ...this.state.battles, [rec.battleId]: rec } });
+    void this.db.saveBattle(this.state.game!.id, rec);
+    return true;
+  }
+
+  /** Host: the two teams fight. Saved on the game, shared with the room, and opened to watch. */
+  startTeamBattle(): boolean {
+    let record: BattleRecord | null = null;
+    const r = this.act((g, v) => {
+      if (g.phase === 'setup' || g.phase === 'pool' || g.phase === 'auction') return { ok: false, error: 'Team battles open once everyone has a team (after the auction).' };
+      record = runTeamBattle(g, v, freshSeed()).record;
       return { ok: true };
     });
     if (!r.ok || !record) return false;

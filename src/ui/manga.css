@@ -105,3 +105,5 @@
 .raid-pick-card .tag { align-self: flex-start; font-size: 9px; color: var(--good); }
 .raid-ready { display: flex; flex-wrap: wrap; gap: 6px; }
 .raid-ready .player-chip.ready { background: color-mix(in srgb, var(--good) 18%, transparent); }
+.team-panel.team-A { box-shadow: 5px 5px 0 #3b82f6, 0 0 0 1px var(--line); }
+.team-panel.team-B { box-shadow: 5px 5px 0 #ef4444, 0 0 0 1px var(--line); }

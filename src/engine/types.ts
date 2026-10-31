@@ -413,7 +413,7 @@ export interface BattleRecord {
   input: BattleInput;
   result: BattleResult;
   matchId: string | null;
-  kind: 'tournament' | 'replay' | 'rematch' | 'raid';
+  kind: 'tournament' | 'replay' | 'rematch' | 'raid' | 'team';
   narration: NarrationLine[];
   createdAt: number;
   postEffects: PostBattleEffect[];
@@ -539,6 +539,9 @@ export interface GameState {
   battleIds: string[];
   /** Who each player sends into the next raid (their own fighters); missing means "pick my best". */
   raidPicks?: Record<string, string[]>;
+  /** Team battles between players: who is on which team, who each player sends, and results. */
+  teamSetup?: { teams: Record<string, 'A' | 'B'>; picks: Record<string, string[]> };
+  teamBattles?: TeamBattleResult[];
   /** Raid Boss attempts, newest last (older saves lack it). */
   raids?: RaidResult[];
   lastBattleId: string | null;
@@ -561,3 +564,4 @@ export interface HallEntry {
 
 export interface RaidContribution { charId: string; name: string; playerId: string; dealt: number; tanked: number; healed: number; finalBlow: boolean; score: number; role: string }
 export interface RaidResult { id: string; battleId: string; bossId: string; bossName: string; won: boolean; mvp: string | null; contributions: RaidContribution[]; at: number }
+export interface TeamBattleResult { id: string; battleId: string; teamA: string[]; teamB: string[]; winner: 'A' | 'B'; mvp: string | null; contributions: RaidContribution[]; at: number }
