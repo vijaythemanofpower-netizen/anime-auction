@@ -1,0 +1,47 @@
+/* Manga-style layer over the identity: inked panels, katakana page titles, a faded
+   character poster per page, an ink header with a coloured spine, speed lines. */
+:root { --font-kana: 'Dela Gothic One', 'Zen Kaku Gothic New', sans-serif; }
+
+/* ---- header: ink bar with a scene-coloured stripe, like a manga magazine spine */
+.topbar { background: rgba(11, 10, 12, 0.94); border-bottom: 3px solid var(--violet); box-shadow: 0 4px 0 var(--ink); transition: border-color 1.2s; }
+.brand-name { font-family: var(--font-display); font-weight: 400; font-size: 18px; letter-spacing: 0.04em; display: flex; align-items: baseline; gap: 8px; }
+.brand-name em { color: var(--violet); transition: color 1.2s; }
+.brand-kana { font-family: var(--font-kana); font-size: 11px; letter-spacing: 0.08em; color: var(--text-faint); text-transform: none; }
+
+/* ---- page dressing (components/PageArt.tsx) */
+.page-art { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
+.kana-title { position: absolute; top: 76px; left: 6px; writing-mode: vertical-rl; font-family: var(--font-kana); font-size: clamp(54px, 7vw, 110px); line-height: 1; letter-spacing: 0.04em;
+  color: transparent; -webkit-text-stroke: 2px color-mix(in srgb, var(--violet) 45%, transparent); opacity: 0.55; animation: kana-in 0.7s ease-out both; transition: -webkit-text-stroke-color 1.2s; }
+@keyframes kana-in { from { transform: translateY(-30px); opacity: 0; } }
+.page-poster { position: absolute; right: -4%; bottom: 0; height: 78vh; max-width: 42vw; object-fit: cover; object-position: top; opacity: 0.13; filter: grayscale(0.35) contrast(1.1);
+  -webkit-mask-image: linear-gradient(to left, #000 35%, transparent), linear-gradient(to top, transparent, #000 25%); -webkit-mask-composite: source-in;
+  mask-image: linear-gradient(to left, #000 35%, transparent); animation: poster-in 0.9s ease-out both; }
+@keyframes poster-in { from { transform: translateX(40px); opacity: 0; } }
+@media (max-width: 900px) { .kana-title { font-size: 46px; opacity: 0.35; } .page-poster { display: none; } }
+
+/* ---- panels: inked manga frames with a screen-tone corner */
+.panel { position: relative; border: 2px solid var(--ink); box-shadow: 5px 5px 0 var(--ink), 0 0 0 1px var(--line); border-radius: 6px; }
+.panel::before { content: ''; position: absolute; top: 0; right: 0; width: 70px; height: 70px; pointer-events: none; border-top-right-radius: 4px;
+  background: radial-gradient(color-mix(in srgb, var(--violet) 55%, transparent) 1.1px, transparent 1.4px) 0 0 / 7px 7px;
+  -webkit-mask-image: linear-gradient(225deg, #000, transparent 70%); mask-image: linear-gradient(225deg, #000, transparent 70%); opacity: 0.6; }
+.panel.tight { box-shadow: 3px 3px 0 var(--ink), 0 0 0 1px var(--line); }
+/* Headings inside panels get a short scene-coloured underline stroke. */
+.panel h3 { display: inline-block; padding-bottom: 3px; background: linear-gradient(var(--violet), var(--violet)) left bottom / 36px 3px no-repeat; }
+
+/* ---- speed lines across cards and menu buttons on hover */
+.card, .menu .btn, .bidder { position: relative; overflow: hidden; }
+.card::after, .menu .btn::before, .bidder::after { content: ''; position: absolute; inset: 0; pointer-events: none; opacity: 0;
+  background: repeating-linear-gradient(100deg, transparent 0 14px, rgba(255, 255, 255, 0.07) 14px 16px); transform: translateX(-30%); transition: opacity 0.2s, transform 0.5s ease-out; }
+.card:hover::after, .menu .btn:hover::before, .bidder:hover::after { opacity: 1; transform: translateX(0); }
+.menu .btn { border: 2px solid var(--ink); box-shadow: 3px 3px 0 var(--ink); }
+
+/* ---- section titles: inked with an offset shadow, like chapter headings */
+.section-head h2, h1:not(.logo-title) { text-shadow: 3px 3px 0 var(--ink); }
+
+@media (prefers-reduced-motion: reduce) { .kana-title, .page-poster { animation: none; } }
+.reduce-motion .kana-title, .reduce-motion .page-poster { animation: none; }
+
+/* Selected toggles and active nav buttons take the scene colour. */
+.seg button[aria-pressed='true'] { background: var(--violet); color: var(--btn-ink); transition: background-color 1.2s; }
+.topbar .btn.active { background: var(--violet); color: var(--btn-ink); border-color: var(--ink); }
+@media (max-width: 640px) { .brand-name { display: none; } }

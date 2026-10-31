@@ -12,6 +12,7 @@ import { Saves } from './screens/Saves';
 import { OnlineScreen } from './screens/Online';
 import { RoomChat } from './components/RoomChat';
 import { SceneBackdrop } from './components/SceneBackdrop';
+import { PageArt } from './components/PageArt';
 import { ONLINE_AVAILABLE } from '../online/client';
 import { useAuth } from '../online/auth';
 
@@ -33,11 +34,12 @@ export function App() {
   return (
     <>
     <SceneBackdrop />
+    <PageArt screen={screen} phase={game?.phase} />
     <div className={`app ${motion === 'on' ? 'reduce-motion' : motion === 'system' ? 'motion-system' : ''}`}>
       <header className="topbar">
         <button className="brand" onClick={() => store.go('home')} aria-label="Home">
           <Logo />
-          <span className="brand-name">Anime <em>Auction</em></span>
+          <span className="brand-name">Anime <em>Auction</em><small className="brand-kana">アニメ・オークション</small></span>
         </button>
         <div className="spacer" />
         {game && screen !== 'game' && <button className="btn sm primary" onClick={() => store.go('game')}>Return to game</button>}
