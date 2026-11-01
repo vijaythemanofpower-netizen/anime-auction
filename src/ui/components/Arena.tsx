@@ -319,6 +319,7 @@ export function ArenaStage({ record, cur, done, fighters, momentum, players, cha
       </div>
       </div>
 
+      {size <= 2 && <FightHud input={input} fighters={fighters} color={pcolor} />}
       <div className="arena-hud">
         <div><div className="env-name">{env.name}</div><div className="faint" style={{ fontSize: 11 }}>{input.mode === 'solo' ? 'Solo Duel' : input.mode === 'tag' ? 'Tag Team' : 'Squad Battle'}</div></div>
         <div className="faint" style={{ fontSize: 11, textAlign: 'right' }}>Action {cur?.turn ?? 0}{frame ? <div className="wx-label">{weatherLabel(frame)}</div> : null}</div>
@@ -596,6 +597,31 @@ function PlayByPlay({ events, upto, names }: { events: BattleEvent[]; upto: numb
   }
   if (!lines.length) return null;
   return <div className="pbp" aria-live="polite">{lines.map((l) => <div key={l.seq} className={`pbp-line ${l.tone}`}>{l.text}</div>)}</div>;
+}
+
+/** Fighting-game HUD (solo and tag): each side's fighters with health, guard and stamina, all from the live fight state. */
+function FightHud({ input, fighters, color }: { input: BattleRecord['input']; fighters: Map<string, LiveFighter>; color: (s: 0 | 1) => string }) {
+  return (
+    <div className="fg-hud" aria-label="Fighters' condition">
+      {([0, 1] as const).map((side) => (
+        <div key={side} className={`fg-side s${side}`} style={{ ['--pc' as string]: color(side) } as CSSProperties}>
+          {input.sides[side].fighters.map((s) => fighters.get(s.charId)).filter((f): f is LiveFighter => !!f).map((f) => {
+            const hp = Math.max(0, Math.min(1, f.hp / f.maxHp));
+            return (
+              <div key={f.snap.charId} className={`fg-row${f.down ? ' down' : ''}${hp < 0.25 && !f.down ? ' danger' : ''}`}>
+                <div className="fg-name">{f.snap.name}{f.formName ? <em>{f.formName}</em> : null}</div>
+                <div className="fg-hp" role="meter" aria-label={`${f.snap.name} health`} aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(hp * 100)}>
+                  <i className="trail" style={{ width: `${hp * 100}%` }} /><i className="fill" style={{ width: `${hp * 100}%` }} />
+                </div>
+                <div className="fg-sub"><span className="fg-guard"><i style={{ width: `${f.guard}%` }} /></span><span className="fg-st"><i style={{ width: `${(f.st / f.maxSt) * 100}%` }} /></span></div>
+              </div>
+            );
+          })}
+        </div>
+      ))}
+      <div className="fg-vs">VS</div>
+    </div>
+  );
 }
 
 /** The fighter's animated body: their own sprite sheet if one exists, else the procedural rig. */

@@ -81,6 +81,12 @@ export function AuctionPhase() {
       {a.notice && <div className="panel" style={{ borderColor: 'var(--warn)' }}>⚖ Director: {a.notice}</div>}
 
       <div className="lot-stage">
+        {/* A new lot arrives like an anime title card: number, name and series cut across the stage. */}
+        <div className="lot-intro" key={`intro-${lot.lotNumber}-${lot.attempt}`} aria-hidden="true">
+          <span className="li-no">LOT {String(lot.lotNumber).padStart(2, '0')}</span>
+          <span className="li-name">{c.name}</span>
+          <span className="li-series">{c.series}</span>
+        </div>
         <div className="col">
           <div className={`lot-art${sold ? '' : ' reveal-anim'}`} key={lot.lotNumber}>
             <CharArt c={c} />
@@ -103,7 +109,7 @@ export function AuctionPhase() {
             <div className="row" style={{ justifyContent: 'space-between', alignItems: 'flex-end' }}>
               <div>
                 <div className="label">{lead ? 'Current bid' : 'Opening bid'}</div>
-                <div className="bid-big" aria-live="polite">{(lead?.amount ?? a.config.openingBid).toLocaleString()}</div>
+                <div className="bid-big" aria-live="polite" key={lead?.amount ?? 'open'}>{(lead?.amount ?? a.config.openingBid).toLocaleString()}</div>
                 <div className="muted">{leadP ? <>Leading: <PlayerChip p={leadP} /></> : 'No bids yet'}</div>
               </div>
               <div style={{ textAlign: 'right' }}>

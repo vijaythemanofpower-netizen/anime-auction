@@ -35,7 +35,7 @@ body::after { content: ''; position: fixed; inset: -50%; z-index: 9990; pointer-
 ::selection { background: var(--crimson); color: #fff; }
 
 /* The old per-page scene backdrop gives way to the living atmosphere canvas. */
-.scene, .scene-glow { display: none !important; }
+#root > .scene, #root > div > .scene-glow, .scene-glow { display: none !important; }
 
 /* ------------------------------------------------------------- type */
 h1 { font-family: var(--font-display); font-weight: 400; font-size: clamp(40px, 6.4vw, 92px); line-height: 0.9; letter-spacing: -0.005em; text-transform: uppercase; }
@@ -187,3 +187,53 @@ hr { border-color: var(--line); }
 .mode-panel h3 { font-family: var(--font-display) !important; font-weight: 400 !important; text-transform: uppercase; font-size: clamp(24px, 2.4vw, 34px) !important; }
 .mode-panel.wide { background: linear-gradient(160deg, rgba(232, 23, 58, 0.22), rgba(10, 10, 14, 0.92) 60%) !important; }
 @media (max-width: 900px) { .hs-shade { background: linear-gradient(180deg, rgba(6,6,9,0.7), rgba(6,6,9,0.86) 50%, rgba(6,6,9,0.98)); } }
+
+/* A new lot arrives as a title card sweeping across the stage. */
+.lot-stage { position: relative; }
+.lot-intro { position: absolute; z-index: 20; left: -2%; right: -2%; top: 26%; padding: 14px 4%; display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 20px; pointer-events: none;
+  background: linear-gradient(90deg, var(--crimson), #8a0c22); color: #fff; transform: skewY(-4deg); box-shadow: 0 12px 0 #000;
+  animation: lot-intro 1.6s cubic-bezier(.7,0,.2,1) forwards; }
+.li-no { font-family: var(--font-display); font-size: clamp(16px, 2vw, 22px); letter-spacing: 0.24em; color: #000; }
+.li-name { font-family: var(--font-display); font-size: clamp(34px, 6vw, 84px); line-height: 0.9; text-transform: uppercase; text-shadow: 5px 5px 0 #000; }
+.li-series { font-family: var(--font-edit); font-weight: 800; font-size: clamp(13px, 1.4vw, 17px); opacity: 0.9; }
+@keyframes lot-intro { 0% { clip-path: polygon(0 0, 0 0, 0 100%, 0 100%); opacity: 1; } 22% { clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%); } 72% { clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%); opacity: 1; } 100% { clip-path: polygon(100% 0, 100% 0, 100% 100%, 100% 100%); opacity: 0; } }
+.reduce-motion .lot-intro { display: none; }
+@media (prefers-reduced-motion: reduce) { .motion-system .lot-intro { display: none; } }
+
+/* --------------------------------------------- fighting-game HUD (arena) */
+.fg-hud { position: absolute; z-index: 9; left: 0; right: 0; top: 0; display: grid; grid-template-columns: 1fr auto 1fr; align-items: start; gap: 10px; padding: 10px 14px 0; pointer-events: none; }
+.fg-side { display: grid; gap: 6px; }
+.fg-side.s0 { grid-column: 1; } .fg-side.s1 { grid-column: 3; direction: rtl; }
+.fg-side.s1 .fg-name, .fg-side.s1 .fg-sub { direction: ltr; text-align: right; }
+.fg-vs { grid-column: 2; grid-row: 1; font-family: var(--font-display); font-size: 26px; color: #fff; text-shadow: 3px 3px 0 var(--crimson); padding-top: 2px; }
+.fg-name { font-family: var(--font-display); font-size: clamp(13px, 1.5vw, 19px); text-transform: uppercase; letter-spacing: 0.04em; color: #fff; text-shadow: 2px 2px 0 #000; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fg-name em { font-style: normal; font-family: var(--font-body); font-size: 10px; letter-spacing: 0.16em; margin: 0 8px; color: var(--gold); }
+.fg-hp { position: relative; height: 14px; background: rgba(0, 0, 0, 0.75); border: 2px solid #000; box-shadow: 0 0 0 1px rgba(255,255,255,0.18); transform: skewX(-20deg); overflow: hidden; }
+.fg-side.s1 .fg-hp { transform: skewX(20deg); }
+.fg-hp i { position: absolute; top: 0; bottom: 0; left: 0; }
+.fg-side.s1 .fg-hp i { left: auto; right: 0; }
+.fg-hp .fill { background: linear-gradient(180deg, #fff6c2, var(--gold) 40%, #d4870f); transition: width 0.25s ease-out; }
+.fg-row.danger .fg-hp .fill { background: linear-gradient(180deg, #ffd0d6, var(--crimson) 45%, #8a0c22); animation: fg-danger 0.6s ease-in-out infinite alternate; }
+.fg-hp .trail { background: #fff; transition: width 0.9s ease-in 0.45s; }
+@keyframes fg-danger { to { filter: brightness(1.5); } }
+.fg-sub { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.fg-sub span { position: relative; height: 4px; background: rgba(0, 0, 0, 0.7); overflow: hidden; }
+.fg-sub i { position: absolute; inset: 0 auto 0 0; transition: width 0.3s; }
+.fg-guard i { background: var(--electric); } .fg-st i { background: #3ddc84; }
+.fg-row.down { opacity: 0.45; filter: grayscale(1); }
+.arena2:has(.fg-hud) .arena-hud { top: auto; bottom: 10px; }
+.arena2:has(.fg-hud) .mom-bar { top: auto; bottom: 14px; }
+.arena2:has(.fg-hud) .stage { inset: 70px 0 0 0; }
+@media (max-width: 700px) { .fg-hud { padding: 8px 8px 0; gap: 6px; } .fg-vs { font-size: 18px; } .fg-hp { height: 10px; } .arena2:has(.fg-hud) .stage { padding-top: 76px; } }
+
+/* ------------------------------------------------ tournament & phases */
+.phase { border-radius: 0 !important; clip-path: polygon(8px 0, 100% 0, calc(100% - 8px) 100%, 0 100%); background: rgba(240, 236, 228, 0.03) !important; letter-spacing: 0.18em !important; }
+.phase.now { background: var(--crimson) !important; color: #fff !important; border-color: transparent !important; }
+.phase.done { color: var(--text-dim) !important; background: rgba(240, 236, 228, 0.07) !important; }
+.match-box { border-radius: 0 !important; border: 1px solid var(--line-strong) !important; background: rgba(10, 10, 14, 0.85) !important; border-left: 3px solid var(--line-strong) !important; transition: transform 0.25s var(--ease); }
+.match-box.current { border-left-color: var(--crimson) !important; border-color: rgba(232, 23, 58, 0.5) !important; box-shadow: 6px 6px 0 rgba(232, 23, 58, 0.25); }
+.match-box:hover { transform: translateX(3px); }
+.match-box .slot.win { color: var(--gold) !important; }
+.match-box .slot.win::after { content: '勝'; font-family: var(--font-kana); color: var(--crimson); margin-left: 8px; }
+.bracket-col h4 { font-family: var(--font-display); font-weight: 400; font-size: 18px !important; letter-spacing: 0.04em !important; color: var(--text) !important; }
+.section-head .eyebrow { margin-right: 10px; }
