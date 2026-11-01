@@ -1,3 +1,5 @@
+import { replayOpening } from '../universe/Opening';
+import { setUiSound, uiSoundOn } from '../universe/uiSound';
 import { useState, useSyncExternalStore } from 'react';
 import { getApiKey, setApiKey } from '../ai/moveWriter';
 import { naturalVoices } from '../voices';
@@ -170,6 +172,10 @@ export function SettingsScreen() {
           <span className="label">Reduced motion</span>
           <Seg value={s.reducedMotion} onChange={(v) => store.updateSettings({ reducedMotion: v })} label="Reduced motion"
             options={[{ v: 'system', label: 'Follow system' }, { v: 'on', label: 'Reduce' }, { v: 'off', label: 'Full motion' }]} />
+        </div>
+        <div className="row" style={{ gap: 10 }}>
+          <button className="btn sm" onClick={() => replayOpening()}>▶ Replay the opening</button>
+          <label className="toggle"><input type="checkbox" defaultChecked={uiSoundOn()} onChange={(e) => setUiSound(e.target.checked)} /> Interface sounds (clicks and actions)</label>
         </div>
         <label className="toggle"><input type="checkbox" checked={s.useOnlineProvider} onChange={(e) => store.updateSettings({ useOnlineProvider: e.target.checked })} /> Allow online character search (AniList)</label>
         <label className="toggle"><input type="checkbox" checked={s.privacyDefault} onChange={(e) => store.updateSettings({ privacyDefault: e.target.checked })} /> Privacy hand-off screens on by default for new games</label>

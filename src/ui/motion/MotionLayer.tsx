@@ -11,6 +11,7 @@
 import { useEffect, useRef } from 'react';
 import { motion, useScroll, useSpring, useVelocity, useTransform } from 'framer-motion';
 import { useMotionOk } from './useMotionOk';
+import { uiClick } from '../universe/uiSound';
 
 const SFX = ['DON!', 'BAM!', 'SHIN!', 'ZAN!', 'GO!', 'DOGA!', 'KA-CHIN!', 'BA-N!'];
 
@@ -64,7 +65,9 @@ export function MotionLayer() {
       const now = performance.now();
       if (now - lastBurst.current < 60) return;
       lastBurst.current = now;
-      burst(e.clientX, e.clientY, el.classList.contains('primary') || el.classList.contains('lg') || el.classList.contains('gold'));
+      const big = el.classList.contains('primary') || el.classList.contains('lg') || el.classList.contains('gold');
+      burst(e.clientX, e.clientY, big);
+      uiClick(big);
     };
     window.addEventListener('pointerdown', onDown, { passive: true });
     return () => window.removeEventListener('pointerdown', onDown);
