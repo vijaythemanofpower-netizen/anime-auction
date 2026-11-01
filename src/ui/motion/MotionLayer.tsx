@@ -17,7 +17,7 @@ const SFX = ['DON!', 'BAM!', 'SHIN!', 'ZAN!', 'GO!', 'DOGA!', 'KA-CHIN!', 'BA-N!
 
 /** Elements that enter with the panel wipe when they scroll into view. */
 const REVEAL = [
-  '.panel', '.home-section > h2', '.home-steps > li', '.mode-panel', '.char-card', '.lot-card', '.account-card',
+  '.panel', '.home-section > h2', '.home-steps > li', '.mode-panel', '.char-card', '.account-card',
   '.section-title', '.stat-card', '.standings', '.bracket', '.hall-card', '.save-row', '.setup-card', '.info-block', 'main h1', 'main h2',
 ].join(',');
 
@@ -87,7 +87,10 @@ export function MotionLayer() {
         el.classList.add('rv');
         // Siblings that enter together cascade, like panels read left to right.
         el.style.setProperty('--rv-delay', `${Math.min(i % 6, 5) * 70}ms`);
-        io.observe(el);
+        // Already on screen: ink it in now rather than waiting for an observer callback.
+        const r = el.getBoundingClientRect();
+        if (r.top < window.innerHeight && r.bottom > 0) el.classList.add('rv-in');
+        else io.observe(el);
       });
     };
     mark(root);
