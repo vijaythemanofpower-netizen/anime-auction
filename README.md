@@ -56,6 +56,10 @@ Drawings come from **ComfyUI** running on this computer (`%USERPROFILE%\ComfyUI_
 - Raids against 1 to 4 bosses at once; more bosses is harder but still winnable.
 - Comics are off by default: press 🎨 Draw this fight on the fights you want drawn.
 - Online fights follow the host's clock so everyone sees the same moment; skipping to the result needs everyone's vote (the host can skip for all).
+- Career dashboard (account menu → 📊 My career): tournaments, titles, fights, boss raids won/lost, team battles, MVP awards, badges (most received first) and rivals, saved to your account (profiles.career) and this device.
+- Friends (account menu → 👥 Friends): find players by name or add someone from a room you played in; once they accept, invite them straight into your room. Invites pop up instantly with a Join button. Needs supabase/friends.sql run once.
+- Corner calls: up to 5 per fight, with taunt, focus the weakest, transform now and no more holding back alongside the classic calls.
+- Injuries: cracks are drawn as real fractures (bruise, dark split with a lit edge, branches, a chip at the impact) with a bone-crack sound.
 - Pre-fight poll: while the comic is drawing, everyone calls the fight (who wins, who falls first, who deals the most damage). In a room everyone sees each other's picks; answers and a mini scoreboard appear when the fight ends.
 - Arena conditions: the arena is announced when a match is prepared. Fighters whose elements or fighting style suit it get a ⭐ tag and a real edge in the fight (about +5 percentage points of win chance per fit point in an even matchup), so the recommended pick wins more often, not always.
 - Plot twists: about a third of fights get one random story event midway (an intruder attacks everyone, the arena shifts to eclipse/flood/lava/blizzard/storm and favours some elements, a fighter's ultimate gets sealed, a flashback revives a nearly beaten fighter, sudden death drains everyone, or a teammate betrays their side). Each gets a big comic panel and a PLOT TWIST stamp. Rolled on separate dice; engine 2.4.0.

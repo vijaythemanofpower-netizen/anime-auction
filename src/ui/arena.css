@@ -373,3 +373,15 @@
 .pbp-line.dim { color: #cbd5e1; }
 @media (max-width: 640px) { .pbp-line { font-size: 12px; } }
 @media (prefers-reduced-motion: reduce) { .stand.formed .pf::after { animation: none; } }
+
+/* Realistic cracks: a bruise, dark splits with a thin lit edge, branches and a chip at the impact. */
+.cracks .bruise { fill: rgba(110, 20, 60, 0.38); filter: blur(3px); mix-blend-mode: multiply; }
+.cracks .crack.fracture .bruise { fill: rgba(130, 10, 30, 0.5); }
+.cracks .crack path.split { stroke: rgba(12, 4, 6, 0.92); stroke-width: 1.5; filter: none; }
+.cracks .crack path.split.thin { stroke-width: 1; }
+.cracks .crack path.edge { stroke: rgba(255, 255, 255, 0.75); stroke-width: 0.45; filter: none; }
+.cracks .crack.fracture path.split { stroke: rgba(40, 0, 6, 0.95); stroke-width: 2; }
+.cracks .crack.fracture path.edge { stroke: rgba(254, 202, 202, 0.85); }
+.cracks .chip { fill: rgba(10, 4, 6, 0.9); stroke: rgba(255, 255, 255, 0.55); stroke-width: 0.35; }
+.cracks .crack.fresh .bruise { animation: bruise-in 0.6s ease-out both; }
+@keyframes bruise-in { from { opacity: 0; } to { opacity: 1; } }

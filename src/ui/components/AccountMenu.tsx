@@ -4,6 +4,7 @@
 // step after a reset link.
 import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { openProfile } from './Social';
 import { ONLINE_AVAILABLE } from '../../online/client';
 import { createAccount, sendPasswordReset, setNewPassword, signInAsGuest, signInWithPassword, signOut, useAuth } from '../../online/auth';
 import { store } from '../../store/store';
@@ -42,6 +43,8 @@ export function AccountMenu() {
           {a.guest
             ? <button className="btn sm primary" role="menuitem" onClick={() => { setMenu(false); setMode('create'); }}>Save this account</button>
             : <button className="btn sm" role="menuitem" onClick={() => { setMenu(false); setMode('newpass'); }}>Change password</button>}
+          <button className="btn sm ghost" role="menuitem" onClick={() => { setMenu(false); openProfile('stats'); }}>📊 My career</button>
+          <button className="btn sm ghost" role="menuitem" onClick={() => { setMenu(false); openProfile('friends'); }}>👥 Friends</button>
           <button className="btn sm ghost" role="menuitem" onClick={() => { setMenu(false); store.go('online'); }}>Play online</button>
           <button className="btn sm ghost" role="menuitem" onClick={() => { setMenu(false); void signOut(); }}>Sign out</button>
         </div>

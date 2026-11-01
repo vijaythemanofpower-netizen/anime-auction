@@ -74,7 +74,14 @@ export const sfx = {
   ko: () => { bell(); crowd(1.8, 0.5); },
   charge: () => { tone(200, 900, 0.6, 0.25, 'sawtooth'); noise(0.6, 500, 0.2, { type: 'bandpass', sweepTo: 4000 }); },
   aura: () => { tone(110, 220, 0.9, 0.35, 'sawtooth'); noise(0.9, 300, 0.3, { sweepTo: 2500 }); },
-  injury: () => { tone(300, 90, 0.25, 0.3, 'square'); },
+  // A bone giving way: a sharp snap, a few splinter clicks, a dull thud in the body.
+  injury: (bad = false) => {
+    noise(0.035, 3200, bad ? 0.9 : 0.7, { type: 'highpass' });
+    for (let i = 0; i < (bad ? 6 : 4); i++) noise(0.012 + Math.random() * 0.01, 2000 + Math.random() * 3000, 0.35 + Math.random() * 0.3, { type: 'bandpass', delay: 0.03 + i * (0.018 + Math.random() * 0.02) });
+    tone(140, 55, 0.22, bad ? 0.5 : 0.35, 'sine', 0.01);
+    noise(0.18, 350, 0.25, { type: 'lowpass', delay: 0.02 });
+    if (bad) tone(520, 380, 0.35, 0.08, 'sawtooth', 0.22);
+  },
   call: () => { tone(880, 880, 0.08, 0.3, 'square'); tone(1320, 1320, 0.1, 0.25, 'square', 0.09); },
   intro: () => { bell(); },
 };
@@ -236,7 +243,7 @@ export function playEvent(e: BattleEvent) {
     case 'guard_break': return sfx.guardBreak();
     case 'knockdown': return sfx.knockdown();
     case 'defeat': return sfx.ko();
-    case 'injury': return sfx.injury();
+    case 'injury': return sfx.injury(e.injury?.severity === 2);
     case 'ability': case 'desperation': return sfx.charge();
     case 'awakening': case 'transform': case 'secret': return sfx.aura();
     case 'call': case 'corner': return sfx.call();

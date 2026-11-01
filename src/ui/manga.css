@@ -136,3 +136,11 @@
 .tag.arena-fit { align-self: flex-start; }
 .tag.arena-fit.good { color: var(--good); border-color: var(--good); }
 .tag.arena-fit.bad { color: var(--warn, #f59e0b); }
+
+/* Career dashboard tiles and friend invites. */
+.career-tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+.career-tile { display: flex; flex-direction: column; gap: 2px; padding: 12px; border: 2px solid var(--ink, #111); border-radius: 10px; background: var(--surface-2); box-shadow: 3px 3px 0 var(--violet); }
+.career-tile b { font-size: 26px; line-height: 1.1; }
+.career-tile .ct-icon { font-size: 20px; }
+.invite-toasts { position: fixed; z-index: 60; right: 16px; top: 72px; display: flex; flex-direction: column; gap: 8px; max-width: min(420px, calc(100vw - 32px)); }
+.invite-toast { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between; padding: 10px 12px; border-radius: 10px; background: var(--surface); border: 2px solid var(--violet); box-shadow: 4px 4px 0 var(--ink, #000); }

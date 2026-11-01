@@ -9,6 +9,7 @@ import { MAX_PLAYERS, createRoom, joinRoom, leaveRoom, listCloudSaves, resumeClo
 import { matchOrder } from '../../engine/tournament';
 import { store, useApp } from '../../store/store';
 import { Seg } from '../components/common';
+import { AddFriendButton, InviteFriends } from '../components/Social';
 
 /** A code from a shared link (…?room=KX7P2Q), used once. */
 export function codeFromLink(): string {
@@ -177,6 +178,7 @@ function Lobby() {
           {s.npcs > 0 && <div className="faint">+ {Math.min(s.npcs, MAX_PLAYERS - humans)} computer player{s.npcs > 1 ? 's' : ''}</div>}
           <p className="faint" style={{ margin: 0 }}>Share the code <strong>{room.code}</strong> or the invite link. Friends sign in (as a guest is fine) to join.</p>
           <p className="faint invite-link" style={{ margin: 0 }}>{link}</p>
+          <InviteFriends />
         </div>
         <div className="panel col" style={{ gap: 10 }}>
           <h3 style={{ margin: 0 }}>Rules</h3>
@@ -223,6 +225,7 @@ function Members() {
           <strong>{m.name}</strong>
           {m.userId === room.hostId && <span className="tag">HOST</span>}
           {m.userId === room.userId && <span className="faint">(you)</span>}
+          <AddFriendButton userId={m.userId} name={m.name} />
         </div>
       ))}
       {!room.members.length && <div className="faint">Loading players…</div>}

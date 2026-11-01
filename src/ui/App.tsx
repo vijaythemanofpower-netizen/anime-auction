@@ -14,6 +14,7 @@ import { RoomChat } from './components/RoomChat';
 import { SceneBackdrop } from './components/SceneBackdrop';
 import { PageArt } from './components/PageArt';
 import { AccountMenu } from './components/AccountMenu';
+import { SocialLayer } from './components/Social';
 import { ONLINE_AVAILABLE } from '../online/client';
 
 export function App() {
@@ -71,6 +72,7 @@ export function App() {
         )}
       </main>
       <RoomChat />
+      <SocialLayer />
       {toast && <div className={`toast ${toast.kind}`} role="status" aria-live="polite">{toast.text}</div>}
     </div>
     </>

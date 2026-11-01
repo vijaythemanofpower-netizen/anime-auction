@@ -301,10 +301,26 @@ function InjuryCracks({ injuries, fresh, flip }: { injuries: BattleInjury[]; fre
         const newest = fresh !== null && i === injuries.length - 1;
         const seed = (i + 1) * 977 + inj.part.length * 131;
         const rays = big ? 5 : 3;
+        // Each ray is a main fracture with a smaller branch off it, drawn as a dark split with a
+        // thin light edge (how real cracks catch the light), over a bruise.
+        const len = big ? 6 : 4.5;
+        const rayPaths = Array.from({ length: rays }, (_, r) => {
+          const main = crackPath(seed + r * 72 * 7, len);
+          const branch = crackPath(seed * 3 + r * 131, len * 0.55);
+          return { main, branch, rot: (360 / rays) * r + ((seed >> r) % 17) - 8, brot: 28 + ((seed >> (r + 2)) % 30) };
+        });
         return (
           <g key={`${inj.part}-${i}`} className={`crack${big ? ' fracture' : ''}${newest ? ' fresh' : ''}`} transform={`translate(${x} ${y})`}>
+            <ellipse className="bruise" rx={big ? 15 : 10} ry={big ? 12 : 8} />
             {newest && <circle className="crack-flash" r={big ? 16 : 10} />}
-            {Array.from({ length: rays }, (_, r) => <path key={r} d={crackPath(seed + r * 72 * 7, big ? 6 : 4.5)} transform={`rotate(${(360 / rays) * r})`} />)}
+            {rayPaths.map((p, r) => (
+              <g key={r} transform={`rotate(${p.rot})`}>
+                <path className="split" d={p.main} />
+                <path className="edge" d={p.main} transform="translate(0.45 0.35)" />
+                <g transform={`translate(${len * 2} 0) rotate(${p.brot})`}><path className="split thin" d={p.branch} /><path className="edge" d={p.branch} transform="translate(0.35 0.3)" /></g>
+              </g>
+            ))}
+            <polygon className="chip" points={big ? '-2.4,-1 0.4,-2.8 2.6,-0.4 1,2.2 -1.8,1.8' : '-1.4,-0.6 0.3,-1.6 1.5,-0.2 0.5,1.3 -1,1'} />
           </g>
         );
       })}

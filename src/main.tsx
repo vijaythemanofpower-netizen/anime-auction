@@ -11,6 +11,8 @@ import { store } from './store/store';
 import { initAuth } from './online/auth';
 import { codeFromLink } from './ui/screens/Online';
 import './online/room';
+import './online/friends';
+import './store/career';
 
 void store.init().then(() => { if (codeFromLink()) store.go('online'); });
 void initAuth();
