@@ -30,13 +30,14 @@ When Claude's usage limit runs out, Claude writes HANDOFF.md with one section pe
 - Phones matter: check new screens at 375 px wide (no sideways scroll, controls reachable).
 - Keep README.md current when behaviour changes; record open work below.
 
-## Open work (Oct 31 2026, end of Claude session)
-Recently added (all committed): plot twists (engine), live predictions, Raid Boss (src/engine/raid.ts, 47 bosses in data/villains.ts + legends, picks via 'raidPick' move, Boss Raid game mode in setup + online lobby), Team Battle (src/engine/teambattle.ts, 'teamPick' move), healers mend/revive, fight length from matchup (setFightLength) + power edge, whole-fight comics (one panel per exchange), duo drawings for big hits, manga UI (identity.css, manga.css, scenes.css, PageArt), official clip reel on home, email+password sign-in (AccountMenu.tsx), roast badges, desktop shortcut icon (assets/).
-"Boss raid not working" was the hub's tournament "Prepare match" button (it started PvP); it is now hidden on the Raid and Team Battle tabs. Raid comics draw the boss alongside whoever it fights (tested in tests/raid.test.ts). Comics stay blank until drawing finishes.
-Not yet checked in real play: online raids/team battles with two people, a full drawn comic via Start Game.bat, voices, phone layout on a real phone, Brevo emails (may land in spam).
+## Open work (Nov 1 2026, end of Claude session)
+Recently added (all committed, engine 2.9.0): fighting kits for all 76 built-ins + 36 raid villains (src/engine/data/kits.ts: forms reached mid-fight, extra moves, one situational secret move; engine checkTransform/kitMoment/unlocked); raids vs 1-4 bosses (raid.ts multiBoss, tuned: more bosses harder but winnable); arena play-by-play + form visuals (Arena.tsx PlayByPlay, .formed CSS); arena announced at match prep with fit recommendations (arenaFit.ts); pre-fight poll while drawing (predictions.ts preFightPoll, room 'guess' messages); online playback follows the host's clock + skip votes (room 'play'/'skipvote'); comics off by default, per-fight "Draw this fight"; corner calls up to 5 with taunt/focus/transform/secret; career dashboard (store/career.ts, profiles.career); friends + direct invites (online/friends.ts, ui/components/Social.tsx).
+Owner must run supabase/friends.sql once in the SQL editor (friends, invites, profiles.career). Until then the Friends tab shows a note and career saves only on the device.
+Not yet checked with two real players: playback sync and skip votes, pre-fight poll sharing, invites (Realtime on public.invites), raids/team battles online.
+Requested, not built: animated 2D character models doing the attacks/blocks with injuries on body parts (see the reply in the session: needs an art pipeline; options were AI-drawn full-body pose sets per fighter on the local drawing app, or cut-out rigs).
 Known limits:
 1. Drawings only work from the local version (Start Game.bat / localhost:5173); guests in a room hosted locally get the host's panels.
 2. Stats: built-ins + ~165 more characters have canon sheets (canonStats.ts, canonByName.ts); others use a profile-based guess.
 3. One drawing holds at most two fighters.
 4. Website and localhost keep separate sign-ins.
-5. Supabase Web3 sign-in rate limit got set to 60 by mistake (default 30); harmless.
+5. Characters outside the built-ins and raid villains have no kit (they keep type-based moves and the generic awakening).
