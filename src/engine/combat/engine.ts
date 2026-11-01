@@ -1585,7 +1585,8 @@ export class BattleSim {
   }
 
   private checkAwakening(f: CombatFighter) {
-    if (f.awakened || hpPct(f) >= 0.25) return;
+    // A fighter who has already transformed has had their power-up.
+    if (f.awakened || f.stage > 0 || hpPct(f) >= 0.25) return;
     let chance = 0.2 + f.eff.potential / 400 + f.eff.adaptability / 800;
     if (f.snap.traits.includes('Late Bloomer')) chance += 0.35;
     if (this.input.rivalry && this.input.rivalry.intensity >= 2) chance += 0.05;

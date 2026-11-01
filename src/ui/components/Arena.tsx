@@ -11,6 +11,9 @@ import { FighterStatus } from './InjuryReport';
 import { FxLayer } from '../fx/FxLayer';
 import { useApp } from '../../store/store';
 import { useFormPicture } from '../formPortraits';
+import { kitFor } from '../../engine/data/kits';
+
+const hasForms = (s: FighterSnapshot) => !!kitFor(s.charId, s.name)?.forms.length;
 
 export interface LiveFighter {
   snap: FighterSnapshot; hp: number; maxHp: number; st: number; maxSt: number; down: boolean; awakened: boolean; position: 'front' | 'back'; form: number;
@@ -135,7 +138,6 @@ export function ArenaStage({ record, cur, done, fighters, momentum, players, cha
             {pc ? <FighterArt c={pc} stage={f.stage ?? 0} /> : null}
             <InjuryCracks injuries={f.injuries} fresh={live?.type === 'injury' && live.target === f.snap.charId ? live.seq : null} flip={side === 1} />
             {f.fromBench && <span className="badge bench-badge">FROM THE BENCH</span>}
-            {f.formName && <span className="badge form-badge">{f.formName}</span>}
             {f.form >= 1.06 && <span className="badge good">TOP FORM</span>}
             {f.form <= 0.94 && <span className="badge bad">OFF DAY</span>}
             {input.mode !== 'solo' && <span className="pos">{f.position === 'front' ? 'FRONT' : 'BACK'}</span>}
@@ -143,6 +145,7 @@ export function ArenaStage({ record, cur, done, fighters, momentum, players, cha
             {f.knockdowns > 0 && !f.down && <span className="kd-mark" title={`Knocked down ${f.knockdowns} time(s)`}>{'▼'.repeat(f.knockdowns)}</span>}
             {f.down && <div className="ko">{f.howDown === 'stoppage' ? 'STOP' : 'K.O.'}</div>}
           </div>
+          {(f.formName || hasForms(f.snap)) && <div className={`form-label${f.formName ? ' on' : ''}`} title={f.formName ? `${f.snap.name} is in ${f.formName}` : `${f.snap.name}: base form`}>{f.formName ?? 'Base form'}</div>}
           <FighterStatus injuries={f.injuries} guard={f.guard} staminaPct={f.st / f.maxSt} down={f.down || f.floored} />
           <div className="shadow" />
         </div>

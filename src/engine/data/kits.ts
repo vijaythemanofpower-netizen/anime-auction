@@ -362,11 +362,18 @@ export const VILLAIN_KITS: Record<string, Kit> = {
   'Alucard': kit('alucard', [['Control Art Release', 'hp50', '#dc2626', 'alucard, release, red coat, many eyes']], [['jackal', 'Jackal', 'a', 2.0, 'WARRIOR', 'A massive pistol.'], ['hellhound', 'Hellhound Baskerville', 's', 1.9, 'DEMON', 'A black dog with many eyes.'], ['familiar', 'Familiars', 'e', 1.8, 'DEMON', 'Bats and eyes everywhere.', 1]], ['cromwell', 'Cromwell Level Zero', 'u', 3.0, 'DEMON', 'hp30', 'His army of souls is released.']),
 };
 
-/** Every kit move, for the move registry. */
-export const KIT_MOVES: Ability[] = [...Object.values(KITS), ...Object.values(VILLAIN_KITS)].flatMap((k) => [...k.moves, k.secret]);
+/** Everyone else (any character from the full AniList search): one awakened form when
+ *  pushed to the limit, and one secret burst for when a teammate falls. */
+export const GENERIC_KIT: Kit = kit('any',
+  [['Awakened', 'hp30', '#f5c451', 'glowing eyes, powerful glowing aura, hair flowing upward, battle damaged clothes, determined expression']],
+  [],
+  ['limit_break', 'Limit Break', 'u', 2.5, 'SPIRIT', 'ally', 'Everything they were holding back comes out in one blow.']);
 
-/** The kit for a character, from their id (built-ins) or name (raid villains). */
-export function kitFor(charId: string, name?: string): Kit | null {
-  if (charId.startsWith('legend:')) return KITS[charId.slice(7)] ?? null;
-  return (name && VILLAIN_KITS[name]) || null;
+/** Every kit move, for the move registry. */
+export const KIT_MOVES: Ability[] = [...Object.values(KITS), ...Object.values(VILLAIN_KITS), GENERIC_KIT].flatMap((k) => [...k.moves, k.secret]);
+
+/** The kit for a character: their own (built-ins by id, raid villains by name), or the shared awakened one. */
+export function kitFor(charId: string, name?: string): Kit {
+  if (charId.startsWith('legend:') && KITS[charId.slice(7)]) return KITS[charId.slice(7)];
+  return (name && VILLAIN_KITS[name]) || GENERIC_KIT;
 }

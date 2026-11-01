@@ -64,7 +64,7 @@ describe('combat engine', () => {
         for (const v of [e.hpBefore, e.hpAfter]) if (v !== undefined) expect(v).toBeGreaterThanOrEqual(0);
         if (e.damage !== undefined) expect(e.damage).toBeGreaterThanOrEqual(1);
         if (e.target && e.hpAfter !== undefined) lastHp.set(e.target, e.hpAfter);
-        if (e.actor && e.hpAfter !== undefined && e.type === 'awakening') lastHp.set(e.actor, e.hpAfter);
+        if (e.actor && e.hpAfter !== undefined && (e.type === 'awakening' || e.type === 'transform')) lastHp.set(e.actor, e.hpAfter);
       }
       for (const f of r.fighters) {
         expect(f.hp).toBeGreaterThanOrEqual(0);

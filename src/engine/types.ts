@@ -3,7 +3,7 @@
 // read hidden game data by accident.
 
 export const SCHEMA_VERSION = 1;
-export const ENGINE_VERSION = '2.9.0';
+export const ENGINE_VERSION = '2.10.0';
 export const STARTING_COINS = 10_000;
 
 export type Archetype =

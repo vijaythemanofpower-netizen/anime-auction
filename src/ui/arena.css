@@ -389,3 +389,7 @@
 .form-pic { animation: form-pic-in 0.6s ease-out both; }
 @keyframes form-pic-in { from { opacity: 0; transform: scale(1.08); filter: brightness(2.2); } to { opacity: 1; transform: none; filter: none; } }
 @media (prefers-reduced-motion: reduce) { .form-pic { animation: none; } }
+/* Which mode the fighter is in, small and under the picture so it never covers it. */
+.stand .form-label { width: fit-content; margin: 3px auto 0; max-width: 100%; padding: 1px 6px; border-radius: 999px; font-size: 10px; line-height: 1.4; font-weight: 700; letter-spacing: 0.02em; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--text-dim, #a1a1aa); background: rgba(0, 0, 0, 0.45); border: 1px solid rgba(255, 255, 255, 0.12); }
+.stand .form-label.on { color: #0b0b0b; background: var(--form, #f5c451); border-color: transparent; }
+@media (max-width: 640px) { .stand .form-label { font-size: 9px; padding: 0 4px; } }
