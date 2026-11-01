@@ -2,6 +2,8 @@
 // recipe, and the most iconic signature moves have their own.
 import type { BattleEvent, VfxKind } from '../../engine/types';
 import type { FxDirector, Pt } from './engine';
+import { ABILITIES } from '../../engine/data/abilities';
+import { chargeMotif, motifsOf, strikeMotif } from './motifs';
 
 export interface Staging {
   /** Black-and-white inverted flash, the classic anime impact frame. */
@@ -153,6 +155,8 @@ export function playFx(fx: FxDirector, ctx: PlayCtx): boolean {
       if (!from) return false;
       const ult = e.context?.kind === 'ultimate';
       if (sig?.charge) sig.charge(fx, from, c, c2);
+      // The move's own motifs (clones, petals, gravity...) on top of the base charge.
+      else if (e.ability && ABILITIES[e.ability] && !reduced) for (const m of motifsOf(ABILITIES[e.ability])) chargeMotif(fx, m, from, c, c2);
       else if (kind === 'aura' || e.context?.kind === 'buff') aura(fx, from, c, c2, ult ? 1.4 : 1);
       else { fx.charge(from, c, 650, 110, ult ? 60 : 30); fx.orb(from, c, ult ? 34 : 20, 700, { alpha: 0.7 }); }
       if (ult && !reduced) { fx.speedLines(from, '#ffffff', 900); stage.zoom(from); }
@@ -164,7 +168,11 @@ export function playFx(fx: FxDirector, ctx: PlayCtx): boolean {
       const k = kind ?? 'punch';
       const t = e.type === 'miss' ? { x: to.x + 70, y: to.y - 50 } : to;
       if (sig?.strike) sig.strike(fx, start, t, c, c2, impact);
-      else KIND[k](fx, start, t, c, c2, impact);
+      else {
+        KIND[k](fx, start, t, c, c2, impact);
+        // The move's own motifs layered on the base effect (not on misses: the move went wide).
+        if (e.ability && ABILITIES[e.ability] && e.type !== 'miss' && !reduced) for (const m of motifsOf(ABILITIES[e.ability])) strikeMotif(fx, m, start, t, c, c2);
+      }
       return true;
     }
     case 'clash': {

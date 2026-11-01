@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import './ui/styles.css';
 import './ui/scenes.css';
 import './ui/arena.css';
+import './ui/battlefield.css';
 import './ui/comic.css';
 import './ui/identity.css';
 import './ui/manga.css';

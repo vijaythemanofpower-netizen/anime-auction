@@ -1,6 +1,6 @@
 // Visual battle stage. Everything shown is driven by the verified event at
 // the current playback position: effects never invent hits or damage.
-import { useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
+import { useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import type { BattleEvent, BattleInjury, BattleRecord, FighterSnapshot, Player, PublicCharacter, VfxKind } from '../../engine/types';
 import { ABILITIES, getAbility, vfxOf } from '../../engine/data/abilities';
 import { getEnvironment } from '../../engine/data/world';
@@ -13,6 +13,12 @@ import { useApp } from '../../store/store';
 import { useFormPicture } from '../formPortraits';
 import { kitFor } from '../../engine/data/kits';
 import { damagePercents, type BodyDamage } from '../bodyDamage';
+import { buildBattlefield, frameAt } from '../battlefield/director';
+import { Crowd, GroundMarks, MoveLight, PropsLayer, SkyAndGround, weatherLabel, type FighterPos } from '../battlefield/Battlefield';
+import { FighterRig, RigGhosts, useSpriteSheet } from '../battlefield/FighterRig';
+import { profileOf } from '../battlefield/motion';
+import type { BridgeCtx } from '../battlefield/fxBridge';
+import type { MotionCue } from '../battlefield/director';
 
 const hasForms = (s: FighterSnapshot) => !!kitFor(s.charId, s.name)?.forms.length;
 
@@ -48,21 +54,45 @@ function fxKindFor(e: BattleEvent, snap: FighterSnapshot | undefined, envId: str
   return snap.reach === 'ranged' ? 'projectile' : snap.archetype === 'Duelist' || snap.archetype === 'Assassin' ? 'slash' : 'punch';
 }
 
-function colorsFor(e: BattleEvent, envId: string): [string, string] {
+function colorsFor(e: BattleEvent, envId: string, snap?: FighterSnapshot): [string, string] {
   if (e.ability && ABILITIES[e.ability]) { const a = ABILITIES[e.ability]; return [a.fx.color, a.color2 ?? '#ffffff']; }
   if (e.context?.environmental) return [getEnvironment(envId).palette[2], '#ffffff'];
+  // Plain strikes carry the fighter's own colour (their first signature move's), so everyone hits like themself.
+  const sig = snap?.abilities.map((id) => ABILITIES[id]).find((a) => a?.owner);
+  if (sig) return [sig.fx.color, sig.color2 ?? '#ffffff'];
   return ['#e5e7eb', '#ffffff'];
 }
 
-export function ArenaStage({ record, cur, done, fighters, momentum, players, characters }: {
+/** Where an element sits inside the camera's (untransformed) space, so effects line up while the camera moves. */
+function placeIn(el: HTMLElement, root: HTMLElement): { x: number; y: number; w: number; h: number } {
+  let x = 0, y = 0;
+  let n: HTMLElement | null = el;
+  while (n && n !== root) { x += n.offsetLeft; y += n.offsetTop; n = n.offsetParent as HTMLElement | null; }
+  let w = el.offsetWidth, h = el.offsetHeight;
+  // The back line is drawn smaller and raised (scale(0.86) translateY(-18px), origin bottom centre).
+  const line = el.closest('.line.back') as HTMLElement | null;
+  if (line && n === root) {
+    const lp = placeIn(line, root);
+    const ox = lp.x + lp.w / 2, oy = lp.y + lp.h, s = 0.86;
+    x = ox + s * (x - ox); y = oy + s * (y - oy - 18); w *= s; h *= s;
+  }
+  return { x, y, w, h };
+}
+
+export function ArenaStage({ record, cur, done, fighters, momentum, players, characters, speed = 1 }: {
   record: BattleRecord; cur: BattleEvent | null; done: boolean; fighters: Map<string, LiveFighter>; momentum: number;
-  players: Player[]; characters: Record<string, PublicCharacter>;
+  players: Player[]; characters: Record<string, PublicCharacter>; speed?: number;
 }) {
   const { input, result } = record;
   const env = getEnvironment(input.environmentId);
   const arenaRef = useRef<HTMLDivElement>(null);
+  const camRef = useRef<HTMLDivElement>(null);
   const standRefs = useRef(new Map<string, HTMLDivElement>());
-  const [pos, setPos] = useState<Record<string, Pt>>({});
+  const [pos, setPos] = useState<FighterPos>({});
+  // The fight director's script for the whole battle: weather, destruction, camera and motion.
+  const script = useMemo(() => buildBattlefield(record), [record]);
+  const seqNow = done ? Number.MAX_SAFE_INTEGER : cur?.seq ?? 0;
+  const frame = cur ? (done ? script.frames[script.frames.length - 1] : frameAt(script, cur.seq)) : script.frames[0];
   // GPU effects replace the simpler CSS effects once the canvas is ready.
   const [gpu, setGpu] = useState(false);
   const motionSetting = useApp((s) => s.settings.reducedMotion);
@@ -73,12 +103,12 @@ export function ArenaStage({ record, cur, done, fighters, momentum, players, cha
 
   useLayoutEffect(() => {
     const measure = () => {
-      const a = arenaRef.current?.getBoundingClientRect();
-      if (!a) return;
-      const next: Record<string, Pt> = {};
+      const cam = camRef.current;
+      if (!cam) return;
+      const next: FighterPos = {};
       standRefs.current.forEach((el, id) => {
-        const r = el.getBoundingClientRect();
-        next[id] = { x: r.left - a.left + r.width / 2, y: r.top - a.top + r.height * 0.45 };
+        const r = placeIn(el, cam);
+        next[id] = { x: Math.round(r.x + r.w / 2), y: Math.round(r.y + r.h * 0.45), foot: Math.round(r.y + r.h), w: Math.round(r.w) };
       });
       setPos((prev) => (JSON.stringify(prev) === JSON.stringify(next) ? prev : next));
     };
@@ -98,13 +128,16 @@ export function ArenaStage({ record, cur, done, fighters, momentum, players, cha
   const shake = live && isStrike && live.type !== 'miss' && live.type !== 'block' ? (bigHit ? 'shake-big' : heavy ? 'shake' : '')
     : live?.type === 'knockdown' || isClash ? 'shake-big' : live?.type === 'awakening' || live?.type === 'environment' || live?.type === 'guard_break' ? 'shake' : '';
 
+  // The director can shake the camera too (knockdowns, ultimates, hazards).
+  const dShake = live && frame && !reduced ? frame.camera.shake : 0;
+  const shakeNow = shake === 'shake-big' || dShake >= 2 ? 'shake-big' : shake || (dShake === 1 ? 'shake' : '');
   // Restart the shake animation on each qualifying event without remounting the stage.
   useLayoutEffect(() => {
     const el = arenaRef.current;
     if (!el) return;
     el.classList.remove('shake', 'shake-big');
-    if (shake) { void el.offsetWidth; el.classList.add(shake); }
-  }, [live?.seq, shake]);
+    if (shakeNow) { void el.offsetWidth; el.classList.add(shakeNow); }
+  }, [live?.seq, shakeNow]);
 
   // Move banner: the most recent move announcement within the current action.
   let banner: BattleEvent | null = null;
@@ -134,11 +167,13 @@ export function ArenaStage({ record, cur, done, fighters, momentum, players, cha
       const hit = !!live && live.target === f.snap.charId && ['attack', 'counter', 'status_tick'].includes(live.type);
       const blocking = !!live && live.target === f.snap.charId && live.type === 'block';
       const pc = characters[f.snap.charId];
+      const art = pc ? <FighterArt c={pc} stage={f.stage ?? 0} /> : null;
       return (
-        <div key={f.snap.charId} className={`stand${f.fromBench ? ' from-bench' : ''}${f.hp / f.maxHp < 0.3 && !f.down ? ' hurt' : ''}${acting ? ' acting' : ''}${acting && (melee || isClash) ? ' lunge' : ''}${hit ? ' hit' : ''}${blocking ? ' blocking' : ''}${f.floored ? ' floored' : ''}${f.staggered && !f.down ? ' staggered' : ''}${f.down ? ' down' : ''}${f.awakened ? ' awakened' : ''}${f.stage ? ` formed stage-${Math.min(3, f.stage)}` : ''}`}
+        <div key={f.snap.charId} className={`stand${f.fromBench ? ' from-bench' : ''}${f.hp / f.maxHp < 0.3 && !f.down ? ' hurt' : ''}${acting ? ' acting' : ''}${acting && reduced && (melee || isClash) ? ' lunge' : ''}${hit ? ' hit' : ''}${blocking ? ' blocking' : ''}${f.floored ? ' floored' : ''}${f.staggered && !f.down ? ' staggered' : ''}${f.down ? ' down' : ''}${f.awakened ? ' awakened' : ''}${f.stage ? ` formed stage-${Math.min(3, f.stage)}` : ''}`}
           style={{ ['--form' as string]: f.formColor ?? '#f5c451', ['--sw' as string]: sw, ['--side' as string]: pcolor(side), ['--lx' as string]: side === 0 ? '46px' : '-46px', ['--fall' as string]: side === 0 ? '-14deg' : '14deg' } as CSSProperties}>
+          {!reduced && <RigGhosts art={art} />}
           <div className="pf" ref={(el) => { if (el) standRefs.current.set(f.snap.charId, el); else standRefs.current.delete(f.snap.charId); }}>
-            {pc ? <FighterArt c={pc} stage={f.stage ?? 0} /> : null}
+            <Body id={f.snap.charId} art={art} cue={frame && cur && !done ? frame.motion[f.snap.charId] : done && frame ? frame.motion[f.snap.charId] : undefined} seq={cur?.seq ?? 0} side={side} snap={f.snap} reduced={!!reduced} speed={speed} />
             <InjuryCracks injuries={f.injuries} fresh={live?.type === 'injury' && live.target === f.snap.charId ? live.seq : null} flip={side === 1} />
             {f.fromBench && <span className="badge bench-badge">FROM THE BENCH</span>}
             {f.form >= 1.06 && <span className="badge good">TOP FORM</span>}
@@ -164,9 +199,40 @@ export function ArenaStage({ record, cur, done, fighters, momentum, players, cha
 
   const from = live?.actor ? pos[live.actor] : undefined;
   const to = live?.target ? pos[live.target] : undefined;
-  const w = arenaRef.current?.clientWidth ?? 800;
-  const h = arenaRef.current?.clientHeight ?? 500;
+  const w = camRef.current?.clientWidth ?? arenaRef.current?.clientWidth ?? 800;
+  const h = camRef.current?.clientHeight ?? arenaRef.current?.clientHeight ?? 500;
   const css = !gpu;
+  const feet = Object.values(pos).map((p) => p.foot);
+  const ground = feet.length ? Math.max(...feet) : h * 0.86;
+
+  // The camera follows the director's shot: push in on whoever matters, tilt, letterbox.
+  const cam = frame && !reduced && cur ? frame.camera : null;
+  const focusPt = (() => {
+    if (!cam || cam.focus === 'wide') return { x: w / 2, y: h * 0.55 };
+    const a = live?.actor ? pos[live.actor] : undefined, t = live?.target ? pos[live.target] : undefined;
+    const p = cam.focus === 'actor' ? a ?? t : cam.focus === 'target' ? t ?? a : a && t ? { x: (a.x + t.x) / 2, y: (a.y + t.y) / 2 } : a ?? t;
+    return p ? { x: p.x, y: p.y } : { x: w / 2, y: h * 0.55 };
+  })();
+  const zoom = done ? 1 : cam?.zoom ?? 1;
+  const camStyle: CSSProperties = reduced ? {} : {
+    transformOrigin: `${focusPt.x}px ${focusPt.y}px`,
+    transform: `scale(${zoom}) rotate(${done ? 0 : cam?.tilt ?? 0}deg)`,
+    transitionDuration: `${Math.round((cam?.zoom ?? 1) > 1.15 ? 420 / speed : 700 / speed)}ms`,
+  };
+
+  // The GPU layer's share of the battlefield: weather, auras, hazards, splashes, debris.
+  const auras = [...fighters.values()].filter((f) => !f.down && (f.stage || f.awakened) && pos[f.snap.charId])
+    .map((f) => ({ at: { x: pos[f.snap.charId].x, y: pos[f.snap.charId].y }, color: f.formColor || '#f5c451', power: Math.min(0.9, 0.35 + (f.stage ?? 0) * 0.2 + (f.awakened ? 0.15 : 0)) }));
+  const field: BridgeCtx | null = frame ? {
+    frame, ground: script.climate.ground, pos, actor: live?.actor, target: live?.target, auras, reduced: !!reduced,
+    propAt: (id) => {
+      const el = camRef.current?.querySelector<HTMLElement>(`[data-prop="${id}"]`);
+      if (!el || !camRef.current) return undefined;
+      const r = placeIn(el, camRef.current);
+      return { x: r.x + r.w / 2, y: r.y + r.h * 0.6 };
+    },
+  } : null;
+  const lightAt = frame?.light ? (frame.light.at === 'actor' ? from : frame.light.at === 'target' ? to ?? from : from && to ? { x: (from.x + to.x) / 2, y: (from.y + to.y) / 2 } : from ?? to) : undefined;
 
   const staging = {
     impactFrame: () => {
@@ -178,8 +244,9 @@ export function ArenaStage({ record, cur, done, fighters, momentum, players, cha
       setTimeout(() => el.classList.remove('impact-frame'), 140);
     },
     zoom: (at: Pt) => {
+      // The director's camera does the push-in now; the old stage zoom is only for reduced motion off + no script.
       const el = stageRef.current;
-      if (!el) return;
+      if (!el || frame) return;
       el.style.setProperty('--zx', `${at.x}px`);
       el.style.setProperty('--zy', `${at.y}px`);
       el.classList.add('zoom');
@@ -188,23 +255,23 @@ export function ArenaStage({ record, cur, done, fighters, momentum, players, cha
   };
   const fxKind = live ? (isStrike || live.type === 'ability' || live.type === 'desperation' || live.type === 'reinforcement' ? fxKindFor(live, actorSnap, input.environmentId) : null) : null;
   const fxCtx = live ? {
-    e: live, from, to: to ?? (live.type === 'awakening' ? from : undefined), kind: fxKind, colors: colorsFor(live, input.environmentId),
+    e: live, from, to: to ?? (live.type === 'awakening' ? from : undefined), kind: fxKind, colors: colorsFor(live, input.environmentId, actorSnap),
     partnerAt: typeof live.context?.partner === 'string' ? pos[live.context.partner] : undefined, stage: staging, reduced,
   } : null;
 
   return (
     <>
-    <div ref={arenaRef} className={`arena2${size > 2 ? ' squad' : ''}`} style={{ ['--env-accent' as string]: env.palette[2] + '55' } as CSSProperties}>
+    <div ref={arenaRef} className={`arena2${size > 2 ? ' squad' : ''}${cam?.letterbox && !done ? ' letterbox' : ''}${reduced ? ' still' : ''}`} style={{ ['--env-accent' as string]: env.palette[2] + '55', ['--hype' as string]: frame?.hype ?? 0 } as CSSProperties}>
+      <div className="cam" ref={camRef} style={camStyle}>
       <ArenaBackdrop envId={input.environmentId} />
-      <div className="arena-hud">
-        <div><div className="env-name">{env.name}</div><div className="faint" style={{ fontSize: 11 }}>{input.mode === 'solo' ? 'Solo Duel' : input.mode === 'tag' ? 'Tag Team' : 'Squad Battle'}</div></div>
-        <div className="faint" style={{ fontSize: 11, textAlign: 'right' }}>Action {cur?.turn ?? 0}</div>
-      </div>
-      <div className="mom-bar" aria-label="Momentum" title="Momentum">
-        <span style={{ background: momentum >= 0 ? pcolor(0) : pcolor(1), left: momentum >= 0 ? '50%' : `${50 + momentum / 2}%`, width: `${Math.abs(momentum) / 2}%` }} />
-      </div>
+      {input.environmentId === 'colosseum' && <Crowd hype={frame?.hype ?? 0} seq={cur?.seq ?? 0} />}
+      <SkyAndGround frame={frame} seq={cur?.seq ?? 0} envId={input.environmentId} />
+      <PropsLayer script={script} seq={seqNow} layer="back" hitNow={live ? frame?.propHits ?? [] : []} wind={frame?.weather.wind ?? 0} />
+      <GroundMarks script={script} seq={seqNow} pos={pos} w={w} h={h} ground={ground} />
+      <MoveLight frame={live ? frame : undefined} seq={cur?.seq ?? 0} at={lightAt} />
       <div className="stage" ref={stageRef}>{renderSide(0)}{renderSide(1)}</div>
-      <FxLayer ctx={fxCtx} seq={live?.seq ?? 0} onReady={setGpu} />
+      <PropsLayer script={script} seq={seqNow} layer="front" hitNow={live ? frame?.propHits ?? [] : []} wind={frame?.weather.wind ?? 0} />
+      <FxLayer ctx={fxCtx} field={field} seq={live?.seq ?? 0} onReady={setGpu} />
 
       <div className="fx-layer" key={live?.seq ?? 'none'}>
         {css && live && kind && from && to && live.type !== 'parry' && <Effect kind={kind} from={from} to={to} colors={colorsFor(live, input.environmentId)} seq={live.seq} miss={live.type === 'miss' || live.type === 'block'} w={w} h={h} />}
@@ -241,6 +308,17 @@ export function ArenaStage({ record, cur, done, fighters, momentum, players, cha
           <div className="plot-banner" key={live.seq}><b>PLOT TWIST!</b><span>{String(live.context?.title ?? '')}</span></div>
         )}
       </div>
+      </div>
+
+      <div className="arena-hud">
+        <div><div className="env-name">{env.name}</div><div className="faint" style={{ fontSize: 11 }}>{input.mode === 'solo' ? 'Solo Duel' : input.mode === 'tag' ? 'Tag Team' : 'Squad Battle'}</div></div>
+        <div className="faint" style={{ fontSize: 11, textAlign: 'right' }}>Action {cur?.turn ?? 0}{frame ? <div className="wx-label">{weatherLabel(frame)}</div> : null}</div>
+      </div>
+      <div className="mom-bar" aria-label="Momentum" title="Momentum">
+        <span style={{ background: momentum >= 0 ? pcolor(0) : pcolor(1), left: momentum >= 0 ? '50%' : `${50 + momentum / 2}%`, width: `${Math.abs(momentum) / 2}%` }} />
+      </div>
+      <div className="letterbox-bar top" aria-hidden="true" />
+      <div className="letterbox-bar bottom" aria-hidden="true" />
 
       {live?.type === 'rival' && live.actor && live.target && (
         <div className="versus" key={`vs${live.seq}`}>
@@ -509,6 +587,13 @@ function PlayByPlay({ events, upto, names }: { events: BattleEvent[]; upto: numb
   }
   if (!lines.length) return null;
   return <div className="pbp" aria-live="polite">{lines.map((l) => <div key={l.seq} className={`pbp-line ${l.tone}`}>{l.text}</div>)}</div>;
+}
+
+/** The fighter's animated body: their own sprite sheet if one exists, else the procedural rig. */
+function Body({ id, art, cue, seq, side, snap, reduced, speed }: { id: string; art: ReactNode; cue: MotionCue | undefined; seq: number; side: 0 | 1; snap: FighterSnapshot; reduced: boolean; speed: number }) {
+  const sheet = useSpriteSheet(id);
+  const profile = useMemo(() => profileOf(snap), [snap]);
+  return <FighterRig art={art} cue={cue} seq={seq} dir={side === 0 ? 1 : -1} profile={profile} reduced={reduced} speed={speed} sheet={sheet} />;
 }
 
 /** The fighter's picture: their form's picture once they transform (if there is one), else their portrait. */

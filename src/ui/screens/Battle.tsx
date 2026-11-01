@@ -298,7 +298,7 @@ export function BattleView({ record, exhibition }: { record: BattleRecord; exhib
       </div>
       {comic
         ? <ComicStage record={record} script={script} cur={idx > 0 ? cur : null} done={done} characters={g.characters} waiting={waitingArt && !prepping} reduced={reduced} aiDrawings={aiDrawings} remoteArt={remoteArt} manga={comicStyle === 'manga'} prep={prepping ? prep : undefined} onStartNow={() => setStartEarly(true)} />
-        : <ArenaStage record={record} cur={idx > 0 ? cur : null} done={done} fighters={state.fs} momentum={state.momentum} players={g.players} characters={g.characters} />}
+        : <ArenaStage record={record} cur={idx > 0 ? cur : null} done={done} fighters={state.fs} momentum={state.momentum} players={g.players} characters={g.characters} speed={speed} />}
       {remoteCorner && cornerPlayer && (
         <div className="panel row" style={{ justifyContent: 'space-between', borderColor: 'var(--warn)' }}>
           <span><span className="spinner" style={{ display: 'inline-block', width: 14, height: 14, verticalAlign: 'middle', marginRight: 8 }} />Waiting for <strong>{cornerPlayer.name}</strong>&apos;s corner call…</span>

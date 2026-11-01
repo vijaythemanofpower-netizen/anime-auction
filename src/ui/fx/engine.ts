@@ -3,6 +3,7 @@
 // silhouettes and screen-wide washes, plus time control for hit-stop and
 // slow motion. Recipes in recipes.ts compose these into attacks.
 import { Application, Container, Graphics, Sprite, Texture, type Ticker } from 'pixi.js';
+import { WeatherSystem } from './weather';
 
 export type Pt = { x: number; y: number };
 
@@ -55,6 +56,13 @@ export class FxDirector {
   w = 800;
   h = 500;
   ready = false;
+  /** Weather particles, drawn under the attack effects. */
+  readonly weather = new WeatherSystem();
+  /** Fighters in a transformed / awakened state keep a living aura. */
+  private auras: Array<{ at: Pt; color: string; power: number }> = [];
+  private auraCarry = 0;
+  /** Particle budget for this device (1 = full). */
+  quality = 1;
 
   async mount(el: HTMLElement): Promise<boolean> {
     try {
@@ -69,7 +77,16 @@ export class FxDirector {
       this.hard = glowTexture(32, 0.45);
       this.overlay.blendMode = 'normal';
       this.layer.blendMode = 'add';
-      app.stage.addChild(this.overlay, this.layer);
+      this.weather.init();
+      this.weather.resize(this.w, this.h);
+      // Smaller budget on weak devices: few cores, or a phone-sized screen at high density.
+      const cores = navigator.hardwareConcurrency || 4;
+      this.quality = cores <= 4 || (window.innerWidth < 700 && (window.devicePixelRatio || 1) > 2) ? 0.55 : 1;
+      this.weather.quality = this.quality;
+      app.stage.addChild(this.weather.root, this.overlay, this.layer);
+      // Nothing to draw while the tab is hidden.
+      this.onVis = () => { if (document.hidden) app.ticker.stop(); else app.ticker.start(); };
+      document.addEventListener('visibilitychange', this.onVis);
       app.ticker.add((t: Ticker) => this.update(t.deltaMS));
       this.ready = true;
       return true;
@@ -78,13 +95,19 @@ export class FxDirector {
     }
   }
 
+  private onVis: (() => void) | null = null;
+
   destroy() {
+    if (this.onVis) document.removeEventListener('visibilitychange', this.onVis);
     try { this.app?.destroy(true, { children: true }); } catch { /* already gone */ }
     this.app = null;
     this.ready = false;
   }
 
-  resize(w: number, h: number) { this.w = w; this.h = h; }
+  resize(w: number, h: number) { this.w = w; this.h = h; this.weather.resize(w, h); }
+
+  /** Living auras around transformed fighters (set every event; empty to clear). */
+  setAuras(list: Array<{ at: Pt; color: string; power: number }>) { this.auras = list; }
 
   clear() {
     for (const p of this.particles) this.release(p.s);
@@ -113,6 +136,17 @@ export class FxDirector {
     if (now > this.slowUntil) this.timeScale = 1;
     const dt = Math.min(50, realDt) * this.timeScale;
     this.clock += dt;
+    this.weather.update(dt);
+    if (this.auras.length) {
+      this.auraCarry += dt * 0.06 * this.quality;
+      while (this.auraCarry >= 1) {
+        this.auraCarry -= 1;
+        for (const a of this.auras) {
+          if (Math.random() > a.power) continue;
+          this.spark({ x: a.at.x + rand(-55, 55), y: a.at.y + rand(10, 90) }, Math.random() < 0.7 ? a.color : '#ffffff', { vy: -rand(2, 4.5), vx: rand(-0.6, 0.6), life: rand(500, 900), size: rand(10, 20), grav: -0.03, drag: 0.98 });
+        }
+      }
+    }
     if (this.tasks.length) {
       const due = this.tasks.filter((t) => t.at <= this.clock);
       this.tasks = this.tasks.filter((t) => t.at > this.clock);
@@ -156,7 +190,7 @@ export class FxDirector {
 
   /** A single glowing particle. */
   spark(at: Pt, color: string, o: { vx?: number; vy?: number; life?: number; size?: number; endSize?: number; alpha?: number; drag?: number; grav?: number; hard?: boolean; spin?: number } = {}) {
-    if (this.particles.length > 1400) return;
+    if (this.particles.length > 1400 * this.quality) return;
     const s = this.take(o.hard ? this.hard : this.soft);
     s.tint = hex(color);
     s.x = at.x; s.y = at.y;

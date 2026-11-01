@@ -36,7 +36,8 @@ git pull --rebase --quiet origin main 2>&1 | Out-Null
 # The text under "## <Name> task" up to the next "## " heading.
 function Task-For($name) {
   $text = Get-Content 'HANDOFF.md' -Raw
-  $m = [regex]::Match($text, "(?ms)^##\s+$name task\s*$(.*?)(?=^##\s|\z)")
+  # Single quotes: inside double quotes PowerShell would run "$(.*?)" as a command.
+  $m = [regex]::Match($text, '(?ms)^##\s+' + $name + ' task\s*$(.*?)(?=^##\s|\z)')
   if (-not $m.Success) { return '' }
   $body = $m.Groups[1].Value.Trim()
   if ($body -match '^(none|-|n/a)\b') { return '' }

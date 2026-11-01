@@ -58,8 +58,30 @@ export function narrate(input: BattleInput, result: BattleResult, ctx: Narration
     used.add(v);
     return v;
   };
-  const say = (e: BattleEvent, text: string, tone: NarrationLine['tone'] = 'calm', speaker = 'narrator') =>
+  // The commentator never says the exact same line twice within a dozen lines.
+  const recent: string[] = [];
+  const say = (e: BattleEvent, text: string, tone: NarrationLine['tone'] = 'calm', speaker = 'narrator') => {
+    if (!text) return;
+    if (speaker === 'narrator') {
+      if (recent.includes(text)) return;
+      recent.push(text);
+      if (recent.length > 14) recent.shift();
+    }
     lines.push({ eventId: e.id, seq: e.seq, speaker, text, tone });
+  };
+  /** A phrasing not used lately (falls back to any). */
+  const vary = (options: string[]) => pick(options.filter((o) => !recent.includes(o)).length ? options.filter((o) => !recent.includes(o)) : options);
+  // Verbs: never the same one twice in a row.
+  const lastVerbs: string[] = [];
+  const verbFor = (impact: string) => {
+    const all = IMPACT[impact] ?? IMPACT.solid;
+    const fresh = all.filter((v) => !lastVerbs.includes(v));
+    const v = rng.pick(fresh.length ? fresh : all);
+    lastVerbs.push(v); if (lastVerbs.length > 3) lastVerbs.shift();
+    return v;
+  };
+  // A move's look is described the first time a fighter uses it; after that, short callbacks.
+  const seenMove = new Set<string>();
   const dialogue = (e: BattleEvent, id: string | undefined, kind: keyof (typeof DIALOGUE)['stoic']) => {
     const t = temp(id);
     if (!t || !id) return;
@@ -98,9 +120,9 @@ export function narrate(input: BattleInput, result: BattleResult, ctx: Narration
         say(e, pick(OPENERS), 'hype');
         break;
       case 'attack': {
-        if (e.context?.environmental) { say(e, `${nm(e.target)} is caught in it!`, 'tense'); break; }
+        if (e.context?.environmental) { say(e, vary([`${nm(e.target)} is caught in it!`, `${nm(e.target)} can't get clear!`, `It hits ${nm(e.target)} too!`, `${nm(e.target)} takes the brunt of it!`]), 'tense'); break; }
         const impact = String(e.context?.impact ?? 'solid');
-        const verb = rng.pick(IMPACT[impact] ?? IMPACT.solid);
+        const verb = verbFor(impact);
         const big = impact === 'heavy' || impact === 'devastating' || e.crit;
         const move = e.ability ? `${getAbility(e.ability).name} ` : '';
         // Plain attacks are described in the fighter's own style and element.
@@ -148,7 +170,7 @@ export function narrate(input: BattleInput, result: BattleResult, ctx: Narration
         if (rng.chance(0.6)) say(e, `${pick(BLOCK)} ${nm(e.target)} stops ${nm(e.actor)}'s attack cold.`, 'calm');
         break;
       case 'guard_break':
-        say(e, `THE GUARD IS BROKEN! ${nm(e.target)} is wide open!`, 'shock');
+        say(e, vary([`THE GUARD IS BROKEN! ${nm(e.target)} is wide open!`, `${nm(e.target)}'s guard SHATTERS!`, `Nothing left to block with — ${nm(e.target)} is exposed!`, `The defence caves in! ${nm(e.target)} is open!`]), 'shock');
         break;
       case 'parry':
         say(e, `${pick(PARRY)} ${nm(e.actor)} deflects ${nm(e.target)}.`, 'hype');
@@ -158,7 +180,7 @@ export function narrate(input: BattleInput, result: BattleResult, ctx: Narration
         const theirs = typeof e.context?.counterMove === 'string' ? getAbility(e.context.counterMove).name : 'a counter';
         say(e, e.context?.rival ? `THE RIVALS' SIGNATURE MOVES MEET! ${mine} against ${theirs}!` : `${pick(CLASH)} ${mine} against ${theirs}!`, 'shock');
         const w = e.context?.winner as string;
-        say(e, w ? `${nm(w)} wins the clash!` : 'Neither gives an inch. They cancel out!', 'tense');
+        say(e, w ? vary([`${nm(w)} wins the clash!`, `${nm(w)} overpowers it!`, `${nm(w)} pushes straight through!`, `The clash goes to ${nm(w)}!`]) : vary(['Neither gives an inch. They cancel out!', 'Dead even! Both moves fizzle out!', 'A stalemate in mid-air!']), 'tense');
         break;
       }
       case 'injury':
@@ -180,36 +202,45 @@ export function narrate(input: BattleInput, result: BattleResult, ctx: Narration
       case 'ability': {
         const a = e.ability ? getAbility(e.ability) : null;
         if (!a) break;
-        say(e, `${nm(e.actor).toUpperCase()} ACTIVATES ${a.name.toUpperCase()}!`, 'hype');
-        if (a.look) say(e, a.look, 'tense');
-        if (a.shout && rng.chance(0.6)) say(e, a.shout, 'dialogue', nm(e.actor));
+        const key = `${e.actor}:${a.id}`;
+        const again = seenMove.has(key);
+        seenMove.add(key);
+        if (again) say(e, vary([`${nm(e.actor)} goes back to ${a.name}!`, `${a.name} again from ${nm(e.actor)}!`, `Another ${a.name}!`, `${nm(e.actor)} isn't done with ${a.name} yet!`]), 'hype');
+        else {
+          say(e, vary([`${nm(e.actor).toUpperCase()} ACTIVATES ${a.name.toUpperCase()}!`, `${nm(e.actor)} calls on ${a.name}!`, `HERE IT COMES — ${a.name.toUpperCase()}!`, `${nm(e.actor)} unleashes ${a.name}!`]), 'hype');
+          if (a.look) say(e, a.look, 'tense');
+        }
+        if (a.shout && rng.chance(again ? 0.25 : 0.6)) say(e, a.shout, 'dialogue', nm(e.actor));
         break;
       }
       case 'desperation': {
         const a = e.ability ? getAbility(e.ability) : null;
-        say(e, `Backed into a corner, ${nm(e.actor)} unleashes ${a?.name ?? 'a desperation move'}!`, 'shock');
-        if (a?.look) say(e, a.look, 'tense');
+        const key = `${e.actor}:${a?.id}`;
+        const again = seenMove.has(key);
+        seenMove.add(key);
+        say(e, vary([`Backed into a corner, ${nm(e.actor)} unleashes ${a?.name ?? 'a desperation move'}!`, `Everything on one move: ${a?.name ?? 'a desperation move'}!`, `${nm(e.actor)} throws caution away — ${a?.name ?? 'a desperation move'}!`]), 'shock');
+        if (a?.look && !again) say(e, a.look, 'tense');
         if (a?.shout) say(e, a.shout, 'dialogue', nm(e.actor));
         break;
       }
       case 'heal':
         if (e.context?.revive) break; // announced by its twist
         if (e.context?.mend && e.actor) { say(e, `${nm(e.actor)} patches up ${nm(e.target)}! Back in it!`, 'tense'); break; }
-        if ((e.heal ?? 0) > 0) say(e, `${nm(e.target)} finds a second wind.`, 'calm');
+        if ((e.heal ?? 0) > 0) say(e, vary([`${nm(e.target)} finds a second wind.`, `${nm(e.target)} steadies and recovers.`, `Some colour back in ${nm(e.target)}'s face.`, `${nm(e.target)} regroups.`]), 'calm');
         break;
       case 'status':
-        if (e.status?.applied && (e.status.type === 'stun' || e.status.type === 'freeze') && !e.target && e.actor) say(e, `${nm(e.actor)} can't move!`, 'tense');
-        else if (e.status?.applied && e.target && e.status.type !== 'shield' && rng.chance(0.6)) say(e, `${nm(e.target)} is hit with ${e.status.type}!`, 'tense');
-        else if (e.status?.type === 'shield' && e.target) say(e, `A barrier shimmers around ${nm(e.target)}.`, 'calm');
+        if (e.status?.applied && (e.status.type === 'stun' || e.status.type === 'freeze') && !e.target && e.actor) say(e, vary([`${nm(e.actor)} can't move!`, `${nm(e.actor)} is locked in place!`, `${nm(e.actor)} is stuck!`]), 'tense');
+        else if (e.status?.applied && e.target && e.status.type !== 'shield' && rng.chance(0.6)) say(e, vary([`${nm(e.target)} is hit with ${e.status.type}!`, `${e.status.type.toUpperCase()} on ${nm(e.target)}!`, `That leaves ${nm(e.target)} with ${e.status.type}.`]), 'tense');
+        else if (e.status?.type === 'shield' && e.target) say(e, vary([`A barrier shimmers around ${nm(e.target)}.`, `${nm(e.target)} is shielded.`, `A wall of energy forms in front of ${nm(e.target)}.`]), 'calm');
         break;
       case 'status_tick':
         if (rng.chance(0.4)) say(e, e.explanation, 'calm');
         break;
       case 'environment':
-        say(e, `THE ARENA ITSELF JOINS THE FIGHT! ${e.explanation}`, 'shock');
+        say(e, `${vary(['THE ARENA ITSELF JOINS THE FIGHT!', 'NATURE TAKES A SWING!', 'THE BATTLEFIELD STRIKES BACK!', 'NOBODY IS SAFE OUT HERE!'])} ${e.explanation}`, 'shock');
         break;
       case 'momentum':
-        if (rng.chance(0.7)) say(e, rng.pick(['The momentum has shifted!', 'You can feel the tide turning!', 'The crowd senses it — the pressure has flipped!']), 'tense');
+        if (rng.chance(0.7)) say(e, vary(['The momentum has shifted!', 'You can feel the tide turning!', 'The crowd senses it — the pressure has flipped!', 'The other corner has the upper hand now!', 'And just like that, the fight turns!', 'Big swing in this fight!']), 'tense');
         break;
       case 'adapt':
         say(e, `${nm(e.actor)} isn't just fighting — they're studying. They've adapted to ${nm(e.target)}'s rhythm!`, 'tense');
@@ -222,7 +253,7 @@ export function narrate(input: BattleInput, result: BattleResult, ctx: Narration
         dialogue(e, e.actor, 'awaken');
         break;
       case 'transform':
-        say(e, rng.pick([`${nm(e.actor).toUpperCase()} TRANSFORMS! ${String(e.context?.form ?? '').toUpperCase()}!`, `The air changes. ${nm(e.actor)} enters ${e.context?.form}!`, `Here it comes: ${e.context?.form}! ${nm(e.actor)} is a different fighter now!`]), 'shock');
+        say(e, vary([`${nm(e.actor).toUpperCase()} TRANSFORMS! ${String(e.context?.form ?? '').toUpperCase()}!`, `The air changes. ${nm(e.actor)} enters ${e.context?.form}!`, `Here it comes: ${e.context?.form}! ${nm(e.actor)} is a different fighter now!`]), 'shock');
         dialogue(e, e.actor, 'awaken');
         break;
       case 'secret':
@@ -286,7 +317,12 @@ export function validateNarration(lines: NarrationLine[], input: BattleInput, re
   const fixed = new Set<string>();
   for (const f of input.sides.flatMap((x) => [...x.fighters, ...(x.reserves ?? [])])) fixed.add(f.name);
   for (const e of result.events) for (const k of ['title', 'lineA', 'lineB', 'shout', 'duo', 'look', 'line'] as const) if (typeof e.context?.[k] === 'string') fixed.add(e.context[k] as string);
-  for (const f of input.sides.flatMap((x) => x.fighters)) for (const id of f.abilities) {
+  // Transformation names ("Super Saiyan 2") and the moves they unlock.
+  for (const e of result.events) if (e.type === 'transform') for (const k of ['form', 'unlocked'] as const) if (typeof e.context?.[k] === 'string' && (e.context[k] as string).length > 2) fixed.add(e.context[k] as string);
+  // Moves known at the start, plus the ones reached mid-fight (form moves, secrets, bench fighters).
+  const moveIds = new Set(input.sides.flatMap((x) => [...x.fighters, ...(x.reserves ?? [])]).flatMap((f) => f.abilities));
+  for (const e of result.events) { if (e.ability) moveIds.add(e.ability); if (typeof e.context?.move === 'string') moveIds.add(e.context.move); if (typeof e.context?.counterMove === 'string') moveIds.add(e.context.counterMove); }
+  for (const id of moveIds) {
     const a = getAbility(id);
     fixed.add(a.name);
     if (a.look) fixed.add(a.look);
