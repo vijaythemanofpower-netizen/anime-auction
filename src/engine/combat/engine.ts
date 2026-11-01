@@ -6,6 +6,8 @@ import type {
   Tag,
 } from '../types';
 import { CALLS_PER_BATTLE, ENGINE_VERSION } from '../types';
+import type { FighterSnapshot } from '../types';
+import { arenaFit, fitEdge } from '../arenaFit';
 import { Rng, deriveSeed, hashString } from '../rng';
 import { duoOf, rivalryBetween, type Rivalry } from '../data/rivals';
 import { EAGERNESS, reactionTo } from '../data/banter';
@@ -1153,6 +1155,8 @@ export class BattleSim {
     if (a.element && this.env.weaken.includes(a.element)) mult *= 0.9;
     for (const e of this.sideFx[att.side].element) if (e && a.element === e.tag) mult *= e.mult;
     mult *= this.sideFx[att.side].damageMult * this.strat(att).dmg;
+    // Fighters suited to the arena hit a little harder (arenaFit.ts); a nudge, not a guarantee.
+    mult *= this.arenaEdge(att.snap) / Math.sqrt(this.arenaEdge(target.snap));
     if (this.orders[att.side]?.kind === 'all_out') mult *= 1.12;
     const sideMom = att.side === 0 ? this.momentum : -this.momentum;
     mult *= 1 + clamp(sideMom, -50, 100) / 500;
@@ -1516,6 +1520,13 @@ export class BattleSim {
     });
     this.shiftMomentum(f.side, 20, `${this.name(f)}'s awakening`);
     this.trackLead(`${this.name(f)}'s awakening`);
+  }
+
+  private fitCache = new Map<string, number>();
+  private arenaEdge(f: FighterSnapshot): number {
+    let v = this.fitCache.get(f.charId);
+    if (v === undefined) { v = fitEdge(arenaFit(f, this.env.id)); this.fitCache.set(f.charId, v); }
+    return v;
   }
 
   private environmentTick() {

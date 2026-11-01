@@ -3,7 +3,7 @@
 // read hidden game data by accident.
 
 export const SCHEMA_VERSION = 1;
-export const ENGINE_VERSION = '2.7.0';
+export const ENGINE_VERSION = '2.8.0';
 export const STARTING_COINS = 10_000;
 
 export type Archetype =
@@ -535,6 +535,8 @@ export interface GameState {
   revealSeen: string[];
   tournament: TournamentState | null;
   currentMatchId: string | null;
+  /** The arena for the match being prepared, announced before players pick fighters. */
+  matchArena?: string | null;
   prep: Record<string, PrepChoice>;
   battleIds: string[];
   /** Who each player sends into the next raid (their own fighters); missing means "pick my best". */

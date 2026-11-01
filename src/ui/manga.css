@@ -130,3 +130,9 @@
 .prepoll .player-chip.ready { background: color-mix(in srgb, var(--good) 18%, transparent); border-color: var(--good); }
 .prepoll .player-chip.missed { opacity: 0.6; }
 .prepoll-answer { color: var(--good); }
+
+/* Arena announced before the match, and each fighter's fit for it. */
+.arena-card { border-width: 2px; }
+.tag.arena-fit { align-self: flex-start; }
+.tag.arena-fit.good { color: var(--good); border-color: var(--good); }
+.tag.arena-fit.bad { color: var(--warn, #f59e0b); }

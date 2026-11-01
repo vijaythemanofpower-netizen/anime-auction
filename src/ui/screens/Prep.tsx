@@ -4,7 +4,8 @@ import * as G from '../../engine/game';
 import { modeSize } from '../../engine/tournament';
 import { progressedStats } from '../../engine/progression';
 import { STAT_LABELS, truePower } from '../../engine/hidden';
-import { TRAINABLE, activeSynergies, getSynergy } from '../../engine/data/world';
+import { TRAINABLE, activeSynergies, getEnvironment, getSynergy } from '../../engine/data/world';
+import { arenaFit } from '../../engine/arenaFit';
 import { store, useApp } from '../../store/store';
 import { CharArt } from '../components/Portrait';
 import { Emblem, HiddenDetails, PlayerChip, PrivacyGate, StatBars } from '../components/common';
@@ -64,7 +65,7 @@ export function PrepPhase() {
         <div className="panel col reveal-anim" style={{ alignItems: 'center', textAlign: 'center', padding: 32 }}>
           <div className="eyebrow">Both sides are locked in</div>
           <h2>Fighters, take your places!</h2>
-          <p className="muted">Lineups, strategies and mental approaches will be revealed as the battle begins. The arena is chosen at random{g.config.tournament.specialEvents ? '' : ' (neutral arena only)'}.</p>
+          <p className="muted">Lineups, strategies and mental approaches will be revealed as the battle begins{g.matchArena ? ` in ${getEnvironment(g.matchArena).name}` : ''}.</p>
           {store.isGuest() ? <p className="faint">Waiting for the host to start the fight…</p>
             : <button className="btn primary lg" onClick={() => { store.setViewer(null); store.runBattle(); }}>⚔ Enter the arena</button>}
         </div>
@@ -99,10 +100,27 @@ function PrepPanel({ g, player }: { g: GameState; player: Player }) {
   const syns = activeSynergies(prep.fighters.map((id) => ({ tags: g.characters[id].tags, archetype: g.characters[id].archetype })));
   const discovered = new Set(player.roster.flatMap((id) => g.conditions[id]?.discoveredSynergies ?? []));
   const intel = g.intel[player.id] ?? [];
+  // The arena is known before the fight: suggest who suits it (a better chance, not a sure win).
+  const arena = g.matchArena ? getEnvironment(g.matchArena) : null;
+  const fitOf = (id: string) => (arena ? arenaFit({ tags: g.characters[id].tags, archetype: g.characters[id].archetype, abilities: g.characters[id].knownAbilities }, arena.id) : 0);
+  const fits = Object.fromEntries(player.roster.map((id) => [id, fitOf(id)]));
+  const bestFit = Math.max(...Object.values(fits));
+  // The best fit, or when nobody has an edge, whoever is least hurt by the arena.
+  const recommended = Math.min(...Object.values(fits)) < bestFit || bestFit > 0 ? player.roster.filter((id) => fits[id] === bestFit) : [];
 
   return (
     <div className="grid prep-grid">
       <div className="col" style={{ gap: 16, minWidth: 0 }}>
+        {arena && (
+          <div className="panel arena-card" style={{ borderColor: arena.palette[2] }}>
+            <div className="eyebrow">Tonight's arena</div>
+            <h3 style={{ margin: '2px 0' }}>{arena.name}</h3>
+            <div className="muted">{arena.description}{arena.hazard ? ` Hazard: ${arena.hazard.name}.` : ''}</div>
+            {recommended.length > 0
+              ? <div style={{ marginTop: 6 }}>⭐ {bestFit > 0 ? 'Suits this arena best' : 'Safest pick here'}: <b>{recommended.map((id) => g.characters[id].name).join(', ')}</b> <span className="faint">(a better chance, not a sure win)</span></div>
+              : <div className="faint" style={{ marginTop: 6 }}>None of your fighters has an edge here. Pure skill decides it.</div>}
+          </div>
+        )}
         <div className="panel">
           <div className="panel-title"><h3 style={{ margin: 0 }}>Choose {size} fighter{size > 1 ? 's' : ''} <span className="faint" style={{ fontWeight: 500 }}>({prep.fighters.length}/{size} picked)</span></h3><span className="faint">{player.prepPoints} prep point{player.prepPoints === 1 ? '' : 's'} left</span></div>
           <div className="cards" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))' }}>
@@ -118,6 +136,7 @@ function PrepPanel({ g, player }: { g: GameState; player: Player }) {
                     <div style={{ minWidth: 0 }}><strong style={{ fontSize: 14 }}>{pc.name}</strong><div className="faint">{pc.archetype} · PWR {st ? truePower(st) : '?'}</div></div>
                   </div>
                   <ConditionBadges g={g} id={id} />
+                  {arena && (fits[id] !== 0 || recommended.includes(id)) && <span className={`tag arena-fit ${fits[id] >= 0 ? 'good' : 'bad'}`}>{recommended.includes(id) ? '⭐ Best pick here' : fits[id] > 0 ? '▲ Suits the arena' : '▼ Struggles here'}</span>}
                   <div className="row" style={{ gap: 6 }}>
                     <button className={`btn sm ${picked ? 'active' : ''}`} onClick={() => toggleFighter(id)} aria-pressed={picked}>{picked ? '✓ Selected' : 'Select'}</button>
                     {picked && size > 1 && <button className="btn sm" onClick={() => toggleFront(id)}>{prep.front.includes(id) ? 'Frontline' : 'Backline'}</button>}

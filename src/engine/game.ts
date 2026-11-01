@@ -6,7 +6,7 @@ import type {
   PrepChoice, PublicCharacter, StatKey, Strategy, TournamentConfig,
 } from './types';
 import { ENGINE_VERSION, SCHEMA_VERSION, STARTING_COINS } from './types';
-import { Rng, deriveSeed, freshSeed, uid } from './rng';
+import { Rng, deriveSeed, freshSeed, hashString, uid } from './rng';
 import { Vault, scoutHint, truePower } from './hidden';
 import * as A from './auction';
 import { scoutAdvice, type ScoutAdvice } from './scout';
@@ -245,6 +245,8 @@ export function startMatch(g: GameState, vault: Vault): R {
   const m = nextPendingMatch(g.tournament);
   if (!m) return fail('No pending match.');
   g.currentMatchId = m.id;
+  // The arena is announced now, so players can pick fighters who suit it.
+  g.matchArena = g.config.tournament.specialEvents ? new Rng(hashString(`${g.secret}:${m.id}:arena`)).pick(ENVIRONMENTS).id : 'colosseum';
   const size = modeSize(m.mode, g.config.rosterSize);
   g.prep = {};
   for (const pid of m.players) {
@@ -379,7 +381,7 @@ export function buildSnapshot(g: GameState, vault: Vault, charId: string, side: 
 export function buildBattleInput(g: GameState, vault: Vault, seed: number): BattleInput {
   const m = currentMatch(g)!;
   const rng = new Rng(seed ^ 0x9e3779b9);
-  const env = g.config.tournament.specialEvents ? rng.pick(ENVIRONMENTS).id : 'colosseum';
+  const env = g.matchArena ?? (g.config.tournament.specialEvents ? rng.pick(ENVIRONMENTS).id : 'colosseum');
   const sides = m.players.map((pid, i) => {
     const prep = g.prep[pid];
     const fighters = prep.fighters.map((id) => buildSnapshot(g, vault, id, i as 0 | 1, prep.front.includes(id) ? 'front' : 'back'));
