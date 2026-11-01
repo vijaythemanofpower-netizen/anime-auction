@@ -9,7 +9,7 @@ import { canonStats } from '../../engine/data/canonStats';
 import { STAT_LABELS } from '../../engine/hidden';
 import type { StatKey } from '../../engine/types';
 import { motion } from 'framer-motion';
-import { Chapter, HeroKanji, KineticTitle, NameBand, useHeroParallax } from '../motion/HomeMotion';
+import { Chapter, HeroKanji, HeroScenes, KineticTitle, NameBand, useHeroParallax } from '../motion/HomeMotion';
 
 const BAND_A = LEGEND_CHARACTERS.slice(0, 38).map((c) => c.name);
 const BAND_B = LEGEND_CHARACTERS.slice(38).map((c) => c.name);
@@ -235,6 +235,7 @@ export function Home() {
     <>
       <section className="hero home-hero" ref={heroRef}>
         <div className="anime-fx" aria-hidden="true"><div className="speed-burst" /></div>
+        <HeroScenes y={px.kanji} />
         <HeroKanji y={px.kanji} />
         <motion.div className="hero-copy" style={{ y: px.copy, opacity: px.fade }}>
           <KineticTitle lines={[{ text: 'Anime Auction', className: 'l1' }, { text: 'Ultimate Battle Arena', className: 'l2' }]} />

@@ -9,6 +9,7 @@ import './ui/identity.css';
 import './ui/manga.css';
 import './ui/home.css';
 import './ui/motion.css';
+import './ui/universe.css';
 import { App } from './ui/App';
 import { store } from './store/store';
 import { initAuth } from './online/auth';

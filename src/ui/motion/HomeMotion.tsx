@@ -1,8 +1,8 @@
 // Home page motion pieces: the title that slams in word by word, the hero's
 // parallax layers, chapter-style section headings with a brush stroke that
 // draws itself, and a band of fighter names that speeds up as you scroll.
-import { useRef, type ReactNode } from 'react';
-import { motion, useAnimationFrame, useMotionValue, useScroll, useSpring, useTransform, useVelocity, type MotionValue } from 'framer-motion';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { AnimatePresence, motion, useAnimationFrame, useMotionValue, useScroll, useSpring, useTransform, useVelocity, type MotionValue } from 'framer-motion';
 import { useMotionOk } from './useMotionOk';
 
 const KANJI = ['一', '二', '三', '四', '五'];
@@ -88,5 +88,31 @@ export function NameBand({ names, reverse = false }: { names: string[]; reverse?
         {items.map((n, i) => <span key={i}>{n}<b>✦</b></span>)}
       </motion.div>
     </div>
+  );
+}
+
+const SCENES = ['naruto-sasuke', 'gojo-sukuna', 'goku-vegeta', 'luffy-kaido', 'ichigo-aizen', 'itachi-sasuke', 'deku-bakugo', 'zoro-mihawk', 'levi-titans', 'gon-killua'];
+
+/** Full-bleed painted fight scenes behind the hero: slow camera drift, a crossfade every few seconds, parallax on scroll. */
+export function HeroScenes({ y }: { y: MotionValue<number> }) {
+  const ok = useMotionOk();
+  const [i, setI] = useState(() => Math.floor(Math.random() * SCENES.length));
+  useEffect(() => {
+    if (!ok) return;
+    const t = setInterval(() => setI((n) => (n + 1) % SCENES.length), 6500);
+    return () => clearInterval(t);
+  }, [ok]);
+  // The next scene is fetched ahead so the crossfade never shows a blank frame.
+  useEffect(() => { const img = new Image(); img.src = `${import.meta.env.BASE_URL}scenes/${SCENES[(i + 1) % SCENES.length]}.jpg`; }, [i]);
+  return (
+    <motion.div className="hero-scenes" style={{ y }} aria-hidden="true">
+      <AnimatePresence initial={false}>
+        <motion.div key={SCENES[i]} className="hs-img" style={{ backgroundImage: `url(${import.meta.env.BASE_URL}scenes/${SCENES[i]}.jpg)` }}
+          initial={{ opacity: 0, scale: 1.12, x: i % 2 ? 30 : -30 }} animate={{ opacity: 1, scale: 1.02, x: 0 }} exit={{ opacity: 0 }}
+          transition={{ opacity: { duration: 1.4 }, scale: { duration: 8, ease: 'linear' }, x: { duration: 8, ease: 'linear' } }} />
+      </AnimatePresence>
+      <div className="hs-shade" />
+      <div className="hs-lines" />
+    </motion.div>
   );
 }

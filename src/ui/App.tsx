@@ -18,6 +18,8 @@ import { SocialLayer } from './components/Social';
 import { ONLINE_AVAILABLE } from '../online/client';
 import { MotionLayer } from './motion/MotionLayer';
 import { ScreenWipe } from './motion/ScreenWipe';
+import { Atmosphere } from './universe/Atmosphere';
+import { Opening } from './universe/Opening';
 
 export function App() {
   const screen = useApp((s) => s.screen);
@@ -36,6 +38,7 @@ export function App() {
   return (
     <>
     <SceneBackdrop />
+    <Atmosphere />
     <PageArt screen={screen} phase={game?.phase} />
     <div className={`app ${motion === 'on' ? 'reduce-motion' : motion === 'system' ? 'motion-system' : ''}`}>
       <header className="topbar">
@@ -74,6 +77,7 @@ export function App() {
         )}
       </main>
       <MotionLayer />
+      <Opening />
       <ScreenWipe />
       <RoomChat />
       <SocialLayer />
