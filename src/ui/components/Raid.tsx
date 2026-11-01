@@ -3,7 +3,7 @@
 // them and see the results (engine/raid.ts).
 import { useMemo, useState } from 'react';
 import type { GameState, RaidResult } from '../../engine/types';
-import { RAID_MAX_TEAM, legendVillains, raidSlots } from '../../engine/raid';
+import { RAID_MAX_BOSSES, RAID_MAX_TEAM, legendVillains, raidSlots } from '../../engine/raid';
 import { VILLAINS } from '../../engine/data/villains';
 import { store, useApp } from '../../store/store';
 import { CharArt } from './Portrait';
@@ -11,9 +11,11 @@ import { CharArt } from './Portrait';
 
 export function RaidHub({ g }: { g: GameState }) {
   const guest = store.isGuest();
-  const [pick, setPick] = useState<string | null>(null);
+  const [picks, setPicks] = useState<string[]>([]);
   const bosses = useMemo(() => [...legendVillains(), ...VILLAINS], []);
-  const chosen = bosses.find((b) => b.id === pick);
+  const chosen = picks.map((id) => bosses.find((b) => b.id === id)).filter((b): b is (typeof bosses)[number] => !!b);
+  const toggleBoss = (id: string) => setPicks((p) => (p.includes(id) ? p.filter((x) => x !== id) : [...p, id].slice(-RAID_MAX_BOSSES)));
+  const names = chosen.map((b) => b.name).join(' & ');
   const raids = (g.raids ?? []).slice().reverse();
   const record = useApp((s) => s.battles);
   const wins = (g.raids ?? []).filter((r) => r.won).length;
@@ -31,10 +33,10 @@ export function RaidHub({ g }: { g: GameState }) {
 
       {guest ? <div className="panel faint">The host chooses the boss and starts the raid once everyone has picked. You'll be able to watch it here.</div> : (
         <div className="panel col" style={{ gap: 10 }}>
-          <strong>Choose your villain</strong>
+          <strong>Choose 1 to {RAID_MAX_BOSSES} villains <span className="faint" style={{ fontWeight: 500 }}>({chosen.length} picked · more bosses, harder raid)</span></strong>
           <div className="boss-grid">
             {bosses.map((b) => (
-              <button key={b.id} className={`boss-card${pick === b.id ? ' picked' : ''}`} onClick={() => setPick(b.id)} aria-pressed={pick === b.id}>
+              <button key={b.id} className={`boss-card${picks.includes(b.id) ? ' picked' : ''}`} onClick={() => toggleBoss(b.id)} aria-pressed={picks.includes(b.id)}>
                 <span className="boss-art"><CharArt c={b} /></span>
                 <b>{b.name}</b><span className="faint">{b.series}</span>
               </button>
@@ -42,15 +44,15 @@ export function RaidHub({ g }: { g: GameState }) {
           </div>
           {waiting.length > 0 && <div className="faint">Still choosing: {waiting.map((p) => p.name).join(', ')}. Anyone who hasn't picked sends their strongest fighters.</div>}
           {/* Stays in view while scrolling the villain list. */}
-          <button className="btn primary lg" style={{ position: 'sticky', bottom: 8, zIndex: 2 }} disabled={!chosen} onClick={() => chosen && store.startRaid(chosen)}>
-            {chosen ? `⚔ Raid ${chosen.name}${waiting.length ? ' anyway' : ''}` : 'Pick a villain'}
+          <button className="btn primary lg" style={{ position: 'sticky', bottom: 8, zIndex: 2 }} disabled={!chosen.length} onClick={() => chosen.length && store.startRaid(chosen)}>
+            {chosen.length ? `⚔ Raid ${names}${waiting.length ? ' anyway' : ''}` : 'Pick a villain'}
           </button>
         </div>
       )}
 
       {raids.map((r, i) => {
-        const boss = bosses.find((b) => b.id === r.bossId) ?? g.characters[r.bossId];
-        return <RaidCard key={r.id} r={r} g={g} canWatch={!!record[r.battleId]} again={i === 0 && boss ? { label: r.won ? `Raid ${boss.name} again` : `Try ${boss.name} again`, run: () => store.startRaid(boss) } : undefined} />;
+        const team = (r.bossIds ?? [r.bossId]).map((id) => bosses.find((b) => b.id === id) ?? g.characters[id]).filter(Boolean);
+        return <RaidCard key={r.id} r={r} g={g} canWatch={!!record[r.battleId]} again={i === 0 && team.length ? { label: r.won ? `Raid ${r.bossName} again` : `Try ${r.bossName} again`, run: () => store.startRaid(team) } : undefined} />;
       })}
     </div>
   );

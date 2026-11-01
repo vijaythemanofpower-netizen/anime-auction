@@ -1,5 +1,6 @@
 import type { Ability, AbilityKind, AbilityTarget, AbilityTrigger, StatusApply, Tag, VfxKind } from '../types';
 import { LEGEND_MOVES } from './legendMoves';
+import { KIT_MOVES } from './kits';
 
 type FxStyle = Ability['fx']['style'];
 
@@ -73,7 +74,7 @@ const LIST: Ability[] = [
   ab('mirror_ward', 'Mirror Ward', 'shield', 'all_allies', 24, 5, 0.1, 'Mirrors that blunt the next blows.', 'Reflect!', '#e9d5ff', 'shield', { element: 'MAGIC' }),
 ];
 
-export const ABILITIES: Record<string, Ability> = Object.fromEntries([...LIST, ...LEGEND_MOVES].map((a) => [a.id, a]));
+export const ABILITIES: Record<string, Ability> = Object.fromEntries([...LIST, ...LEGEND_MOVES, ...KIT_MOVES].map((a) => [a.id, a]));
 
 export const BASIC_ATTACK: Ability = {
   id: 'basic', name: 'Strike', description: 'A standard attack.', kind: 'attack', target: 'enemy',

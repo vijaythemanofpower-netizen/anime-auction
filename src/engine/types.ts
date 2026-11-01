@@ -3,7 +3,7 @@
 // read hidden game data by accident.
 
 export const SCHEMA_VERSION = 1;
-export const ENGINE_VERSION = '2.8.0';
+export const ENGINE_VERSION = '2.9.0';
 export const STARTING_COINS = 10_000;
 
 export type Archetype =
@@ -128,6 +128,10 @@ export interface Ability {
   look?: string;
   /** Character id for signature moves; generic moves have no owner. */
   owner?: string;
+  /** Kit moves: needs this transformation stage (1 = first form) before it can be used. */
+  form?: number;
+  /** Secret move: held back until this moment ('ally' down, 'last' standing, or badly hurt), once per fight. */
+  secret?: 'hp70' | 'hp50' | 'hp30' | 'ally' | 'last';
 }
 
 export type VfxKind =
@@ -335,7 +339,7 @@ export type BattleEventType =
   | 'replacement' | 'protect' | 'assist' | 'combo' | 'guard' | 'recover'
   | 'synergy' | 'final_exchange' | 'conclusion' | 'verdict' | 'iron_will'
   | 'clash' | 'parry' | 'guard_break' | 'injury' | 'knockdown' | 'get_up'
-  | 'corner' | 'call' | 'reinforcement' | 'rival' | 'banter' | 'twist';
+  | 'corner' | 'call' | 'reinforcement' | 'rival' | 'banter' | 'twist' | 'transform' | 'secret';
 
 export type BodyPart = 'head' | 'arm' | 'leg' | 'torso';
 export interface BattleInjury { part: BodyPart; severity: 1 | 2; label: string }
@@ -565,5 +569,5 @@ export interface HallEntry {
 }
 
 export interface RaidContribution { charId: string; name: string; playerId: string; dealt: number; tanked: number; healed: number; finalBlow: boolean; score: number; role: string }
-export interface RaidResult { id: string; battleId: string; bossId: string; bossName: string; won: boolean; mvp: string | null; contributions: RaidContribution[]; at: number }
+export interface RaidResult { id: string; battleId: string; bossId: string; bossName: string; /** Every boss in a multi-boss raid (bossId is the first). */ bossIds?: string[]; won: boolean; mvp: string | null; contributions: RaidContribution[]; at: number }
 export interface TeamBattleResult { id: string; battleId: string; teamA: string[]; teamB: string[]; winner: 'A' | 'B'; mvp: string | null; contributions: RaidContribution[]; at: number }

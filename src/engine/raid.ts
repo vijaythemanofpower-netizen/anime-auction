@@ -54,6 +54,17 @@ export function bossScaling(teamSize: number) {
   return teamSize <= 4 ? { hpScale: 0.95 * teamSize, power: 0.8 + 0.05 * teamSize } : { hpScale: 0.95 * teamSize + 0.4, power: 0.98 + 0.105 * teamSize };
 }
 
+/** Several bosses share the work: each gets a share of the health and of the damage, with a
+ *  little extra in total, so more bosses is harder but still winnable. */
+export function multiBoss(s: { hpScale: number; power: number }, n: number) {
+  if (n <= 1) return s;
+  // Damage grows with power^0.65 (engine attack curve), so split the damage, not the power.
+  const share = Math.pow(s.power, 0.65) / n;
+  return { hpScale: Math.max(0.5, (s.hpScale / n) * (1 + 0.04 * (n - 1))), power: Math.max(0.2, Math.pow(share, 1 / 0.65)) };
+}
+
+export const RAID_MAX_BOSSES = 4;
+
 export function legendVillains(): PublicCharacter[] {
   return RAID_VILLAINS.map((id) => LEGEND_CHARACTERS.find((c) => c.id === id)).filter((c): c is PublicCharacter => !!c);
 }
@@ -91,7 +102,7 @@ function power(g: GameState, vault: Vault, id: string) {
 }
 
 /** The boss as a fighter: canon stats (or its profile) pushed up, health and damage scaled. */
-function bossSnapshot(boss: PublicCharacter, secret: number, teamSize: number): FighterSnapshot {
+function bossSnapshot(boss: PublicCharacter, secret: number, teamSize: number, bossCount = 1): FighterSnapshot {
   registerCharacterMoves(boss);
   const h = generateHidden(boss, secret);
   const canon = canonFor(boss);
@@ -100,11 +111,12 @@ function bossSnapshot(boss: PublicCharacter, secret: number, teamSize: number): 
   return {
     charId: boss.id, name: boss.name, playerId: 'raid-boss', side: 1, archetype: boss.archetype, temperament: boss.temperament, reach: boss.reach,
     tags: boss.tags, stats, traits: h.traits, abilities: [...boss.knownAbilities, h.hiddenAbility], position: 'front', fatigue: 0, injuries: [],
-    price: 0, vulnerability: null, boss: bossScaling(teamSize),
+    price: 0, vulnerability: null, boss: multiBoss(bossScaling(teamSize), bossCount),
   };
 }
 
-export function buildRaidInput(g: GameState, vault: Vault, boss: PublicCharacter, seed: number): BattleInput {
+export function buildRaidInput(g: GameState, vault: Vault, boss: PublicCharacter | PublicCharacter[], seed: number): BattleInput {
+  const bosses = (Array.isArray(boss) ? boss : [boss]).slice(0, RAID_MAX_BOSSES);
   const team = raidTeam(g, vault);
   const fighters = team.map((id, i) => ({ ...buildSnapshot(g, vault, id, 0, i < 3 ? 'front' : 'back'), injuries: [], fatigue: 0 }));
   const env = new Rng(seed ^ 0x51ed).pick(ENVIRONMENTS).id;
@@ -112,7 +124,7 @@ export function buildRaidInput(g: GameState, vault: Vault, boss: PublicCharacter
     battleId: uid('raid'), engineVersion: ENGINE_VERSION, seed, mode: 'squad', environmentId: env, rivalry: null,
     sides: [
       { playerId: 'raid-team', strategy: 'balanced', mental: 'composure', fighters, synergies: [], coach: 'auto' },
-      { playerId: 'raid-boss', strategy: 'aggressive', mental: 'intimidate', fighters: [bossSnapshot(boss, g.secret, fighters.length)], synergies: [], coach: 'auto' },
+      { playerId: 'raid-boss', strategy: 'aggressive', mental: 'intimidate', fighters: bosses.map((b) => bossSnapshot(b, g.secret, fighters.length, bosses.length)), synergies: [], coach: 'auto' },
     ],
   };
 }
@@ -121,8 +133,10 @@ export function buildRaidInput(g: GameState, vault: Vault, boss: PublicCharacter
 export function raidContributions(record: BattleRecord): RaidContribution[] {
   const team = record.input.sides[0].fighters;
   const ev = record.result.events;
-  const bossId = record.input.sides[1].fighters[0].charId;
-  const defeat = ev.find((e) => e.type === 'defeat' && e.target === bossId);
+  const bossIds = record.input.sides[1].fighters.map((f) => f.charId);
+  // The final blow: on the last boss to go down.
+  const defeat = [...ev].reverse().find((e) => e.type === 'defeat' && !!e.target && bossIds.includes(e.target));
+  const bossId = defeat?.target ?? bossIds[0];
   let finisher: string | undefined;
   if (defeat) for (let k = ev.indexOf(defeat) - 1; k >= 0; k--) if (ev[k].target === bossId && ev[k].actor && (ev[k].damage ?? 0) > 0) { finisher = ev[k].actor; break; }
   const boss = record.result.fighters.find((f) => f.charId === bossId);
@@ -140,16 +154,18 @@ export function raidContributions(record: BattleRecord): RaidContribution[] {
 }
 
 /** Runs a raid and records it on the game. Never touches the tournament. */
-export function runRaid(g: GameState, vault: Vault, boss: PublicCharacter, seed: number): { record: BattleRecord; result: RaidResult } {
-  if (!g.characters[boss.id]) g.characters[boss.id] = boss;
-  const input = buildRaidInput(g, vault, boss, seed);
+export function runRaid(g: GameState, vault: Vault, bossOrBosses: PublicCharacter | PublicCharacter[], seed: number): { record: BattleRecord; result: RaidResult } {
+  const bosses = (Array.isArray(bossOrBosses) ? bossOrBosses : [bossOrBosses]).slice(0, RAID_MAX_BOSSES);
+  for (const b of bosses) if (!g.characters[b.id]) g.characters[b.id] = b;
+  const boss = { ...bosses[0], name: bosses.map((b) => b.name).join(' & ') };
+  const input = buildRaidInput(g, vault, bosses, seed);
   const result = simulateBattle(input);
   const playerNames = { ...Object.fromEntries(g.players.map((p) => [p.id, p.name])), 'raid-team': 'The raid party', 'raid-boss': boss.name };
   const narration = narrate(input, result, { prices: g.prices, playerNames, previousLoss: {}, stageName: `the raid on ${boss.name}` });
   const record: BattleRecord = { battleId: input.battleId, input, result, matchId: null, kind: 'raid', narration, createdAt: Date.now(), postEffects: [] };
   const contributions = raidContributions(record);
   const raid: RaidResult = {
-    id: input.battleId, battleId: input.battleId, bossId: boss.id, bossName: boss.name, won: result.winnerSide === 0,
+    id: input.battleId, battleId: input.battleId, bossId: boss.id, bossName: boss.name, bossIds: bosses.map((b) => b.id), won: result.winnerSide === 0,
     mvp: contributions[0]?.charId ?? null, contributions, at: Date.now(),
   };
   g.raids = [...(g.raids ?? []), raid];

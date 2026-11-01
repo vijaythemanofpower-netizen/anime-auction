@@ -181,6 +181,7 @@ export function playFx(fx: FxDirector, ctx: PlayCtx): boolean {
     case 'knockdown': if (to) { fx.explode(to, '#f97316', 1.1); if (!reduced) { fx.hitStop(180); stage.impactFrame(); } } return true;
     case 'injury': if (to) fx.burst(to, '#ef4444', 14, 6, { size: 10, grav: 0.2 }); return true;
     case 'defeat': if (to) { fx.ring(to, '#ef4444', { radius: 260, width: 20, dur: 900 }); fx.burst(to, '#ffffff', 60, 15, { size: 16 }); if (!reduced) { fx.slowMo(1300, 0.3); fx.speedLines(to, '#ffffff', 1100); stage.impactFrame(); } } return true;
+    case 'transform': if (from) { const c = String(e.context?.color ?? '#f5c451'); aura(fx, from, c, '#ffffff', 1.8); if (!reduced) fx.speedLines(from, c, 1200); } return true;
     case 'awakening': if (from) { aura(fx, from, '#f5c451', '#fff7d6', 1.6); if (!reduced) fx.speedLines(from, '#fde68a', 1000); } return true;
     case 'heal': if (to) KIND.heal(fx, to, to, c, c2, () => undefined); return true;
     case 'environment': fx.wash(c, 0.3, 700); return true;

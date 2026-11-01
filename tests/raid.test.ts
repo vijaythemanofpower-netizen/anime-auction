@@ -75,3 +75,15 @@ describe('pre-fight poll', () => {
     for (const q of qs) expect(q.options.some((o) => o.id === q.answer)).toBe(true);
   });
 });
+
+describe('multi-boss raids', () => {
+  it('put up to four bosses in the fight and name them all', () => {
+    const { g, vault } = makeGame(3, 3, 'live', 55) as never as { g: import('../src/engine/types').GameState; vault: import('../src/engine/hidden').Vault };
+    runAuction(g);
+    const bosses = legendVillains().slice(0, 5);
+    const { record, result } = runRaid(g, vault, bosses, 3);
+    expect(record.input.sides[1].fighters.map((f) => f.charId)).toEqual(bosses.slice(0, 4).map((b) => b.id));
+    expect(result.bossIds).toHaveLength(4);
+    expect(result.bossName).toContain(' & ');
+  });
+});

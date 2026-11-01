@@ -162,6 +162,8 @@ function candidates(record: BattleRecord): Candidate[] {
       case 'injury': if (t && e.injury) out.push({ e, shot: 'injury', focus: t, score: e.injury.severity === 2 ? 6 : 2.5 }); break;
       case 'knockdown': if (t) out.push({ e, shot: 'knockdown', focus: t, score: 7.5 }); break;
       case 'awakening': if (a) out.push({ e, shot: 'awaken', focus: a, score: 8 }); break;
+      case 'transform': if (a) out.push({ e, shot: 'awaken', focus: a, score: 9.5 }); break;
+      case 'secret': if (a) out.push({ e, shot: 'charge', focus: a, score: 9 }); break;
       case 'twist': {
         const kind = String(e.context?.twist);
         if (a && ['laststand', 'secondwind', 'avenge', 'hidden'].includes(kind)) out.push({ e, shot: 'awaken', focus: a, score: 7 });
@@ -301,6 +303,12 @@ export function buildComic(record: BattleRecord, characters: Record<string, Publ
     return [...parts].map((p) => INJURY_TAGS[p]).filter(Boolean).join(', ');
   };
   const arena = ARENA_TAGS[input.environmentId] ?? ARENA_TAGS.colosseum;
+  // A transformed fighter is drawn in their form (Sage Mode, Bankai...).
+  const transforms = ev.filter((e) => e.type === 'transform' && e.actor);
+  const formAt = (id: string, seq: number) => {
+    const t = [...transforms].reverse().find((e) => e.actor === id && e.seq <= seq);
+    return t ? `, ${String(t.context?.look ?? '')}` : '';
+  };
 
   const usedText = new Set<string>();
   const panels: ComicPanel[] = list.map((c, i) => {
@@ -308,7 +316,7 @@ export function buildComic(record: BattleRecord, characters: Record<string, Publ
     const subjects = c.other ? [c.focus, c.other] : [c.focus];
     // Two fighters share one picture at medium range (tested: close enough that both stay
     // recognisable; wider shots shrink them to silhouettes).
-    const duo = c.other ? duoDrawing(c, characters, names, i, size, STYLE, input.seed, input.battleId) : null;
+    const duo = c.other ? duoDrawing(c, characters, names, i, size, STYLE, input.seed, input.battleId, (id) => formAt(id, c.e.seq)) : null;
     const drawings = duo ? [duo] : subjects.map((who, j): ComicDrawing => {
       const ch = characters[who];
       const [w, h] = c.other ? [832, 1216] : sizeFor[size];
@@ -316,7 +324,7 @@ export function buildComic(record: BattleRecord, characters: Record<string, Publ
       const evForDrawing = j === 1 && c.e.context?.counterMove ? { ...c.e, ability: String(c.e.context.counterMove) } : c.e;
       const prompt = [
         // The fighter must win over the scenery and move names (a move called "Shrine" drew a shrine).
-        `(${characterTags(ch, names.get(who) ?? who)}:1.15)`, action(c.shot, evForDrawing, ch, record, injuriesAt(who, c.e.seq), hashString(`${input.seed}:${i}:${j}:${who}:pose`) >>> 0), angle, `(${arena}:0.6)`, STYLE, SAFE, QUALITY,
+        `(${characterTags(ch, names.get(who) ?? who)}${formAt(who, c.e.seq)}:1.15)`, action(c.shot, evForDrawing, ch, record, injuriesAt(who, c.e.seq), hashString(`${input.seed}:${i}:${j}:${who}:pose`) >>> 0), angle, `(${arena}:0.6)`, STYLE, SAFE, QUALITY,
       ].filter(Boolean).join(', ').replace(/,\s*,/g, ',').replace(/,\s*$/, '');
       const seed = hashString(`${input.seed}:${i}:${j}:${who}`) >>> 0;
       // Keyed by content, so panels a corner call doesn't change keep their drawing.
@@ -336,7 +344,7 @@ export function buildComic(record: BattleRecord, characters: Record<string, Publ
   return { battleId: input.battleId, panels };
 }
 
-function duoDrawing(c: Candidate, characters: Record<string, PublicCharacter>, names: Map<string, string>, i: number, size: PanelSize, style: string, fightSeed: number, battleId: string): ComicDrawing {
+function duoDrawing(c: Candidate, characters: Record<string, PublicCharacter>, names: Map<string, string>, i: number, size: PanelSize, style: string, fightSeed: number, battleId: string, formOf: (id: string) => string = () => ''): ComicDrawing {
   const a = characters[c.focus], b = characters[c.other!];
   const strip = (tags: string) => tags.split(', ').filter((t) => !/^1(boy|girl)$/.test(t)).join(', ');
   const girls = [a, b].filter((x) => x?.gender === 'female').length;
@@ -349,7 +357,7 @@ function duoDrawing(c: Candidate, characters: Record<string, PublicCharacter>, n
     : c.shot === 'strike' ? `fighting, attacking, landing a hit, ${move}${elem}opponent getting hit, impact, shockwave, dynamic angle, cowboy shot, motion lines`
       : c.shot === 'finisher' ? `final blow, ultimate attack, ${move}${elem}opponent knocked back, massive explosion, dramatic, dynamic angle, cowboy shot, motion lines`
         : 'fighting each other, clash, fists colliding, shockwave, sparks, dynamic angle, cowboy shot, motion lines';
-  const prompt = [count, `(${strip(characterTags(a, names.get(c.focus) ?? c.focus))}:1.1)`, `(${strip(characterTags(b, names.get(c.other!) ?? c.other!))}:1.1)`, what, style.replace('solo, ', ''), SAFE, QUALITY].join(', ');
+  const prompt = [count, `(${strip(characterTags(a, names.get(c.focus) ?? c.focus))}${formOf(c.focus)}:1.1)`, `(${strip(characterTags(b, names.get(c.other!) ?? c.other!))}${formOf(c.other!)}:1.1)`, what, style.replace('solo, ', ''), SAFE, QUALITY].join(', ');
   const [w, h] = size === 'tall' ? sizeFor.tall : sizeFor.wide;
   const seed = hashString(`${fightSeed}:duo:${i}:${c.focus}:${c.other}`) >>> 0;
   return { key: `${battleId}:${hashString(`${prompt}|${seed}|${w}x${h}`).toString(36)}`, prompt, seed, width: w, height: h };

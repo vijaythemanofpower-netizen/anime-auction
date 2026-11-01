@@ -215,7 +215,7 @@ export function playEvent(e: BattleEvent) {
         if (a?.vfx === 'summon') return sample('roar');
         return sample('spell');
       }
-      case 'awakening': return both(sample('magic'), () => sample('roar', { delay: 0.3, gain: 0.6 }));
+      case 'awakening': case 'transform': return both(sample('magic'), () => sample('roar', { delay: 0.3, gain: 0.6 }));
       case 'reinforcement': return sample('teleport');
       case 'rival': return sample('gong');
       case 'twist': return both(sample('boom'), () => sample('rubble', { delay: 0.2 }));
@@ -238,7 +238,7 @@ export function playEvent(e: BattleEvent) {
     case 'defeat': return sfx.ko();
     case 'injury': return sfx.injury();
     case 'ability': case 'desperation': return sfx.charge();
-    case 'awakening': return sfx.aura();
+    case 'awakening': case 'transform': case 'secret': return sfx.aura();
     case 'call': case 'corner': return sfx.call();
     case 'reinforcement': case 'combo': case 'rival': return sfx.charge();
     case 'twist': return sfx.knockdown();

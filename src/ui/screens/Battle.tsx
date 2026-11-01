@@ -43,7 +43,7 @@ function delayFor(e: BattleEvent, hasLine: boolean): number {
     case 'intro': return 2600;
     case 'prebattle': case 'synergy': return 1500;
     case 'ability': case 'desperation': return e.ability && getAbility(e.ability).look ? 2600 : 1400;
-    case 'awakening': case 'final_exchange': case 'iron_will': return 1900;
+    case 'awakening': case 'final_exchange': case 'iron_will': case 'transform': case 'secret': return 1900;
     case 'verdict': case 'conclusion': return 1500;
     default: return e.crit ? 1100 : 780;
   }
@@ -249,6 +249,7 @@ export function BattleView({ record, exhibition }: { record: BattleRecord; exhib
       if (act && e.actorGuard !== undefined) { act.guard = e.actorGuard; act.staggered = false; act.floored = false; }
       if (tgt && e.guardAfter !== undefined) tgt.guard = e.guardAfter;
       if (e.type === 'awakening' && act) { act.awakened = true; if (e.hpAfter !== undefined) act.hp = e.hpAfter; }
+      if (e.type === 'transform' && act) { act.stage = Number(e.context?.stage ?? 1); act.formName = String(e.context?.form ?? ''); act.formColor = String(e.context?.color ?? ''); if (e.hpAfter !== undefined) act.hp = e.hpAfter; }
       if (e.type === 'guard_break' && tgt) tgt.staggered = true;
       if (e.type === 'injury' && tgt && e.injury) tgt.injuries = [...tgt.injuries.filter((x) => x.part !== e.injury!.part), e.injury];
       if (e.type === 'knockdown' && tgt) { tgt.knockdowns++; tgt.floored = true; tgt.staggered = true; }
@@ -357,8 +358,8 @@ export function BattleView({ record, exhibition }: { record: BattleRecord; exhib
 
       {done && record.kind === 'raid' && g.raids?.find((r) => r.battleId === record.battleId) && (() => {
         const r = g.raids!.find((x) => x.battleId === record.battleId)!;
-        const boss = g.characters[r.bossId];
-        return <RaidCard r={r} g={g} again={boss ? { label: r.won ? `Raid ${boss.name} again` : `Try ${boss.name} again`, run: () => store.startRaid(boss) } : undefined} />;
+        const team = (r.bossIds ?? [r.bossId]).map((id) => g.characters[id]).filter(Boolean);
+        return <RaidCard r={r} g={g} again={team.length ? { label: r.won ? `Raid ${r.bossName} again` : `Try ${r.bossName} again`, run: () => store.startRaid(team) } : undefined} />;
       })()}
       {done && record.kind === 'team' && (() => {
         const t = g.teamBattles?.find((x) => x.battleId === record.battleId);

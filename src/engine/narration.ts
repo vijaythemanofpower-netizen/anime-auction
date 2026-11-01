@@ -221,6 +221,13 @@ export function narrate(input: BattleInput, result: BattleResult, ctx: Narration
         say(e, `WHAT IS THIS?! ${nm(e.actor).toUpperCase()} IS AWAKENING!`, 'shock');
         dialogue(e, e.actor, 'awaken');
         break;
+      case 'transform':
+        say(e, rng.pick([`${nm(e.actor).toUpperCase()} TRANSFORMS! ${String(e.context?.form ?? '').toUpperCase()}!`, `The air changes. ${nm(e.actor)} enters ${e.context?.form}!`, `Here it comes: ${e.context?.form}! ${nm(e.actor)} is a different fighter now!`]), 'shock');
+        dialogue(e, e.actor, 'awaken');
+        break;
+      case 'secret':
+        say(e, e.context?.why === 'ally' ? `${nm(e.actor)} saw their teammate fall. No more holding back: ${e.action}!` : e.context?.why === 'last' ? `${nm(e.actor)} is the last one standing, and pulls out a move nobody has seen: ${e.action}!` : `${nm(e.actor)} was saving this one: ${e.action}!`, 'shock');
+        break;
       case 'iron_will':
         say(e, `${pick(STILL)} ${nm(e.target)} survives on pure Iron Will!`, 'shock');
         break;

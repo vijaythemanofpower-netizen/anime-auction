@@ -16,6 +16,8 @@ export interface LiveFighter {
   guard: number; injuries: BattleInjury[]; knockdowns: number; floored: boolean; staggered: boolean; howDown?: string;
   /** A bench fighter stepping in for one move. */
   fromBench?: boolean;
+  /** Transformation reached mid-fight (Sage Mode, Bankai...), shown on the portrait. */
+  formName?: string; formColor?: string; stage?: number;
 }
 
 /** A fighter's state in words, the way a commentator would describe it. */
@@ -126,12 +128,13 @@ export function ArenaStage({ record, cur, done, fighters, momentum, players, cha
       const blocking = !!live && live.target === f.snap.charId && live.type === 'block';
       const pc = characters[f.snap.charId];
       return (
-        <div key={f.snap.charId} className={`stand${f.fromBench ? ' from-bench' : ''}${f.hp / f.maxHp < 0.3 && !f.down ? ' hurt' : ''}${acting ? ' acting' : ''}${acting && (melee || isClash) ? ' lunge' : ''}${hit ? ' hit' : ''}${blocking ? ' blocking' : ''}${f.floored ? ' floored' : ''}${f.staggered && !f.down ? ' staggered' : ''}${f.down ? ' down' : ''}${f.awakened ? ' awakened' : ''}`}
-          style={{ ['--sw' as string]: sw, ['--side' as string]: pcolor(side), ['--lx' as string]: side === 0 ? '46px' : '-46px', ['--fall' as string]: side === 0 ? '-14deg' : '14deg' } as CSSProperties}>
+        <div key={f.snap.charId} className={`stand${f.fromBench ? ' from-bench' : ''}${f.hp / f.maxHp < 0.3 && !f.down ? ' hurt' : ''}${acting ? ' acting' : ''}${acting && (melee || isClash) ? ' lunge' : ''}${hit ? ' hit' : ''}${blocking ? ' blocking' : ''}${f.floored ? ' floored' : ''}${f.staggered && !f.down ? ' staggered' : ''}${f.down ? ' down' : ''}${f.awakened ? ' awakened' : ''}${f.stage ? ` formed stage-${Math.min(3, f.stage)}` : ''}`}
+          style={{ ['--form' as string]: f.formColor ?? '#f5c451', ['--sw' as string]: sw, ['--side' as string]: pcolor(side), ['--lx' as string]: side === 0 ? '46px' : '-46px', ['--fall' as string]: side === 0 ? '-14deg' : '14deg' } as CSSProperties}>
           <div className="pf" ref={(el) => { if (el) standRefs.current.set(f.snap.charId, el); else standRefs.current.delete(f.snap.charId); }}>
             {pc ? <CharArt c={pc} /> : null}
             <InjuryCracks injuries={f.injuries} fresh={live?.type === 'injury' && live.target === f.snap.charId ? live.seq : null} flip={side === 1} />
             {f.fromBench && <span className="badge bench-badge">FROM THE BENCH</span>}
+            {f.formName && <span className="badge form-badge">{f.formName}</span>}
             {f.form >= 1.06 && <span className="badge good">TOP FORM</span>}
             {f.form <= 0.94 && <span className="badge bad">OFF DAY</span>}
             {input.mode !== 'solo' && <span className="pos">{f.position === 'front' ? 'FRONT' : 'BACK'}</span>}
@@ -183,6 +186,7 @@ export function ArenaStage({ record, cur, done, fighters, momentum, players, cha
   } : null;
 
   return (
+    <>
     <div ref={arenaRef} className={`arena2${size > 2 ? ' squad' : ''}`} style={{ ['--env-accent' as string]: env.palette[2] + '55' } as CSSProperties}>
       <ArenaBackdrop envId={input.environmentId} />
       <div className="arena-hud">
@@ -214,6 +218,8 @@ export function ArenaStage({ record, cur, done, fighters, momentum, players, cha
             : <Charge at={from} c={getAbility(live.ability).fx.color} />
         )}
         {css && live?.ability && ABILITIES[live.ability] && vfxOf(ABILITIES[live.ability]) === 'domain' && isStrike && from && <Domain at={from} c={getAbility(live.ability!).fx.color} c2={getAbility(live.ability!).color2 ?? '#000'} w={w} h={h} />}
+        {live?.type === 'transform' && <>{css && from && <Aura at={from} c={String(live.context?.color ?? '#f5c451')} c2="#ffffff" seq={live.seq} />}<div className="big-call transform-call" style={{ ['--c' as string]: String(live.context?.color ?? '#f5c451') } as CSSProperties}><small>TRANSFORMATION</small>{String(live.context?.form ?? '')}{live.context?.unlocked ? <span className="unlocked">New: {String(live.context.unlocked)}</span> : null}</div></>}
+        {live?.type === 'secret' && <div className="big-call secret-call" style={{ ['--c' as string]: '#f43f5e' } as CSSProperties}><small>{live.context?.why === 'ally' ? 'NO MORE HOLDING BACK' : live.context?.why === 'last' ? 'LAST ONE STANDING' : 'SECRET MOVE'}</small>{live.action}</div>}
         {live?.type === 'awakening' && from && <>{css && <Aura at={from} c="#f5c451" c2="#fff7d6" seq={live.seq} />}<div className="big-call" style={{ ['--c' as string]: '#f5c451' } as CSSProperties}>AWAKENING!</div></>}
         {css && live?.type === 'heal' && to && <HealFx at={to} />}
         {live?.type === 'status' && live.status?.type === 'shield' && to && <div className="fx-dome" style={{ left: to.x, top: to.y, ['--c' as string]: '#93c5fd' } as CSSProperties} />}
@@ -243,6 +249,12 @@ export function ArenaStage({ record, cur, done, fighters, momentum, players, cha
           {live.type === 'combo' && typeof live.context?.partner === 'string' && characters[live.context.partner] && <div className="ci-img second"><CharArt c={characters[live.context.partner]} /></div>}
         </div>
       )}
+      {(live?.type === 'transform' || live?.type === 'secret') && live.actor && characters[live.actor] && (
+        <div className={`cutin${fighters.get(live.actor)?.snap.side === 1 ? ' right' : ''}`} key={`tf${live.seq}`} style={{ ['--c' as string]: live.type === 'secret' ? '#f43f5e' : String(live.context?.color ?? '#f5c451') } as CSSProperties}>
+          <div className="ci-lines" />
+          <div className={`ci-img formed stage-${Math.min(3, Number(live.context?.stage ?? 1))}`} style={{ ['--form' as string]: String(live.context?.color ?? '#f43f5e') } as CSSProperties}><CharArt c={characters[live.actor]} /></div>
+        </div>
+      )}
       {cutIn && live?.actor && characters[live.actor] && (
         <div className={`cutin${fighters.get(live.actor)?.snap.side === 1 ? ' right' : ''}`} key={`ci${live.seq}`} style={{ ['--c' as string]: getAbility(live.ability!).fx.color } as CSSProperties}>
           <div className="ci-lines" />
@@ -260,6 +272,8 @@ export function ArenaStage({ record, cur, done, fighters, momentum, players, cha
         </div>
       )}
     </div>
+    <PlayByPlay events={result.events} upto={cur && !done ? cur.seq : -1} names={(id) => fighters.get(id)?.snap.name ?? id} />
+    </>
   );
 }
 
@@ -446,4 +460,30 @@ function Clash({ e, from, to, snap, defSnap, envId, w, h }: { e: BattleEvent; fr
       <div className="fx-flash fx-full" style={v({ '--c': '#fff', '--fo': 0.4, animationDelay: '0.3s' })} />
     </>
   );
+}
+
+/** The last few actions in plain words: who used what on whom, how hard it hit, what it caused. */
+function PlayByPlay({ events, upto, names }: { events: BattleEvent[]; upto: number; names: (id: string) => string }) {
+  if (upto < 0) return null;
+  const lines: Array<{ seq: number; text: string; tone: string }> = [];
+  for (let i = Math.min(upto, events.length - 1); i >= 0 && lines.length < 3; i--) {
+    const e = events[i];
+    const who = e.actor ? names(e.actor) : '', tgt = e.target ? names(e.target) : '';
+    const move = e.ability && ABILITIES[e.ability] ? ABILITIES[e.ability].name : e.action === 'combo' ? 'combo' : 'a strike';
+    const el = e.ability && ABILITIES[e.ability]?.element ? ` (${ABILITIES[e.ability].element!.toLowerCase()})` : '';
+    let text = '', tone = '';
+    if ((e.type === 'attack' || e.type === 'counter') && e.actor && e.target && (e.damage ?? 0) > 0) {
+      text = `${who}${e.type === 'counter' ? ' counters with' : ' ·'} ${move}${el} → ${tgt}: ${e.damage} damage${e.crit ? ', CRITICAL' : ''}${e.context?.impact === 'devastating' ? ', devastating' : e.context?.impact === 'heavy' ? ', heavy' : ''}${e.hpAfter === 0 ? ', down!' : ''}`;
+      tone = e.crit ? 'crit' : '';
+    } else if (e.type === 'miss' && e.actor) { text = `${who} · ${move} misses ${tgt || 'the mark'}`; tone = 'dim'; }
+    else if (e.type === 'block' && e.target) { text = `${tgt} blocks ${who}'s ${move}${(e.damage ?? 0) > 0 ? ` (${e.damage} through)` : ''}`; tone = 'dim'; }
+    else if (e.type === 'heal' && e.target) { text = `${who || tgt} heals ${e.actor === e.target ? 'themself' : tgt}: +${e.heal ?? 0} HP${e.context?.revive ? ', back on their feet!' : ''}`; tone = 'good'; }
+    else if (e.type === 'status' && e.status?.applied && e.target) { text = `${tgt} is hit with ${e.status.type}`; tone = 'dim'; }
+    else if (e.type === 'transform' && e.actor) { text = `${who} transforms: ${String(e.context?.form)}`; tone = 'form'; }
+    else if (e.type === 'secret' && e.actor) { text = `${who} unleashes a secret move: ${e.action}`; tone = 'crit'; }
+    else continue;
+    lines.unshift({ seq: e.seq, text, tone });
+  }
+  if (!lines.length) return null;
+  return <div className="pbp" aria-live="polite">{lines.map((l) => <div key={l.seq} className={`pbp-line ${l.tone}`}>{l.text}</div>)}</div>;
 }

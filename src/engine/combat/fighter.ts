@@ -1,5 +1,9 @@
 import type { BattleInjury, FighterResult, FighterSnapshot, Stats, StatusType } from '../types';
 import { STAT_KEYS } from '../types';
+import { kitFor, type Kit } from '../data/kits';
+
+/** A kit's extra moves and its secret, by id. */
+const kitMoves = (kit: Kit | null) => (kit ? [...kit.moves, kit.secret].map((m) => m.id) : []);
 
 export interface ActiveStatus {
   type: StatusType;
@@ -36,6 +40,11 @@ export interface CombatFighter {
   reviveUsed: boolean;
   /** How many times this fighter has healed only themselves. */
   selfHeals: number;
+  /** Transformation stage reached (0 = base form), the moves this fighter can use, and their kit. */
+  stage: number;
+  moves: string[];
+  secretUsed: boolean;
+  kit: Kit | null;
   criticalShown: boolean;
   guarding: boolean;
   protecting: string | null;
@@ -73,6 +82,7 @@ export function maxStFor(stats: Stats): number {
 }
 
 export function createFighter(snap: FighterSnapshot): CombatFighter {
+  const kit = kitFor(snap.charId, snap.name);
   const eff = effectiveStats(snap);
   // Max HP uses base stats so condition shows as reduced effectiveness, not
   // as a phantom HP loss; injuries to stamina still lower stamina pool.
@@ -101,6 +111,10 @@ export function createFighter(snap: FighterSnapshot): CombatFighter {
     mendCd: 0,
     reviveUsed: false,
     selfHeals: 0,
+    stage: 0,
+    moves: [...snap.abilities, ...kitMoves(kit)],
+    secretUsed: false,
+    kit,
     criticalShown: false,
     guarding: false,
     protecting: null,

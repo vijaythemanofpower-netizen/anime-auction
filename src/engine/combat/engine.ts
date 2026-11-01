@@ -8,6 +8,7 @@ import type {
 import { CALLS_PER_BATTLE, ENGINE_VERSION } from '../types';
 import type { FighterSnapshot } from '../types';
 import { arenaFit, fitEdge } from '../arenaFit';
+import type { KitTrigger } from '../data/kits';
 import { Rng, deriveSeed, hashString } from '../rng';
 import { duoOf, rivalryBetween, type Rivalry } from '../data/rivals';
 import { EAGERNESS, reactionTo } from '../data/banter';
@@ -359,10 +360,16 @@ export class BattleSim {
       return;
     }
 
+    this.checkTransform(f);
     this.checkAwakening(f);
     const forced = this.forceUltimate.has(f.id) ? this.bestMove(f, true) : null;
     this.forceUltimate.delete(f.id);
     const opt: Option = forced ? { kind: 'ability', ability: forced, weight: 1 } : this.chooseAction(f);
+    if (opt.kind === 'ability' && opt.ability.secret) {
+      f.secretUsed = true;
+      this.emit('secret', `${this.name(f)} is done holding back. SECRET MOVE: ${opt.ability.name}!`, { actor: f.id, action: opt.ability.name, context: { move: opt.ability.id, why: opt.ability.secret } });
+      this.shiftMomentum(f.side, 10, `${this.name(f)}'s secret move`);
+    }
     this.execute(f, opt);
     const order = this.orders[f.side];
     if (order && --order.left <= 0) this.orders[f.side] = null;
@@ -788,7 +795,7 @@ export class BattleSim {
 
   /** The fighter's strongest offensive technique that they can afford now. */
   private bestMove(f: CombatFighter, preferUltimate: boolean, peek = false): Ability | null {
-    const moves = f.snap.abilities.map((id) => ABILITIES[id]).filter((m): m is Ability => !!m && ['attack', 'ultimate', 'summon', 'aoe'].includes(m.kind));
+    const moves = f.moves.map((id) => ABILITIES[id]).filter((m): m is Ability => !!m && ['attack', 'ultimate', 'summon', 'aoe'].includes(m.kind) && !m.secret && this.unlocked(f, m));
     const usable = moves.filter((m) => (f.cooldowns[m.id] ?? 0) === 0 && (peek || f.st + 15 >= m.cost));
     usable.sort((a, b) => (preferUltimate ? Number(b.kind === 'ultimate') - Number(a.kind === 'ultimate') : 0) || b.power - a.power);
     return usable[0] ?? null;
@@ -826,10 +833,10 @@ export class BattleSim {
     if (provoked) attackW *= 1.3;
     opts.push({ kind: 'ability', ability: BASIC_ATTACK, weight: attackW });
 
-    for (const id of f.snap.abilities) {
+    for (const id of f.moves) {
       const a = getAbility(id);
       const cost = Math.round(a.cost * strat.cost);
-      if (f.st < cost || (f.cooldowns[id] ?? 0) > 0 || !this.triggerOk(f, a)) continue;
+      if (f.st < cost || (f.cooldowns[id] ?? 0) > 0 || !this.triggerOk(f, a) || !this.unlocked(f, a)) continue;
       let w = arch.behavior.ability * strat.abilityW * (order === 'all_out' && a.kind !== 'heal' && a.kind !== 'shield' ? 1.3 : 1);
       switch (a.kind) {
         case 'attack': case 'summon': w *= 0.9 + a.power * 0.35; break;
@@ -851,6 +858,9 @@ export class BattleSim {
         case 'buff': w *= hasStatus(f, a.status?.type ?? 'focus') ? 0.05 : 0.9; break;
         case 'debuff': w *= this.input.sides[f.side].strategy === 'control' ? 1.6 : 1; break;
       }
+      // A secret move, once its moment comes, is what they reach for; new forms favour their new moves.
+      if (a.secret) w *= 6;
+      else if (a.form) w *= 1.6;
       // Strategists hold big moves until the enemy is softened up.
       if (conserve && a.power >= 1.9 && enemies.every((e) => hpPct(e) > 0.6) && f.actionsTaken < 6) w *= 0.35;
       opts.push({ kind: 'ability', ability: a, weight: w });
@@ -1264,9 +1274,9 @@ export class BattleSim {
 
   /** An offensive move the defender could throw back right now, for a clash. */
   private readyMove(t: CombatFighter): Ability | null {
-    for (const id of t.snap.abilities) {
+    for (const id of t.moves) {
       const m = ABILITIES[id];
-      if (!m || !(m.kind === 'attack' || m.kind === 'ultimate' || m.kind === 'summon') || m.target !== 'enemy') continue;
+      if (!m || m.secret || !this.unlocked(t, m) || !(m.kind === 'attack' || m.kind === 'ultimate' || m.kind === 'summon') || m.target !== 'enemy') continue;
       if ((t.cooldowns[id] ?? 0) > 0 || t.st < Math.round(m.cost * this.strat(t).cost) || !this.triggerOk(t, m)) continue;
       return m;
     }
@@ -1497,6 +1507,48 @@ export class BattleSim {
         this.emit('final_exchange', `Both ${this.name(a[0])} and ${this.name(b[0])} are nearly spent. The final exchange begins!`, { actor: a[0].id, target: b[0].id });
       }
     }
+  }
+
+  /** Kit moves need their form; a secret move waits for its moment and comes out once. */
+  private unlocked(f: CombatFighter, a: Ability): boolean {
+    if (a.form && f.stage < a.form) return false;
+    if (a.secret) return !f.secretUsed && this.kitMoment(f, a.secret);
+    return true;
+  }
+
+  /** The moments that bring out a form or a secret move. In a 1-on-1 there are no teammates,
+   *  so "a teammate falls" means being badly hurt and "last one standing" means nearly beaten. */
+  private kitMoment(f: CombatFighter, when: KitTrigger): boolean {
+    const hp = hpPct(f);
+    const team = this.fighters.filter((x) => x.side === f.side);
+    const alone = team.length === 1;
+    switch (when) {
+      case 'hp70': return hp < 0.7;
+      case 'hp50': return hp < 0.5;
+      case 'hp30': return hp < 0.3;
+      case 'ally': return alone ? hp < 0.4 : team.some((x) => x !== f && x.defeated);
+      case 'last': return alone ? hp < 0.3 : team.every((x) => x === f || x.defeated);
+    }
+  }
+
+  /** Transformations: when the moment comes, a fighter may reach their next form. */
+  private checkTransform(f: CombatFighter) {
+    const next = f.kit?.forms[f.stage];
+    if (!next || !this.kitMoment(f, next.trigger) || !this.plotRng.chance(0.55)) return;
+    f.stage++;
+    f.mods.dmg += 0.1;
+    f.eff.speed = Math.round(f.eff.speed * 1.05 * 10) / 10;
+    f.eff.defense = Math.round(f.eff.defense * 1.05 * 10) / 10;
+    const before = f.hp;
+    f.hp = Math.min(f.maxHp, f.hp + Math.round(f.maxHp * 0.06));
+    f.guard = 100;
+    f.staggered = false;
+    const unlocked = f.kit!.moves.filter((m) => m.form === f.stage).map((m) => m.name);
+    this.emit('transform', `${this.name(f)} transforms: ${next.name.toUpperCase()}!${unlocked.length ? ` New moves: ${unlocked.join(', ')}.` : ''}`, {
+      actor: f.id, action: next.name, heal: f.hp - before, hpBefore: before, hpAfter: f.hp,
+      context: { form: next.name, stage: f.stage, color: next.color, look: next.look, unlocked: unlocked.join(', ') },
+    });
+    this.shiftMomentum(f.side, 12, `${this.name(f)}'s transformation`);
   }
 
   private checkAwakening(f: CombatFighter) {

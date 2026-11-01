@@ -350,3 +350,26 @@
 @keyframes bench-dash { from { transform: translateX(var(--dash, -180px)) scale(0.9); opacity: 0; filter: blur(3px); } }
 .stand .bench-badge { position: absolute; top: 6px; left: 6px; right: 6px; text-align: center; background: #f5c451; color: #1a1a1a; font-weight: 800; font-size: 10px; letter-spacing: 0.04em; border-radius: 6px; padding: 2px 4px; z-index: 3; }
 @media (prefers-reduced-motion: reduce) { .stand.from-bench { animation: none; } }
+
+/* Transformations: the portrait takes on the form's colour and glow, stronger with each
+   stage (Sage Mode → Kurama Mode → Baryon Mode), with the form's name on the card. */
+.stand.formed .pf, .ci-img.formed { border-color: var(--form); box-shadow: 0 0 28px -2px var(--form), inset 0 0 22px -6px var(--form); }
+.stand.formed .pf img, .ci-img.formed img { filter: saturate(1.25) contrast(1.08) drop-shadow(0 0 6px var(--form)); }
+.stand.formed.stage-2 .pf img, .ci-img.formed.stage-2 img { filter: saturate(1.45) contrast(1.15) brightness(1.06) drop-shadow(0 0 10px var(--form)); }
+.stand.formed.stage-3 .pf img, .ci-img.formed.stage-3 img { filter: saturate(1.7) contrast(1.22) brightness(1.12) hue-rotate(-8deg) drop-shadow(0 0 14px var(--form)); }
+.stand.formed .pf::after { content: ''; position: absolute; inset: 0; pointer-events: none; background: radial-gradient(circle at 50% 70%, transparent 45%, color-mix(in srgb, var(--form) 45%, transparent)); mix-blend-mode: screen; animation: form-pulse 1.4s ease-in-out infinite alternate; }
+@keyframes form-pulse { from { opacity: 0.45; } to { opacity: 0.95; } }
+.badge.form-badge { position: absolute; top: 4px; left: 50%; transform: translateX(-50%); white-space: nowrap; max-width: 96%; overflow: hidden; text-overflow: ellipsis; background: var(--form); color: #0b0b0b; font-weight: 800; font-size: 10px; z-index: 3; }
+.big-call.transform-call, .big-call.secret-call { display: flex; flex-direction: column; align-items: center; text-align: center; line-height: 1.05; }
+.big-call small { font-size: 0.32em; letter-spacing: 0.2em; opacity: 0.9; }
+.big-call .unlocked { font-size: 0.26em; font-family: var(--font-body, inherit); font-weight: 600; letter-spacing: 0; margin-top: 6px; color: #fff; }
+/* Play-by-play: the last few actions in words, under the fighters. */
+.pbp { display: flex; flex-direction: column; gap: 2px; margin-top: 6px; min-height: 64px; }
+.pbp-line { align-self: flex-start; max-width: 100%; font-size: 13px; line-height: 1.35; padding: 2px 8px; border-radius: 6px; background: var(--surface-2, rgba(0,0,0,0.5)); color: var(--text, #e5e7eb); opacity: 0.6; }
+.pbp-line:last-child { opacity: 1; font-weight: 600; }
+.pbp-line.crit { color: #fda4af; }
+.pbp-line.good { color: #86efac; }
+.pbp-line.form { color: #fde68a; }
+.pbp-line.dim { color: #cbd5e1; }
+@media (max-width: 640px) { .pbp-line { font-size: 12px; } }
+@media (prefers-reduced-motion: reduce) { .stand.formed .pf::after { animation: none; } }

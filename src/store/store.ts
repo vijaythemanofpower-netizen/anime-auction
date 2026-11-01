@@ -326,7 +326,7 @@ class Store {
   }
 
   /** Host: the party takes on a raid boss. Saved on the game, shared with the room, and opened to watch. */
-  startRaid(boss: PublicCharacter): boolean {
+  startRaid(boss: PublicCharacter | PublicCharacter[]): boolean {
     let record: BattleRecord | null = null;
     const r = this.act((g, v) => {
       if (g.phase === 'setup' || g.phase === 'pool' || g.phase === 'auction') return { ok: false, error: 'The raid opens once everyone has a team (after the auction).' };
