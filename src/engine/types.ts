@@ -327,10 +327,10 @@ export interface BattleSideInput {
 
 export type JumpInRule = 'never' | 'ask' | 'auto';
 
-export type CallKind = 'all_out' | 'defend' | 'ultimate' | 'callback' | 'reinforce' | 'none';
+export type CallKind = 'all_out' | 'defend' | 'ultimate' | 'callback' | 'reinforce' | 'taunt' | 'focus' | 'transform' | 'secret' | 'none';
 /** The call for a side's nth corner moment (0-based). */
 export interface CoachCall { side: 0 | 1; corner: number; kind: CallKind; reserveId?: string }
-export const CALLS_PER_BATTLE = 3;
+export const CALLS_PER_BATTLE = 5;
 
 export type BattleEventType =
   | 'intro' | 'prebattle' | 'opening' | 'attack' | 'miss' | 'block' | 'counter'

@@ -41,6 +41,7 @@ interface StrikeOpts { noCounter?: boolean; accBonus?: number; label?: string; i
 /** What the corner shouts for each call. */
 const CALL_SHOUT: Record<Exclude<CallKind, 'none'>, string> = {
   all_out: 'GO ALL OUT!', defend: 'GUARD UP! WEATHER IT!', ultimate: 'USE IT NOW!', callback: 'FALL BACK!', reinforce: 'SEND IN BACKUP!',
+  taunt: 'GET IN THEIR HEAD!', focus: 'EVERYONE ON THE WEAK ONE!', transform: 'TRANSFORM NOW!', secret: 'NO MORE HOLDING BACK!',
 };
 interface Order { kind: 'all_out' | 'defend'; left: number }
 
@@ -390,7 +391,7 @@ export class BattleSim {
       if (this.checkWinner() !== null) return;
       const side = c.side;
       if (c.reason === 'jump_in') { this.jumpInMoment(side, c.focus, c.reserve!); continue; }
-      if (this.callsUsed[side] >= CALLS_PER_BATTLE || this.turn - this.lastCornerTurn[side] < 6) continue;
+      if (this.callsUsed[side] >= CALLS_PER_BATTLE || this.turn - this.lastCornerTurn[side] < 4) continue;
       // The focus may be a bench fighter who has already left, or someone just knocked out.
       let focus = this.fighters.find((f) => f.id === c.focus);
       if (!focus || focus.defeated) focus = this.alive(side)[0];
@@ -715,6 +716,10 @@ export class BattleSim {
     if (this.bestMove(focus, true, true)) out.push('ultimate');
     out.push('callback');
     if (this.reservesLeft(side).length) out.push('reinforce');
+    out.push('taunt');
+    if (this.alive(side === 0 ? 1 : 0).length > 1) out.push('focus');
+    if (focus.kit?.forms[focus.stage]) out.push('transform');
+    if (focus.kit && !focus.secretUsed && !focus.secretOpen) out.push('secret');
     out.push('none');
     return out;
   }
@@ -730,6 +735,10 @@ export class BattleSim {
       ultimate: foeHurt ? 1.8 : 0.3,
       callback: hurt ? 1.4 : 0.1,
       reinforce: hurt || foeHurt ? 1.2 : 0.3,
+      taunt: hurt ? 0.3 : 0.6,
+      focus: foeHurt ? 1.6 : 0.5,
+      transform: hurt ? 1.8 : 0.7,
+      secret: hurt || foeHurt ? 1.3 : 0.3,
     };
     if (reason === 'check') w.none = 2.5;
     const opts = options.filter((o) => w[o]);
@@ -773,6 +782,30 @@ export class BattleSim {
         }
         return;
       }
+      case 'taunt': {
+        // The enemy loses their cool: they chase this fighter and swing wilder for a few actions.
+        for (const e of this.alive(side === 0 ? 1 : 0)) { e.forcedTarget = { id: focus.id, turns: 3 }; e.mods.acc -= 0.04; e.mods.provokedTurns = Math.max(e.mods.provokedTurns, 3); }
+        focus.guard = clamp(focus.guard + 20, 0, 100);
+        this.emit('call', `${CALL_SHOUT[kind]} ${this.name(focus)} mocks the other side, and they take the bait.`, { actor: focus.id, context: ctx });
+        this.shiftMomentum(side, 5, 'the taunt');
+        return;
+      }
+      case 'focus': {
+        const weak = this.alive(side === 0 ? 1 : 0).sort((a, b) => hpPct(a) - hpPct(b))[0];
+        if (!weak) return;
+        for (const f of this.alive(side)) f.forcedTarget = { id: weak.id, turns: 3 };
+        this.emit('call', `${CALL_SHOUT[kind]} Everyone turns on ${this.name(weak)}.`, { actor: focus.id, target: weak.id, context: ctx });
+        return;
+      }
+      case 'transform':
+        this.checkTransform(focus, true);
+        this.emit('call', `${CALL_SHOUT[kind]} ${this.name(focus)}'s corner wants their next form, right now.`, { actor: focus.id, context: ctx });
+        return;
+      case 'secret':
+        focus.secretOpen = true;
+        focus.st = clamp(focus.st + 20, 0, focus.maxSt);
+        this.emit('call', `${CALL_SHOUT[kind]} ${this.name(focus)} is told to use the move they've been hiding.`, { actor: focus.id, context: ctx });
+        return;
       case 'reinforce': {
         const pool = this.reservesLeft(side);
         const snap = pool.find((x) => x.charId === call.reserveId) ?? pool.slice().sort((a, b) => b.stats.attack - a.stats.attack)[0];
@@ -1512,7 +1545,7 @@ export class BattleSim {
   /** Kit moves need their form; a secret move waits for its moment and comes out once. */
   private unlocked(f: CombatFighter, a: Ability): boolean {
     if (a.form && f.stage < a.form) return false;
-    if (a.secret) return !f.secretUsed && this.kitMoment(f, a.secret);
+    if (a.secret) return !f.secretUsed && (f.secretOpen || this.kitMoment(f, a.secret));
     return true;
   }
 
@@ -1532,9 +1565,9 @@ export class BattleSim {
   }
 
   /** Transformations: when the moment comes, a fighter may reach their next form. */
-  private checkTransform(f: CombatFighter) {
+  private checkTransform(f: CombatFighter, now = false) {
     const next = f.kit?.forms[f.stage];
-    if (!next || !this.kitMoment(f, next.trigger) || !this.plotRng.chance(0.55)) return;
+    if (!next || (!now && (!this.kitMoment(f, next.trigger) || !this.plotRng.chance(0.55)))) return;
     f.stage++;
     f.mods.dmg += 0.1;
     f.eff.speed = Math.round(f.eff.speed * 1.05 * 10) / 10;

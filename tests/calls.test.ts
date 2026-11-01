@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { CALLS_PER_BATTLE } from '../src/engine/types';
 import { simulateBattle } from '../src/engine/combat/engine';
 import { LEGEND_CHARACTERS } from '../src/engine/data/legends';
 import { ABILITIES } from '../src/engine/data/abilities';
@@ -87,7 +88,7 @@ describe('corner calls', () => {
       const r = simulateBattle(battle('solo', seed, ['goku'], ['vegeta'], { coach: ['auto', 'auto'], reserves: [['piccolo'], ['gohan']] }));
       const made = r.events.filter((e) => e.type === 'call');
       calls += made.length;
-      for (const side of [0, 1]) expect(made.filter((e) => e.context?.side === side).length).toBeLessThanOrEqual(3);
+      for (const side of [0, 1]) expect(made.filter((e) => e.context?.side === side).length).toBeLessThanOrEqual(CALLS_PER_BATTLE);
     }
     expect(calls).toBeGreaterThan(5);
   });

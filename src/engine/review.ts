@@ -16,7 +16,7 @@ export interface StrategyReview { chosen: Strategy; chosenWin: number; best: Str
 export interface SideReview { side: 0 | 1; calls: CallReview[]; strategy: StrategyReview | null; iq: number; missed: number }
 
 export const CALL_LABEL: Record<CallKind, string> = {
-  all_out: 'Go all out', defend: 'Guard up', ultimate: 'Use it NOW', callback: 'Call back / fall back', reinforce: 'Send backup', none: 'Let them fight',
+  all_out: 'Go all out', defend: 'Guard up', ultimate: 'Use it NOW', callback: 'Call back / fall back', reinforce: 'Send backup', taunt: 'Taunt them', focus: 'Focus the weakest', transform: 'Transform now', secret: 'No more holding back', none: 'Let them fight',
 };
 
 const STRATS: Strategy[] = ['aggressive', 'defensive', 'balanced', 'counter', 'control', 'highrisk'];

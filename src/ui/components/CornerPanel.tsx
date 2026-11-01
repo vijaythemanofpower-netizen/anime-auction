@@ -63,6 +63,10 @@ export function CornerPanel({ e, record, fighters, players, characters, onCall }
     { kind: 'all_out', icon: '🔥', title: 'Go all out', text: 'Hit harder for the next 4 actions (+12% power, more attacks). Guard drops.' },
     { kind: 'defend', icon: '🛡️', title: 'Guard up', text: 'Rebuild the guard right now and block far more for 4 actions.' },
     { kind: 'ultimate', icon: '⚡', title: 'Use it NOW', text: best ? `${best.name} on the next turn, no waiting.` : 'Their strongest technique on the next turn.' },
+    { kind: 'taunt', icon: '😏', title: 'Taunt them', text: `${focus.snap.name} gets in their heads: enemies chase ${focus.snap.name} and swing wilder for 3 actions.` },
+    { kind: 'focus', icon: '🎯', title: 'Focus the weakest', text: 'Your whole side goes after the most hurt enemy for 3 actions.' },
+    { kind: 'transform', icon: '🌀', title: 'Transform now', text: `${focus.snap.name} reaches their next form right away instead of waiting for the moment.` },
+    { kind: 'secret', icon: '🤫', title: 'No more holding back', text: `${focus.snap.name} may use their secret move from now on, plus a burst of stamina.` },
     { kind: 'callback', icon: '↩️', title: back ? 'Call back' : 'Fall back', text: back ? `Pull ${focus.snap.name} back to recover; ${back.snap.name} takes the front.` : `${focus.snap.name} backs off: guard reset, breath back, a little recovery. The other side gains momentum.` },
   ];
 

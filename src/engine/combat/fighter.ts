@@ -44,6 +44,8 @@ export interface CombatFighter {
   stage: number;
   moves: string[];
   secretUsed: boolean;
+  /** The corner told them to stop holding back: the secret move is open now. */
+  secretOpen: boolean;
   kit: Kit | null;
   criticalShown: boolean;
   guarding: boolean;
@@ -114,6 +116,7 @@ export function createFighter(snap: FighterSnapshot): CombatFighter {
     stage: 0,
     moves: [...snap.abilities, ...kitMoves(kit)],
     secretUsed: false,
+    secretOpen: false,
     kit,
     criticalShown: false,
     guarding: false,
