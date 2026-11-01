@@ -1,1 +1,3677 @@
-{}
+{
+  "legend:goku": {
+    "url": "sprites/goku/idle.webp",
+    "frameW": 384,
+    "frameH": 512,
+    "clips": {
+      "idle": {
+        "url": "sprites/goku/idle.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": true
+      },
+      "strike": {
+        "url": "sprites/goku/strike.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "cast": {
+        "url": "sprites/goku/cast.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "hit": {
+        "url": "sprites/goku/hit.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "knockdown": {
+        "url": "sprites/goku/knockdown.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "victory": {
+        "url": "sprites/goku/victory.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      }
+    }
+  },
+  "legend:luffy": {
+    "url": "sprites/luffy/idle.webp",
+    "frameW": 384,
+    "frameH": 512,
+    "clips": {
+      "idle": {
+        "url": "sprites/luffy/idle.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": true
+      },
+      "strike": {
+        "url": "sprites/luffy/strike.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "cast": {
+        "url": "sprites/luffy/cast.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "hit": {
+        "url": "sprites/luffy/hit.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "knockdown": {
+        "url": "sprites/luffy/knockdown.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "victory": {
+        "url": "sprites/luffy/victory.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      }
+    }
+  },
+  "legend:gojo": {
+    "url": "sprites/gojo/idle.webp",
+    "frameW": 384,
+    "frameH": 512,
+    "clips": {
+      "idle": {
+        "url": "sprites/gojo/idle.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": true
+      },
+      "strike": {
+        "url": "sprites/gojo/strike.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "cast": {
+        "url": "sprites/gojo/cast.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "hit": {
+        "url": "sprites/gojo/hit.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "knockdown": {
+        "url": "sprites/gojo/knockdown.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "victory": {
+        "url": "sprites/gojo/victory.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      }
+    }
+  },
+  "legend:tanjiro": {
+    "url": "sprites/tanjiro/idle.webp",
+    "frameW": 384,
+    "frameH": 512,
+    "clips": {
+      "idle": {
+        "url": "sprites/tanjiro/idle.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": true
+      },
+      "strike": {
+        "url": "sprites/tanjiro/strike.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "cast": {
+        "url": "sprites/tanjiro/cast.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "hit": {
+        "url": "sprites/tanjiro/hit.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "knockdown": {
+        "url": "sprites/tanjiro/knockdown.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "victory": {
+        "url": "sprites/tanjiro/victory.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      }
+    }
+  },
+  "legend:naruto": {
+    "url": "sprites/naruto/idle.webp",
+    "frameW": 384,
+    "frameH": 512,
+    "clips": {
+      "idle": {
+        "url": "sprites/naruto/idle.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": true
+      },
+      "strike": {
+        "url": "sprites/naruto/strike.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "cast": {
+        "url": "sprites/naruto/cast.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "hit": {
+        "url": "sprites/naruto/hit.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "knockdown": {
+        "url": "sprites/naruto/knockdown.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "victory": {
+        "url": "sprites/naruto/victory.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      }
+    }
+  },
+  "legend:ichigo": {
+    "url": "sprites/ichigo/idle.webp",
+    "frameW": 384,
+    "frameH": 512,
+    "clips": {
+      "idle": {
+        "url": "sprites/ichigo/idle.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": true
+      },
+      "strike": {
+        "url": "sprites/ichigo/strike.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "cast": {
+        "url": "sprites/ichigo/cast.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "hit": {
+        "url": "sprites/ichigo/hit.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "knockdown": {
+        "url": "sprites/ichigo/knockdown.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "victory": {
+        "url": "sprites/ichigo/victory.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      }
+    }
+  },
+  "legend:sasuke": {
+    "url": "sprites/sasuke/idle.webp",
+    "frameW": 384,
+    "frameH": 512,
+    "clips": {
+      "idle": {
+        "url": "sprites/sasuke/idle.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": true
+      },
+      "strike": {
+        "url": "sprites/sasuke/strike.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "cast": {
+        "url": "sprites/sasuke/cast.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "hit": {
+        "url": "sprites/sasuke/hit.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "knockdown": {
+        "url": "sprites/sasuke/knockdown.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "victory": {
+        "url": "sprites/sasuke/victory.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      }
+    }
+  },
+  "legend:vegeta": {
+    "url": "sprites/vegeta/idle.webp",
+    "frameW": 384,
+    "frameH": 512,
+    "clips": {
+      "idle": {
+        "url": "sprites/vegeta/idle.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": true
+      },
+      "strike": {
+        "url": "sprites/vegeta/strike.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "cast": {
+        "url": "sprites/vegeta/cast.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "hit": {
+        "url": "sprites/vegeta/hit.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "knockdown": {
+        "url": "sprites/vegeta/knockdown.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "victory": {
+        "url": "sprites/vegeta/victory.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      }
+    }
+  },
+  "legend:saitama": {
+    "url": "sprites/saitama/idle.webp",
+    "frameW": 384,
+    "frameH": 512,
+    "clips": {
+      "idle": {
+        "url": "sprites/saitama/idle.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": true
+      },
+      "strike": {
+        "url": "sprites/saitama/strike.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "cast": {
+        "url": "sprites/saitama/cast.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "hit": {
+        "url": "sprites/saitama/hit.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "knockdown": {
+        "url": "sprites/saitama/knockdown.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "victory": {
+        "url": "sprites/saitama/victory.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      }
+    }
+  },
+  "legend:levi": {
+    "url": "sprites/levi/idle.webp",
+    "frameW": 384,
+    "frameH": 512,
+    "clips": {
+      "idle": {
+        "url": "sprites/levi/idle.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": true
+      },
+      "strike": {
+        "url": "sprites/levi/strike.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "cast": {
+        "url": "sprites/levi/cast.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "hit": {
+        "url": "sprites/levi/hit.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "knockdown": {
+        "url": "sprites/levi/knockdown.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "victory": {
+        "url": "sprites/levi/victory.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      }
+    }
+  },
+  "legend:deku": {
+    "url": "sprites/deku/idle.webp",
+    "frameW": 384,
+    "frameH": 512,
+    "clips": {
+      "idle": {
+        "url": "sprites/deku/idle.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": true
+      },
+      "strike": {
+        "url": "sprites/deku/strike.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "cast": {
+        "url": "sprites/deku/cast.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "hit": {
+        "url": "sprites/deku/hit.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "knockdown": {
+        "url": "sprites/deku/knockdown.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "victory": {
+        "url": "sprites/deku/victory.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      }
+    }
+  },
+  "legend:zoro": {
+    "url": "sprites/zoro/idle.webp",
+    "frameW": 384,
+    "frameH": 512,
+    "clips": {
+      "idle": {
+        "url": "sprites/zoro/idle.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": true
+      },
+      "strike": {
+        "url": "sprites/zoro/strike.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "cast": {
+        "url": "sprites/zoro/cast.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "hit": {
+        "url": "sprites/zoro/hit.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "knockdown": {
+        "url": "sprites/zoro/knockdown.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "victory": {
+        "url": "sprites/zoro/victory.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      }
+    }
+  },
+  "legend:sukuna": {
+    "url": "sprites/sukuna/idle.webp",
+    "frameW": 384,
+    "frameH": 512,
+    "clips": {
+      "idle": {
+        "url": "sprites/sukuna/idle.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": true
+      },
+      "strike": {
+        "url": "sprites/sukuna/strike.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "cast": {
+        "url": "sprites/sukuna/cast.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "hit": {
+        "url": "sprites/sukuna/hit.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "knockdown": {
+        "url": "sprites/sukuna/knockdown.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "victory": {
+        "url": "sprites/sukuna/victory.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      }
+    }
+  },
+  "legend:itachi": {
+    "url": "sprites/itachi/idle.webp",
+    "frameW": 384,
+    "frameH": 512,
+    "clips": {
+      "idle": {
+        "url": "sprites/itachi/idle.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": true
+      },
+      "strike": {
+        "url": "sprites/itachi/strike.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "cast": {
+        "url": "sprites/itachi/cast.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "hit": {
+        "url": "sprites/itachi/hit.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "knockdown": {
+        "url": "sprites/itachi/knockdown.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "victory": {
+        "url": "sprites/itachi/victory.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      }
+    }
+  },
+  "legend:kakashi": {
+    "url": "sprites/kakashi/idle.webp",
+    "frameW": 384,
+    "frameH": 512,
+    "clips": {
+      "idle": {
+        "url": "sprites/kakashi/idle.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": true
+      },
+      "strike": {
+        "url": "sprites/kakashi/strike.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "cast": {
+        "url": "sprites/kakashi/cast.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "hit": {
+        "url": "sprites/kakashi/hit.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "knockdown": {
+        "url": "sprites/kakashi/knockdown.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "victory": {
+        "url": "sprites/kakashi/victory.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      }
+    }
+  },
+  "legend:sanji": {
+    "url": "sprites/sanji/idle.webp",
+    "frameW": 384,
+    "frameH": 512,
+    "clips": {
+      "idle": {
+        "url": "sprites/sanji/idle.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": true
+      },
+      "strike": {
+        "url": "sprites/sanji/strike.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "cast": {
+        "url": "sprites/sanji/cast.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "hit": {
+        "url": "sprites/sanji/hit.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "knockdown": {
+        "url": "sprites/sanji/knockdown.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "victory": {
+        "url": "sprites/sanji/victory.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      }
+    }
+  },
+  "legend:ace": {
+    "url": "sprites/ace/idle.webp",
+    "frameW": 384,
+    "frameH": 512,
+    "clips": {
+      "idle": {
+        "url": "sprites/ace/idle.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": true
+      },
+      "strike": {
+        "url": "sprites/ace/strike.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "cast": {
+        "url": "sprites/ace/cast.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "hit": {
+        "url": "sprites/ace/hit.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "knockdown": {
+        "url": "sprites/ace/knockdown.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "victory": {
+        "url": "sprites/ace/victory.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      }
+    }
+  },
+  "legend:frieza": {
+    "url": "sprites/frieza/idle.webp",
+    "frameW": 384,
+    "frameH": 512,
+    "clips": {
+      "idle": {
+        "url": "sprites/frieza/idle.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": true
+      },
+      "strike": {
+        "url": "sprites/frieza/strike.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "cast": {
+        "url": "sprites/frieza/cast.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "hit": {
+        "url": "sprites/frieza/hit.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "knockdown": {
+        "url": "sprites/frieza/knockdown.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "victory": {
+        "url": "sprites/frieza/victory.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      }
+    }
+  },
+  "legend:byakuya": {
+    "url": "sprites/byakuya/idle.webp",
+    "frameW": 384,
+    "frameH": 512,
+    "clips": {
+      "idle": {
+        "url": "sprites/byakuya/idle.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": true
+      },
+      "strike": {
+        "url": "sprites/byakuya/strike.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "cast": {
+        "url": "sprites/byakuya/cast.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "hit": {
+        "url": "sprites/byakuya/hit.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "knockdown": {
+        "url": "sprites/byakuya/knockdown.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "victory": {
+        "url": "sprites/byakuya/victory.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      }
+    }
+  },
+  "legend:aizen": {
+    "url": "sprites/aizen/idle.webp",
+    "frameW": 384,
+    "frameH": 512,
+    "clips": {
+      "idle": {
+        "url": "sprites/aizen/idle.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": true
+      },
+      "strike": {
+        "url": "sprites/aizen/strike.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "cast": {
+        "url": "sprites/aizen/cast.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "hit": {
+        "url": "sprites/aizen/hit.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "knockdown": {
+        "url": "sprites/aizen/knockdown.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "victory": {
+        "url": "sprites/aizen/victory.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      }
+    }
+  },
+  "legend:yuji": {
+    "url": "sprites/yuji/idle.webp",
+    "frameW": 384,
+    "frameH": 512,
+    "clips": {
+      "idle": {
+        "url": "sprites/yuji/idle.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": true
+      },
+      "strike": {
+        "url": "sprites/yuji/strike.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "cast": {
+        "url": "sprites/yuji/cast.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "hit": {
+        "url": "sprites/yuji/hit.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "knockdown": {
+        "url": "sprites/yuji/knockdown.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "victory": {
+        "url": "sprites/yuji/victory.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      }
+    }
+  },
+  "legend:megumi": {
+    "url": "sprites/megumi/idle.webp",
+    "frameW": 384,
+    "frameH": 512,
+    "clips": {
+      "idle": {
+        "url": "sprites/megumi/idle.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": true
+      },
+      "strike": {
+        "url": "sprites/megumi/strike.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "cast": {
+        "url": "sprites/megumi/cast.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "hit": {
+        "url": "sprites/megumi/hit.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "knockdown": {
+        "url": "sprites/megumi/knockdown.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "victory": {
+        "url": "sprites/megumi/victory.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      }
+    }
+  },
+  "legend:zenitsu": {
+    "url": "sprites/zenitsu/idle.webp",
+    "frameW": 384,
+    "frameH": 512,
+    "clips": {
+      "idle": {
+        "url": "sprites/zenitsu/idle.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": true
+      },
+      "strike": {
+        "url": "sprites/zenitsu/strike.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "cast": {
+        "url": "sprites/zenitsu/cast.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "hit": {
+        "url": "sprites/zenitsu/hit.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "knockdown": {
+        "url": "sprites/zenitsu/knockdown.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "victory": {
+        "url": "sprites/zenitsu/victory.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      }
+    }
+  },
+  "legend:rengoku": {
+    "url": "sprites/rengoku/idle.webp",
+    "frameW": 384,
+    "frameH": 512,
+    "clips": {
+      "idle": {
+        "url": "sprites/rengoku/idle.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": true
+      },
+      "strike": {
+        "url": "sprites/rengoku/strike.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "cast": {
+        "url": "sprites/rengoku/cast.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "hit": {
+        "url": "sprites/rengoku/hit.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "knockdown": {
+        "url": "sprites/rengoku/knockdown.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "victory": {
+        "url": "sprites/rengoku/victory.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      }
+    }
+  },
+  "legend:bakugo": {
+    "url": "sprites/bakugo/idle.webp",
+    "frameW": 384,
+    "frameH": 512,
+    "clips": {
+      "idle": {
+        "url": "sprites/bakugo/idle.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": true
+      },
+      "strike": {
+        "url": "sprites/bakugo/strike.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "cast": {
+        "url": "sprites/bakugo/cast.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "hit": {
+        "url": "sprites/bakugo/hit.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "knockdown": {
+        "url": "sprites/bakugo/knockdown.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "victory": {
+        "url": "sprites/bakugo/victory.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      }
+    }
+  },
+  "legend:todoroki": {
+    "url": "sprites/todoroki/idle.webp",
+    "frameW": 384,
+    "frameH": 512,
+    "clips": {
+      "idle": {
+        "url": "sprites/todoroki/idle.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": true
+      },
+      "strike": {
+        "url": "sprites/todoroki/strike.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "cast": {
+        "url": "sprites/todoroki/cast.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "hit": {
+        "url": "sprites/todoroki/hit.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "knockdown": {
+        "url": "sprites/todoroki/knockdown.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "victory": {
+        "url": "sprites/todoroki/victory.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      }
+    }
+  },
+  "legend:allmight": {
+    "url": "sprites/allmight/idle.webp",
+    "frameW": 384,
+    "frameH": 512,
+    "clips": {
+      "idle": {
+        "url": "sprites/allmight/idle.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": true
+      },
+      "strike": {
+        "url": "sprites/allmight/strike.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "cast": {
+        "url": "sprites/allmight/cast.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "hit": {
+        "url": "sprites/allmight/hit.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "knockdown": {
+        "url": "sprites/allmight/knockdown.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "victory": {
+        "url": "sprites/allmight/victory.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      }
+    }
+  },
+  "legend:eren": {
+    "url": "sprites/eren/idle.webp",
+    "frameW": 384,
+    "frameH": 512,
+    "clips": {
+      "idle": {
+        "url": "sprites/eren/idle.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": true
+      },
+      "strike": {
+        "url": "sprites/eren/strike.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "cast": {
+        "url": "sprites/eren/cast.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "hit": {
+        "url": "sprites/eren/hit.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "knockdown": {
+        "url": "sprites/eren/knockdown.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "victory": {
+        "url": "sprites/eren/victory.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      }
+    }
+  },
+  "legend:mikasa": {
+    "url": "sprites/mikasa/idle.webp",
+    "frameW": 384,
+    "frameH": 512,
+    "clips": {
+      "idle": {
+        "url": "sprites/mikasa/idle.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": true
+      },
+      "strike": {
+        "url": "sprites/mikasa/strike.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "cast": {
+        "url": "sprites/mikasa/cast.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "hit": {
+        "url": "sprites/mikasa/hit.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "knockdown": {
+        "url": "sprites/mikasa/knockdown.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "victory": {
+        "url": "sprites/mikasa/victory.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      }
+    }
+  },
+  "legend:gon": {
+    "url": "sprites/gon/idle.webp",
+    "frameW": 384,
+    "frameH": 512,
+    "clips": {
+      "idle": {
+        "url": "sprites/gon/idle.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": true
+      },
+      "strike": {
+        "url": "sprites/gon/strike.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "cast": {
+        "url": "sprites/gon/cast.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "hit": {
+        "url": "sprites/gon/hit.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "knockdown": {
+        "url": "sprites/gon/knockdown.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "victory": {
+        "url": "sprites/gon/victory.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      }
+    }
+  },
+  "legend:killua": {
+    "url": "sprites/killua/idle.webp",
+    "frameW": 384,
+    "frameH": 512,
+    "clips": {
+      "idle": {
+        "url": "sprites/killua/idle.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": true
+      },
+      "strike": {
+        "url": "sprites/killua/strike.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "cast": {
+        "url": "sprites/killua/cast.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "hit": {
+        "url": "sprites/killua/hit.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "knockdown": {
+        "url": "sprites/killua/knockdown.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "victory": {
+        "url": "sprites/killua/victory.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      }
+    }
+  },
+  "legend:hisoka": {
+    "url": "sprites/hisoka/idle.webp",
+    "frameW": 384,
+    "frameH": 512,
+    "clips": {
+      "idle": {
+        "url": "sprites/hisoka/idle.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": true
+      },
+      "strike": {
+        "url": "sprites/hisoka/strike.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "cast": {
+        "url": "sprites/hisoka/cast.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "hit": {
+        "url": "sprites/hisoka/hit.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "knockdown": {
+        "url": "sprites/hisoka/knockdown.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "victory": {
+        "url": "sprites/hisoka/victory.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      }
+    }
+  },
+  "legend:edward": {
+    "url": "sprites/edward/idle.webp",
+    "frameW": 384,
+    "frameH": 512,
+    "clips": {
+      "idle": {
+        "url": "sprites/edward/idle.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": true
+      },
+      "strike": {
+        "url": "sprites/edward/strike.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "cast": {
+        "url": "sprites/edward/cast.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "hit": {
+        "url": "sprites/edward/hit.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "knockdown": {
+        "url": "sprites/edward/knockdown.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "victory": {
+        "url": "sprites/edward/victory.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      }
+    }
+  },
+  "legend:roy": {
+    "url": "sprites/roy/idle.webp",
+    "frameW": 384,
+    "frameH": 512,
+    "clips": {
+      "idle": {
+        "url": "sprites/roy/idle.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": true
+      },
+      "strike": {
+        "url": "sprites/roy/strike.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "cast": {
+        "url": "sprites/roy/cast.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "hit": {
+        "url": "sprites/roy/hit.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "knockdown": {
+        "url": "sprites/roy/knockdown.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "victory": {
+        "url": "sprites/roy/victory.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      }
+    }
+  },
+  "legend:natsu": {
+    "url": "sprites/natsu/idle.webp",
+    "frameW": 384,
+    "frameH": 512,
+    "clips": {
+      "idle": {
+        "url": "sprites/natsu/idle.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": true
+      },
+      "strike": {
+        "url": "sprites/natsu/strike.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "cast": {
+        "url": "sprites/natsu/cast.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "hit": {
+        "url": "sprites/natsu/hit.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "knockdown": {
+        "url": "sprites/natsu/knockdown.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "victory": {
+        "url": "sprites/natsu/victory.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      }
+    }
+  },
+  "legend:denji": {
+    "url": "sprites/denji/idle.webp",
+    "frameW": 384,
+    "frameH": 512,
+    "clips": {
+      "idle": {
+        "url": "sprites/denji/idle.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": true
+      },
+      "strike": {
+        "url": "sprites/denji/strike.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "cast": {
+        "url": "sprites/denji/cast.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "hit": {
+        "url": "sprites/denji/hit.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "knockdown": {
+        "url": "sprites/denji/knockdown.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "victory": {
+        "url": "sprites/denji/victory.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      }
+    }
+  },
+  "legend:minato": {
+    "url": "sprites/minato/idle.webp",
+    "frameW": 384,
+    "frameH": 512,
+    "clips": {
+      "idle": {
+        "url": "sprites/minato/idle.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": true
+      },
+      "strike": {
+        "url": "sprites/minato/strike.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "cast": {
+        "url": "sprites/minato/cast.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "hit": {
+        "url": "sprites/minato/hit.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "knockdown": {
+        "url": "sprites/minato/knockdown.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "victory": {
+        "url": "sprites/minato/victory.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      }
+    }
+  },
+  "legend:madara": {
+    "url": "sprites/madara/idle.webp",
+    "frameW": 384,
+    "frameH": 512,
+    "clips": {
+      "idle": {
+        "url": "sprites/madara/idle.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": true
+      },
+      "strike": {
+        "url": "sprites/madara/strike.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "cast": {
+        "url": "sprites/madara/cast.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "hit": {
+        "url": "sprites/madara/hit.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "knockdown": {
+        "url": "sprites/madara/knockdown.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "victory": {
+        "url": "sprites/madara/victory.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      }
+    }
+  },
+  "legend:gaara": {
+    "url": "sprites/gaara/idle.webp",
+    "frameW": 384,
+    "frameH": 512,
+    "clips": {
+      "idle": {
+        "url": "sprites/gaara/idle.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": true
+      },
+      "strike": {
+        "url": "sprites/gaara/strike.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "cast": {
+        "url": "sprites/gaara/cast.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "hit": {
+        "url": "sprites/gaara/hit.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "knockdown": {
+        "url": "sprites/gaara/knockdown.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "victory": {
+        "url": "sprites/gaara/victory.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      }
+    }
+  },
+  "legend:lee": {
+    "url": "sprites/lee/idle.webp",
+    "frameW": 384,
+    "frameH": 512,
+    "clips": {
+      "idle": {
+        "url": "sprites/lee/idle.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": true
+      },
+      "strike": {
+        "url": "sprites/lee/strike.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "cast": {
+        "url": "sprites/lee/cast.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "hit": {
+        "url": "sprites/lee/hit.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "knockdown": {
+        "url": "sprites/lee/knockdown.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "victory": {
+        "url": "sprites/lee/victory.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      }
+    }
+  },
+  "legend:law": {
+    "url": "sprites/law/idle.webp",
+    "frameW": 384,
+    "frameH": 512,
+    "clips": {
+      "idle": {
+        "url": "sprites/law/idle.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": true
+      },
+      "strike": {
+        "url": "sprites/law/strike.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "cast": {
+        "url": "sprites/law/cast.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "hit": {
+        "url": "sprites/law/hit.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "knockdown": {
+        "url": "sprites/law/knockdown.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "victory": {
+        "url": "sprites/law/victory.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      }
+    }
+  },
+  "legend:whitebeard": {
+    "url": "sprites/whitebeard/idle.webp",
+    "frameW": 384,
+    "frameH": 512,
+    "clips": {
+      "idle": {
+        "url": "sprites/whitebeard/idle.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": true
+      },
+      "strike": {
+        "url": "sprites/whitebeard/strike.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "cast": {
+        "url": "sprites/whitebeard/cast.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "hit": {
+        "url": "sprites/whitebeard/hit.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "knockdown": {
+        "url": "sprites/whitebeard/knockdown.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "victory": {
+        "url": "sprites/whitebeard/victory.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      }
+    }
+  },
+  "legend:shanks": {
+    "url": "sprites/shanks/idle.webp",
+    "frameW": 384,
+    "frameH": 512,
+    "clips": {
+      "idle": {
+        "url": "sprites/shanks/idle.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": true
+      },
+      "strike": {
+        "url": "sprites/shanks/strike.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "cast": {
+        "url": "sprites/shanks/cast.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "hit": {
+        "url": "sprites/shanks/hit.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "knockdown": {
+        "url": "sprites/shanks/knockdown.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "victory": {
+        "url": "sprites/shanks/victory.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      }
+    }
+  },
+  "legend:gohan": {
+    "url": "sprites/gohan/idle.webp",
+    "frameW": 384,
+    "frameH": 512,
+    "clips": {
+      "idle": {
+        "url": "sprites/gohan/idle.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": true
+      },
+      "strike": {
+        "url": "sprites/gohan/strike.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "cast": {
+        "url": "sprites/gohan/cast.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "hit": {
+        "url": "sprites/gohan/hit.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "knockdown": {
+        "url": "sprites/gohan/knockdown.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "victory": {
+        "url": "sprites/gohan/victory.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      }
+    }
+  },
+  "legend:piccolo": {
+    "url": "sprites/piccolo/idle.webp",
+    "frameW": 384,
+    "frameH": 512,
+    "clips": {
+      "idle": {
+        "url": "sprites/piccolo/idle.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": true
+      },
+      "strike": {
+        "url": "sprites/piccolo/strike.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "cast": {
+        "url": "sprites/piccolo/cast.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "hit": {
+        "url": "sprites/piccolo/hit.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "knockdown": {
+        "url": "sprites/piccolo/knockdown.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "victory": {
+        "url": "sprites/piccolo/victory.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      }
+    }
+  },
+  "legend:broly": {
+    "url": "sprites/broly/idle.webp",
+    "frameW": 384,
+    "frameH": 512,
+    "clips": {
+      "idle": {
+        "url": "sprites/broly/idle.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": true
+      },
+      "strike": {
+        "url": "sprites/broly/strike.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "cast": {
+        "url": "sprites/broly/cast.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "hit": {
+        "url": "sprites/broly/hit.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "knockdown": {
+        "url": "sprites/broly/knockdown.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "victory": {
+        "url": "sprites/broly/victory.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      }
+    }
+  },
+  "legend:kenpachi": {
+    "url": "sprites/kenpachi/idle.webp",
+    "frameW": 384,
+    "frameH": 512,
+    "clips": {
+      "idle": {
+        "url": "sprites/kenpachi/idle.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": true
+      },
+      "strike": {
+        "url": "sprites/kenpachi/strike.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "cast": {
+        "url": "sprites/kenpachi/cast.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "hit": {
+        "url": "sprites/kenpachi/hit.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "knockdown": {
+        "url": "sprites/kenpachi/knockdown.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "victory": {
+        "url": "sprites/kenpachi/victory.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      }
+    }
+  },
+  "legend:toshiro": {
+    "url": "sprites/toshiro/idle.webp",
+    "frameW": 384,
+    "frameH": 512,
+    "clips": {
+      "idle": {
+        "url": "sprites/toshiro/idle.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": true
+      },
+      "strike": {
+        "url": "sprites/toshiro/strike.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "cast": {
+        "url": "sprites/toshiro/cast.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "hit": {
+        "url": "sprites/toshiro/hit.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "knockdown": {
+        "url": "sprites/toshiro/knockdown.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "victory": {
+        "url": "sprites/toshiro/victory.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      }
+    }
+  },
+  "legend:rukia": {
+    "url": "sprites/rukia/idle.webp",
+    "frameW": 384,
+    "frameH": 512,
+    "clips": {
+      "idle": {
+        "url": "sprites/rukia/idle.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": true
+      },
+      "strike": {
+        "url": "sprites/rukia/strike.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "cast": {
+        "url": "sprites/rukia/cast.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "hit": {
+        "url": "sprites/rukia/hit.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "knockdown": {
+        "url": "sprites/rukia/knockdown.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "victory": {
+        "url": "sprites/rukia/victory.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      }
+    }
+  },
+  "legend:yuta": {
+    "url": "sprites/yuta/idle.webp",
+    "frameW": 384,
+    "frameH": 512,
+    "clips": {
+      "idle": {
+        "url": "sprites/yuta/idle.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": true
+      },
+      "strike": {
+        "url": "sprites/yuta/strike.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "cast": {
+        "url": "sprites/yuta/cast.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "hit": {
+        "url": "sprites/yuta/hit.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "knockdown": {
+        "url": "sprites/yuta/knockdown.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "victory": {
+        "url": "sprites/yuta/victory.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      }
+    }
+  },
+  "legend:todo": {
+    "url": "sprites/todo/idle.webp",
+    "frameW": 384,
+    "frameH": 512,
+    "clips": {
+      "idle": {
+        "url": "sprites/todo/idle.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": true
+      },
+      "strike": {
+        "url": "sprites/todo/strike.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "cast": {
+        "url": "sprites/todo/cast.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "hit": {
+        "url": "sprites/todo/hit.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "knockdown": {
+        "url": "sprites/todo/knockdown.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "victory": {
+        "url": "sprites/todo/victory.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      }
+    }
+  },
+  "legend:nanami": {
+    "url": "sprites/nanami/idle.webp",
+    "frameW": 384,
+    "frameH": 512,
+    "clips": {
+      "idle": {
+        "url": "sprites/nanami/idle.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": true
+      },
+      "strike": {
+        "url": "sprites/nanami/strike.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "cast": {
+        "url": "sprites/nanami/cast.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "hit": {
+        "url": "sprites/nanami/hit.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "knockdown": {
+        "url": "sprites/nanami/knockdown.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "victory": {
+        "url": "sprites/nanami/victory.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      }
+    }
+  },
+  "legend:nobara": {
+    "url": "sprites/nobara/idle.webp",
+    "frameW": 384,
+    "frameH": 512,
+    "clips": {
+      "idle": {
+        "url": "sprites/nobara/idle.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": true
+      },
+      "strike": {
+        "url": "sprites/nobara/strike.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "cast": {
+        "url": "sprites/nobara/cast.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "hit": {
+        "url": "sprites/nobara/hit.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "knockdown": {
+        "url": "sprites/nobara/knockdown.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "victory": {
+        "url": "sprites/nobara/victory.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      }
+    }
+  },
+  "legend:giyu": {
+    "url": "sprites/giyu/idle.webp",
+    "frameW": 384,
+    "frameH": 512,
+    "clips": {
+      "idle": {
+        "url": "sprites/giyu/idle.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": true
+      },
+      "strike": {
+        "url": "sprites/giyu/strike.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "cast": {
+        "url": "sprites/giyu/cast.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "hit": {
+        "url": "sprites/giyu/hit.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "knockdown": {
+        "url": "sprites/giyu/knockdown.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "victory": {
+        "url": "sprites/giyu/victory.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      }
+    }
+  },
+  "legend:inosuke": {
+    "url": "sprites/inosuke/idle.webp",
+    "frameW": 384,
+    "frameH": 512,
+    "clips": {
+      "idle": {
+        "url": "sprites/inosuke/idle.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": true
+      },
+      "strike": {
+        "url": "sprites/inosuke/strike.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "cast": {
+        "url": "sprites/inosuke/cast.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "hit": {
+        "url": "sprites/inosuke/hit.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "knockdown": {
+        "url": "sprites/inosuke/knockdown.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "victory": {
+        "url": "sprites/inosuke/victory.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      }
+    }
+  },
+  "legend:akaza": {
+    "url": "sprites/akaza/idle.webp",
+    "frameW": 384,
+    "frameH": 512,
+    "clips": {
+      "idle": {
+        "url": "sprites/akaza/idle.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": true
+      },
+      "strike": {
+        "url": "sprites/akaza/strike.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "cast": {
+        "url": "sprites/akaza/cast.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "hit": {
+        "url": "sprites/akaza/hit.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "knockdown": {
+        "url": "sprites/akaza/knockdown.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "victory": {
+        "url": "sprites/akaza/victory.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      }
+    }
+  },
+  "legend:shinobu": {
+    "url": "sprites/shinobu/idle.webp",
+    "frameW": 384,
+    "frameH": 512,
+    "clips": {
+      "idle": {
+        "url": "sprites/shinobu/idle.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": true
+      },
+      "strike": {
+        "url": "sprites/shinobu/strike.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "cast": {
+        "url": "sprites/shinobu/cast.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "hit": {
+        "url": "sprites/shinobu/hit.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "knockdown": {
+        "url": "sprites/shinobu/knockdown.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "victory": {
+        "url": "sprites/shinobu/victory.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      }
+    }
+  },
+  "legend:shigaraki": {
+    "url": "sprites/shigaraki/idle.webp",
+    "frameW": 384,
+    "frameH": 512,
+    "clips": {
+      "idle": {
+        "url": "sprites/shigaraki/idle.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": true
+      },
+      "strike": {
+        "url": "sprites/shigaraki/strike.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "cast": {
+        "url": "sprites/shigaraki/cast.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "hit": {
+        "url": "sprites/shigaraki/hit.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "knockdown": {
+        "url": "sprites/shigaraki/knockdown.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "victory": {
+        "url": "sprites/shigaraki/victory.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      }
+    }
+  },
+  "legend:endeavor": {
+    "url": "sprites/endeavor/idle.webp",
+    "frameW": 384,
+    "frameH": 512,
+    "clips": {
+      "idle": {
+        "url": "sprites/endeavor/idle.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": true
+      },
+      "strike": {
+        "url": "sprites/endeavor/strike.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "cast": {
+        "url": "sprites/endeavor/cast.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "hit": {
+        "url": "sprites/endeavor/hit.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "knockdown": {
+        "url": "sprites/endeavor/knockdown.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "victory": {
+        "url": "sprites/endeavor/victory.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      }
+    }
+  },
+  "legend:kurapika": {
+    "url": "sprites/kurapika/idle.webp",
+    "frameW": 384,
+    "frameH": 512,
+    "clips": {
+      "idle": {
+        "url": "sprites/kurapika/idle.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": true
+      },
+      "strike": {
+        "url": "sprites/kurapika/strike.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "cast": {
+        "url": "sprites/kurapika/cast.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "hit": {
+        "url": "sprites/kurapika/hit.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "knockdown": {
+        "url": "sprites/kurapika/knockdown.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "victory": {
+        "url": "sprites/kurapika/victory.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      }
+    }
+  },
+  "legend:meruem": {
+    "url": "sprites/meruem/idle.webp",
+    "frameW": 384,
+    "frameH": 512,
+    "clips": {
+      "idle": {
+        "url": "sprites/meruem/idle.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": true
+      },
+      "strike": {
+        "url": "sprites/meruem/strike.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "cast": {
+        "url": "sprites/meruem/cast.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "hit": {
+        "url": "sprites/meruem/hit.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "knockdown": {
+        "url": "sprites/meruem/knockdown.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "victory": {
+        "url": "sprites/meruem/victory.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      }
+    }
+  },
+  "legend:jinwoo": {
+    "url": "sprites/jinwoo/idle.webp",
+    "frameW": 384,
+    "frameH": 512,
+    "clips": {
+      "idle": {
+        "url": "sprites/jinwoo/idle.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": true
+      },
+      "strike": {
+        "url": "sprites/jinwoo/strike.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "cast": {
+        "url": "sprites/jinwoo/cast.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "hit": {
+        "url": "sprites/jinwoo/hit.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "knockdown": {
+        "url": "sprites/jinwoo/knockdown.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "victory": {
+        "url": "sprites/jinwoo/victory.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      }
+    }
+  },
+  "legend:jotaro": {
+    "url": "sprites/jotaro/idle.webp",
+    "frameW": 384,
+    "frameH": 512,
+    "clips": {
+      "idle": {
+        "url": "sprites/jotaro/idle.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": true
+      },
+      "strike": {
+        "url": "sprites/jotaro/strike.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "cast": {
+        "url": "sprites/jotaro/cast.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "hit": {
+        "url": "sprites/jotaro/hit.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "knockdown": {
+        "url": "sprites/jotaro/knockdown.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "victory": {
+        "url": "sprites/jotaro/victory.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      }
+    }
+  },
+  "legend:dio": {
+    "url": "sprites/dio/idle.webp",
+    "frameW": 384,
+    "frameH": 512,
+    "clips": {
+      "idle": {
+        "url": "sprites/dio/idle.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": true
+      },
+      "strike": {
+        "url": "sprites/dio/strike.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "cast": {
+        "url": "sprites/dio/cast.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "hit": {
+        "url": "sprites/dio/hit.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "knockdown": {
+        "url": "sprites/dio/knockdown.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "victory": {
+        "url": "sprites/dio/victory.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      }
+    }
+  },
+  "legend:mob": {
+    "url": "sprites/mob/idle.webp",
+    "frameW": 384,
+    "frameH": 512,
+    "clips": {
+      "idle": {
+        "url": "sprites/mob/idle.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": true
+      },
+      "strike": {
+        "url": "sprites/mob/strike.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "cast": {
+        "url": "sprites/mob/cast.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "hit": {
+        "url": "sprites/mob/hit.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "knockdown": {
+        "url": "sprites/mob/knockdown.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "victory": {
+        "url": "sprites/mob/victory.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      }
+    }
+  },
+  "legend:kaneki": {
+    "url": "sprites/kaneki/idle.webp",
+    "frameW": 384,
+    "frameH": 512,
+    "clips": {
+      "idle": {
+        "url": "sprites/kaneki/idle.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": true
+      },
+      "strike": {
+        "url": "sprites/kaneki/strike.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "cast": {
+        "url": "sprites/kaneki/cast.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "hit": {
+        "url": "sprites/kaneki/hit.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "knockdown": {
+        "url": "sprites/kaneki/knockdown.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "victory": {
+        "url": "sprites/kaneki/victory.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      }
+    }
+  },
+  "legend:asta": {
+    "url": "sprites/asta/idle.webp",
+    "frameW": 384,
+    "frameH": 512,
+    "clips": {
+      "idle": {
+        "url": "sprites/asta/idle.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": true
+      },
+      "strike": {
+        "url": "sprites/asta/strike.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "cast": {
+        "url": "sprites/asta/cast.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "hit": {
+        "url": "sprites/asta/hit.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "knockdown": {
+        "url": "sprites/asta/knockdown.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "victory": {
+        "url": "sprites/asta/victory.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      }
+    }
+  },
+  "legend:yuno": {
+    "url": "sprites/yuno/idle.webp",
+    "frameW": 384,
+    "frameH": 512,
+    "clips": {
+      "idle": {
+        "url": "sprites/yuno/idle.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": true
+      },
+      "strike": {
+        "url": "sprites/yuno/strike.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "cast": {
+        "url": "sprites/yuno/cast.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "hit": {
+        "url": "sprites/yuno/hit.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "knockdown": {
+        "url": "sprites/yuno/knockdown.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "victory": {
+        "url": "sprites/yuno/victory.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      }
+    }
+  },
+  "legend:power": {
+    "url": "sprites/power/idle.webp",
+    "frameW": 384,
+    "frameH": 512,
+    "clips": {
+      "idle": {
+        "url": "sprites/power/idle.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": true
+      },
+      "strike": {
+        "url": "sprites/power/strike.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "cast": {
+        "url": "sprites/power/cast.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "hit": {
+        "url": "sprites/power/hit.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "knockdown": {
+        "url": "sprites/power/knockdown.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "victory": {
+        "url": "sprites/power/victory.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      }
+    }
+  },
+  "legend:yor": {
+    "url": "sprites/yor/idle.webp",
+    "frameW": 384,
+    "frameH": 512,
+    "clips": {
+      "idle": {
+        "url": "sprites/yor/idle.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": true
+      },
+      "strike": {
+        "url": "sprites/yor/strike.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "cast": {
+        "url": "sprites/yor/cast.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "hit": {
+        "url": "sprites/yor/hit.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "knockdown": {
+        "url": "sprites/yor/knockdown.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "victory": {
+        "url": "sprites/yor/victory.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      }
+    }
+  },
+  "legend:gilgamesh": {
+    "url": "sprites/gilgamesh/idle.webp",
+    "frameW": 384,
+    "frameH": 512,
+    "clips": {
+      "idle": {
+        "url": "sprites/gilgamesh/idle.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": true
+      },
+      "strike": {
+        "url": "sprites/gilgamesh/strike.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "cast": {
+        "url": "sprites/gilgamesh/cast.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "hit": {
+        "url": "sprites/gilgamesh/hit.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "knockdown": {
+        "url": "sprites/gilgamesh/knockdown.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "victory": {
+        "url": "sprites/gilgamesh/victory.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      }
+    }
+  },
+  "legend:saber": {
+    "url": "sprites/saber/idle.webp",
+    "frameW": 384,
+    "frameH": 512,
+    "clips": {
+      "idle": {
+        "url": "sprites/saber/idle.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": true
+      },
+      "strike": {
+        "url": "sprites/saber/strike.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "cast": {
+        "url": "sprites/saber/cast.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "hit": {
+        "url": "sprites/saber/hit.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "knockdown": {
+        "url": "sprites/saber/knockdown.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "victory": {
+        "url": "sprites/saber/victory.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      }
+    }
+  },
+  "legend:kirito": {
+    "url": "sprites/kirito/idle.webp",
+    "frameW": 384,
+    "frameH": 512,
+    "clips": {
+      "idle": {
+        "url": "sprites/kirito/idle.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": true
+      },
+      "strike": {
+        "url": "sprites/kirito/strike.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "cast": {
+        "url": "sprites/kirito/cast.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "hit": {
+        "url": "sprites/kirito/hit.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "knockdown": {
+        "url": "sprites/kirito/knockdown.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "victory": {
+        "url": "sprites/kirito/victory.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      }
+    }
+  },
+  "legend:frieren": {
+    "url": "sprites/frieren/idle.webp",
+    "frameW": 384,
+    "frameH": 512,
+    "clips": {
+      "idle": {
+        "url": "sprites/frieren/idle.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": true
+      },
+      "strike": {
+        "url": "sprites/frieren/strike.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "cast": {
+        "url": "sprites/frieren/cast.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "hit": {
+        "url": "sprites/frieren/hit.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "knockdown": {
+        "url": "sprites/frieren/knockdown.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "victory": {
+        "url": "sprites/frieren/victory.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      }
+    }
+  },
+  "legend:escanor": {
+    "url": "sprites/escanor/idle.webp",
+    "frameW": 384,
+    "frameH": 512,
+    "clips": {
+      "idle": {
+        "url": "sprites/escanor/idle.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": true
+      },
+      "strike": {
+        "url": "sprites/escanor/strike.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "cast": {
+        "url": "sprites/escanor/cast.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "hit": {
+        "url": "sprites/escanor/hit.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "knockdown": {
+        "url": "sprites/escanor/knockdown.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      },
+      "victory": {
+        "url": "sprites/escanor/victory.webp",
+        "row": 0,
+        "frames": 1,
+        "fps": 1,
+        "loop": false
+      }
+    }
+  }
+}
