@@ -16,6 +16,8 @@ import { PageArt } from './components/PageArt';
 import { AccountMenu } from './components/AccountMenu';
 import { SocialLayer } from './components/Social';
 import { ONLINE_AVAILABLE } from '../online/client';
+import { MotionLayer } from './motion/MotionLayer';
+import { ScreenWipe } from './motion/ScreenWipe';
 
 export function App() {
   const screen = useApp((s) => s.screen);
@@ -71,6 +73,8 @@ export function App() {
           </>
         )}
       </main>
+      <MotionLayer />
+      <ScreenWipe />
       <RoomChat />
       <SocialLayer />
       {toast && <div className={`toast ${toast.kind}`} role="status" aria-live="polite">{toast.text}</div>}
