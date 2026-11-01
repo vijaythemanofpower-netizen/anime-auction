@@ -6,6 +6,7 @@ import './ui/arena.css';
 import './ui/comic.css';
 import './ui/identity.css';
 import './ui/manga.css';
+import './ui/home.css';
 import { App } from './ui/App';
 import { store } from './store/store';
 import { initAuth } from './online/auth';

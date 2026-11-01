@@ -1,0 +1,112 @@
+/* Home page (screens/Home.tsx): the lot card hero, how a game goes, ways to fight and
+   the fight reel. Uses the identity tokens (identity.css); the scene accent is --violet. */
+:root {
+  --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --dur-ui: 200ms;
+  --dur-hero: 800ms;
+  --lot-redacted: repeating-linear-gradient(-45deg, var(--surface-3) 0 5px, var(--ink) 5px 10px);
+}
+
+/* ---------------------------------------------------------------- hero */
+.home-hero { grid-template-columns: minmax(0, 1.2fr) minmax(0, 400px); gap: 48px; min-height: calc(100vh - 140px); }
+.hero-copy { position: relative; z-index: 1; min-width: 0; }
+.hero-pitch { margin-top: 18px; max-width: 520px; font-size: 17px; color: var(--text-dim); }
+/* Small print uses --text-dim: --text-faint is under 4.5:1 on the page background. */
+.hero-meta { margin-top: 8px; font-size: 13px; color: var(--text-dim); }
+.home-hero .menu { margin-top: 24px; }
+.home-hero .account-card { margin-top: 16px; max-width: 420px; padding: 10px 14px; box-shadow: 4px 4px 0 var(--violet); }
+.home-hero .account-card .btn { min-height: 36px; padding: 0 12px; font-size: 13px; }
+.home-links { gap: 8px; margin-top: 14px; }
+
+/* The lot card: a sealed fighter sheet with a hard accent shadow. */
+.lot-card {
+  position: relative; z-index: 1; justify-self: end; width: 100%;
+  background: var(--surface); border: 3px solid var(--ink); border-radius: 12px;
+  box-shadow: 10px 10px 0 var(--violet); transform: rotate(1.2deg);
+  transition: box-shadow 1.2s; overflow: hidden;
+}
+.lot-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; padding: 10px 14px; background: var(--ink); }
+.lot-no { font-family: var(--font-display); font-size: 22px; letter-spacing: 0.04em; text-transform: uppercase; color: var(--gold); }
+.lot-series { font-size: 12px; color: var(--text-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lot-pic { position: relative; aspect-ratio: 5 / 4; background: var(--bg-2); border-bottom: 3px solid var(--ink); overflow: hidden; }
+.lot-pic img, .lot-pic svg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center 18%; }
+.lot-body { padding: 12px 14px 4px; }
+.lot-name { font-family: var(--font-display); font-size: 28px; line-height: 1.05; text-transform: uppercase; letter-spacing: 0.01em; }
+.lot-role { margin-top: 2px; font-size: 13px; color: var(--text-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lot-who { font-size: 13px; color: var(--text-dim); }
+.lot-stats { list-style: none; margin: 12px 0 0; padding: 0; display: grid; gap: 7px; }
+.lot-stats li { display: grid; grid-template-columns: 92px minmax(0, 1fr) 28px; align-items: center; gap: 10px; font-size: 13px; color: var(--text-dim); }
+.lot-stats b { font-family: var(--font-display); font-weight: 400; font-size: 16px; text-align: right; color: var(--text-dim); }
+.lot-bar { height: 10px; border-radius: 3px; background: var(--lot-redacted); overflow: hidden; }
+.lot-bar i { display: block; height: 100%; width: 0; background: var(--gold); transition: width var(--dur-hero) var(--ease-out) 350ms; }
+.lot-stats li.open { color: var(--text); }
+.lot-stats li.open .lot-bar { background: var(--surface-3); }
+.lot-stats li.open b { color: var(--gold); }
+.lot-bid { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin-top: 12px; padding: 10px 14px 12px; border-top: 2px dashed var(--line-strong); }
+.lot-bid .coins { font-size: 30px; font-weight: 400; animation: bid-bump var(--dur-ui) var(--ease-out); }
+@keyframes bid-bump { from { transform: translateY(-6px); opacity: 0.4; } }
+
+/* The one orchestrated moment: the SOLD stamp slams onto the art. */
+.lot-stamp {
+  position: absolute; left: 50%; top: 50%; padding: 2px 18px;
+  font-family: var(--font-display); font-size: 64px; line-height: 1; text-transform: uppercase; letter-spacing: 0.04em;
+  color: var(--violet); border: 5px solid var(--violet); border-radius: 8px; background: rgba(11, 10, 12, 0.72);
+  transform: translate(-50%, -50%) rotate(-12deg); opacity: 0; pointer-events: none;
+}
+.lot-card.sold .lot-stamp { opacity: 1; animation: stamp-slam var(--dur-hero) var(--ease-out) both; }
+@keyframes stamp-slam {
+  0% { opacity: 0; transform: translate(-50%, -50%) rotate(-12deg) scale(2.4); }
+  45% { opacity: 1; transform: translate(-50%, -50%) rotate(-12deg) scale(0.92); }
+  100% { opacity: 1; transform: translate(-50%, -50%) rotate(-12deg) scale(1); }
+}
+.lot-card.sold .lot-pic img, .lot-card.sold .lot-pic svg { animation: art-hit var(--dur-hero) var(--ease-out); }
+@keyframes art-hit { 40% { filter: brightness(1.6) contrast(1.2); } }
+
+/* ------------------------------------------------------------ sections */
+.home-section { position: relative; z-index: 1; margin-top: 88px; }
+.home-section h2 { font-size: clamp(30px, 4vw, 46px); text-transform: uppercase; text-shadow: 3px 3px 0 var(--ink); }
+.home-note { margin-top: 6px; margin-bottom: 18px; max-width: 560px; }
+
+/* How a game goes: a real sequence, so it is numbered. */
+.home-steps { list-style: none; counter-reset: step; margin: 24px 0 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 32px; }
+.home-steps li { counter-increment: step; padding-top: 14px; border-top: 3px solid var(--line-strong); }
+.home-steps li::before { content: counter(step, decimal-leading-zero); display: block; font-family: var(--font-display); font-size: 56px; line-height: 1; color: var(--violet); text-shadow: 3px 3px 0 var(--ink); transition: color 1.2s; }
+.home-steps b { display: block; margin-top: 6px; font-family: var(--font-display); font-weight: 400; font-size: 28px; text-transform: uppercase; letter-spacing: 0.02em; }
+.home-steps p { margin-top: 6px; color: var(--text-dim); max-width: 36ch; }
+
+/* Ways to fight: manga panels of different sizes, not a row of identical cards. */
+.home-modes { margin-top: 24px; display: grid; gap: 14px; grid-template-columns: 1.3fr 1fr 1fr; grid-template-areas: 'a b c' 'a d d'; }
+.mode-panel { padding: 18px 20px; background: var(--surface); border: 2px solid var(--ink); border-radius: 6px; }
+.mode-panel:nth-child(1) { grid-area: a; } .mode-panel:nth-child(2) { grid-area: b; } .mode-panel:nth-child(3) { grid-area: c; } .mode-panel:nth-child(4) { grid-area: d; }
+.mode-panel h3 { font-family: var(--font-display); font-weight: 400; font-size: 24px; text-transform: uppercase; letter-spacing: 0.02em; }
+.mode-panel p { margin-top: 6px; color: var(--text-dim); }
+.mode-panel.wide {
+  display: flex; flex-direction: column; justify-content: flex-end; min-height: 240px;
+  background: radial-gradient(rgba(242, 236, 226, 0.09) 1.2px, transparent 1.6px) 0 0 / 10px 10px, var(--surface);
+  box-shadow: 6px 6px 0 var(--violet); transition: box-shadow 1.2s;
+}
+.mode-panel.wide h3 { font-size: 40px; color: var(--violet); transition: color 1.2s; }
+
+.home-section .fight-reel { max-height: 72vh; }
+
+/* -------------------------------------------------------------- phones */
+@media (max-width: 900px) {
+  .home-hero { grid-template-columns: minmax(0, 1fr); gap: 36px; min-height: auto; }
+  .lot-card { justify-self: center; max-width: 420px; transform: none; box-shadow: 6px 6px 0 var(--violet); }
+  .home-steps { grid-template-columns: minmax(0, 1fr); gap: 22px; }
+  .home-modes { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-areas: 'a a' 'b c' 'd d'; }
+  .mode-panel.wide { min-height: 180px; }
+}
+@media (max-width: 640px) {
+  .home-section { margin-top: 56px; }
+  .home-hero .menu { max-width: none; }
+  .home-hero .menu .btn, .home-hero .account-card .btn { white-space: normal; text-align: left; }
+  .home-hero .account-card { max-width: none; }
+  .home-modes { grid-template-columns: minmax(0, 1fr); grid-template-areas: 'a' 'b' 'c' 'd'; }
+  .lot-stamp { font-size: 52px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .motion-system .lot-card *, .motion-system .lot-card { animation: none !important; transition: none !important; }
+}
+.reduce-motion .lot-card, .reduce-motion .lot-card * { animation: none !important; transition: none !important; }
