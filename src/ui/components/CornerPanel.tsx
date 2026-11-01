@@ -5,6 +5,7 @@ import type { BattleEvent, BattleRecord, CallKind, CoachCall, Player, PublicChar
 import { ABILITIES } from '../../engine/data/abilities';
 import { conditionOf, type LiveFighter } from './Arena';
 import { InjuryReport, BodyChart, guardWord } from './InjuryReport';
+import { damagePercents } from '../bodyDamage';
 import { CharArt } from './Portrait';
 
 const REASON: Record<string, (n: string, foe: string) => string> = {
@@ -83,14 +84,14 @@ export function CornerPanel({ e, record, fighters, players, characters, onCall }
         <div className="corner-grid">
           <div className="panel tight">
             <div className="label" style={{ marginBottom: 6 }}>Your fighter</div>
-            <InjuryReport name={focus.snap.name} condition={conditionOf(focus).label} injuries={focus.injuries} guard={focus.guard} staminaPct={focus.st / focus.maxSt} knockdowns={focus.knockdowns} />
+            <InjuryReport name={focus.snap.name} condition={conditionOf(focus).label} injuries={focus.injuries} guard={focus.guard} staminaPct={focus.st / focus.maxSt} knockdowns={focus.knockdowns} damage={focus.body ? damagePercents(focus.body, focus.hp, focus.maxHp) : undefined} hp={focus.hp} maxHp={focus.maxHp} target={focus.snap.charId} />
           </div>
           <div className="panel tight">
             <div className="label" style={{ marginBottom: 6 }}>The opposition</div>
             <div className="col" style={{ gap: 8 }}>
               {foes.map((f) => (
                 <div key={f.snap.charId} className="row" style={{ gap: 8, flexWrap: 'nowrap', alignItems: 'center' }}>
-                  <BodyChart injuries={f.injuries} size={56} down={f.floored} />
+                  <BodyChart injuries={f.injuries} size={56} down={f.floored} damage={f.body ? damagePercents(f.body, f.hp, f.maxHp) : undefined} target={f.snap.charId} />
                   <div style={{ minWidth: 0 }}>
                     <div style={{ fontWeight: 700 }}>{f.snap.name}</div>
                     <div className="faint" style={{ fontSize: 12 }}>{conditionOf(f).label} · guard {guardWord(f.guard).label.toLowerCase()}{f.knockdowns ? ` · down ×${f.knockdowns}` : ''}</div>

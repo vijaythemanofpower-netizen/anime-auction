@@ -21,6 +21,7 @@ import { chooseMusic, music } from '../music';
 import { clipKeys, onClipsChanged } from '../../store/media';
 import { playback, sendPlayback, useRoom, voteSkip, votersNeeded } from '../../online/room';
 import { prepareFormPortraits } from '../formPortraits';
+import { NO_DAMAGE, regionOf } from '../bodyDamage';
 
 
 function delayFor(e: BattleEvent, hasLine: boolean): number {
@@ -240,7 +241,7 @@ export function BattleView({ record, exhibition }: { record: BattleRecord; exhib
     const fs = new Map<string, LiveFighter>();
     for (const side of input.sides) for (const f of side.fighters) {
       const r = result.fighters.find((x) => x.charId === f.charId)!;
-      fs.set(f.charId, { snap: f, hp: r.maxHp, maxHp: r.maxHp, st: r.maxStamina, maxSt: r.maxStamina, down: false, awakened: false, position: f.position, form: r.form ?? 1, guard: 100, injuries: [], knockdowns: 0, floored: false, staggered: false });
+      fs.set(f.charId, { snap: f, hp: r.maxHp, maxHp: r.maxHp, st: r.maxStamina, maxSt: r.maxStamina, down: false, awakened: false, position: f.position, form: r.form ?? 1, guard: 100, injuries: [], knockdowns: 0, floored: false, staggered: false, body: NO_DAMAGE() });
     }
     let momentum = 0;
     for (let i = 0; i < Math.min(idx, events.length); i++) {
@@ -248,6 +249,7 @@ export function BattleView({ record, exhibition }: { record: BattleRecord; exhib
       if (e.momentum) momentum = e.momentum[0];
       if (e.actor && e.staminaDelta) { const a = fs.get(e.actor); if (a) a.st = Math.max(0, Math.min(a.maxSt, a.st + e.staminaDelta)); }
       if (e.target && e.hpAfter !== undefined) { const t = fs.get(e.target); if (t) t.hp = e.hpAfter; }
+      if (e.target && (e.damage ?? 0) > 0 && e.type !== 'heal') { const t = fs.get(e.target); if (t?.body) t.body[regionOf(e)] += e.damage!; }
       const act = e.actor ? fs.get(e.actor) : undefined, tgt = e.target ? fs.get(e.target) : undefined;
       if (act && e.actorGuard !== undefined) { act.guard = e.actorGuard; act.staggered = false; act.floored = false; }
       if (tgt && e.guardAfter !== undefined) tgt.guard = e.guardAfter;

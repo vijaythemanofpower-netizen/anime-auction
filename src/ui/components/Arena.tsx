@@ -12,6 +12,7 @@ import { FxLayer } from '../fx/FxLayer';
 import { useApp } from '../../store/store';
 import { useFormPicture } from '../formPortraits';
 import { kitFor } from '../../engine/data/kits';
+import { damagePercents, type BodyDamage } from '../bodyDamage';
 
 const hasForms = (s: FighterSnapshot) => !!kitFor(s.charId, s.name)?.forms.length;
 
@@ -22,6 +23,8 @@ export interface LiveFighter {
   fromBench?: boolean;
   /** Transformation reached mid-fight (Sage Mode, Bankai...), shown on the portrait. */
   formName?: string; formColor?: string; stage?: number;
+  /** Damage taken per body area so far (raw, see bodyDamage.ts). */
+  body?: BodyDamage;
 }
 
 /** A fighter's state in words, the way a commentator would describe it. */
@@ -146,7 +149,7 @@ export function ArenaStage({ record, cur, done, fighters, momentum, players, cha
             {f.down && <div className="ko">{f.howDown === 'stoppage' ? 'STOP' : 'K.O.'}</div>}
           </div>
           {(f.formName || hasForms(f.snap)) && <div className={`form-label${f.formName ? ' on' : ''}`} title={f.formName ? `${f.snap.name} is in ${f.formName}` : `${f.snap.name}: base form`}>{f.formName ?? 'Base form'}</div>}
-          <FighterStatus injuries={f.injuries} guard={f.guard} staminaPct={f.st / f.maxSt} down={f.down || f.floored} />
+          <FighterStatus injuries={f.injuries} guard={f.guard} staminaPct={f.st / f.maxSt} down={f.down || f.floored} damage={f.body ? damagePercents(f.body, f.hp, f.maxHp) : undefined} hp={f.hp} maxHp={f.maxHp} target={f.snap.charId} />
           <div className="shadow" />
         </div>
       );
