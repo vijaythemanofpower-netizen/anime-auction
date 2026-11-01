@@ -57,6 +57,8 @@ type Msg =
   | { k: 'chat'; name: string; text: string; at: number }
   | { k: 'react'; emoji: string }
   | { k: 'guess'; battleId: string; q: string; pick: string }
+  | { k: 'play'; battleId: string; idx: number; votes: string[] }
+  | { k: 'skipvote'; battleId: string }
   | { k: 'closed' };
 
 let room: RoomState | null = null;
@@ -194,6 +196,8 @@ async function receive(w: Wire) {
   if (msg.k === 'chat') { addChat(w.from, msg); return; }
   if (msg.k === 'react') { addReaction(w.from, msg.emoji); return; }
   if (msg.k === 'guess') { addGuess(w.from, msg); return; }
+  if (msg.k === 'play') { if (w.from === room.hostId) setPlayback({ battleId: msg.battleId, idx: msg.idx, votes: msg.votes }); return; }
+  if (msg.k === 'skipvote') { if (room.role === 'host') addSkipVote(msg.battleId, w.from); return; }
   if (room.role === 'host') hostReceive(w.from, msg);
   else if (w.from === room.hostId) guestReceive(msg);
 }
@@ -539,6 +543,42 @@ export function sendGuess(battleId: string, q: string, pick: string) {
   addGuess(room?.userId ?? 'local', { battleId, q, pick });
   if (room) void send({ k: 'guess', battleId, q, pick });
 }
+
+// Fight playback: the host's browser is the clock. It sends its position as the fight
+// plays, and guests follow it, so everyone sees the same moment. Skipping to the result
+// needs everyone's vote (or the host's say-so).
+export interface Playback { battleId: string; idx: number; votes: string[] }
+let playbackState: Playback | null = null;
+const playbackListeners = new Set<() => void>();
+export const playback = {
+  get: () => playbackState,
+  subscribe: (l: () => void) => { playbackListeners.add(l); return () => { playbackListeners.delete(l); }; },
+};
+function setPlayback(p: Playback) { playbackState = p; playbackListeners.forEach((l) => l()); }
+const skipVotes = new Map<string, Set<string>>();
+function addSkipVote(battleId: string, from: string) {
+  const set = skipVotes.get(battleId) ?? new Set<string>();
+  set.add(from);
+  skipVotes.set(battleId, set);
+  const cur = playbackState?.battleId === battleId ? playbackState : { battleId, idx: 0, votes: [] };
+  setPlayback({ ...cur, votes: [...set] });
+  void send({ k: 'play', battleId, idx: cur.idx, votes: [...set] });
+}
+/** Host: tells the room where the fight is. */
+export function sendPlayback(battleId: string, idx: number) {
+  if (!room || room.role !== 'host') return;
+  const votes = [...(skipVotes.get(battleId) ?? [])];
+  setPlayback({ battleId, idx, votes });
+  void send({ k: 'play', battleId, idx, votes });
+}
+/** Votes to skip to the result (the host counts the votes). */
+export function voteSkip(battleId: string) {
+  if (!room) return;
+  if (room.role === 'host') addSkipVote(battleId, room.userId);
+  else { void send({ k: 'skipvote', battleId }); setPlayback({ ...(playbackState ?? { battleId, idx: 0, votes: [] }), votes: [...new Set([...(playbackState?.votes ?? []), room.userId])] }); }
+}
+/** How many people must vote: everyone online in the room. */
+export function votersNeeded(): number { return Math.max(1, room?.members.filter((m) => m.online).length ?? 1); }
 
 export function sendMove(move: PlayerMove) { void send({ k: 'move', move }); }
 /** Guest: sends a corner call to the host. */

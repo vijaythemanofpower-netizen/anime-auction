@@ -19,7 +19,7 @@ import { buildComic, COMIC_LENGTHS } from '../../engine/comic';
 import { ComicStage, useComicHold, useComicPrep } from '../comic/ComicStage';
 import { chooseMusic, music } from '../music';
 import { clipKeys, onClipsChanged } from '../../store/media';
-import { useRoom } from '../../online/room';
+import { playback, sendPlayback, useRoom, voteSkip, votersNeeded } from '../../online/room';
 
 
 function delayFor(e: BattleEvent, hasLine: boolean): number {
@@ -62,7 +62,6 @@ export function BattleView({ record, exhibition }: { record: BattleRecord; exhib
   const sound = useApp((s) => s.settings.sound);
   const voice = useApp((s) => s.settings.voice);
   const quality = useApp((s) => s.settings.voiceQuality);
-  const view = useApp((s) => s.settings.battleView);
   const aiDrawings = useApp((s) => s.settings.aiDrawings);
   const musicOn = useApp((s) => s.settings.music);
   const room = useRoom();
@@ -84,7 +83,9 @@ export function BattleView({ record, exhibition }: { record: BattleRecord; exhib
   const completed = useRef(false);
   const feedRef = useRef<HTMLDivElement>(null);
   const done = idx >= events.length;
-  const comic = view === 'comic';
+  // Comics are off by default: only a fight someone asks for is drawn (drawing is heavy).
+  const [comic, setComic] = useState(false);
+  useEffect(() => setComic(false), [record.battleId]);
   const script = useMemo(() => buildComic(record, g.characters, { max: COMIC_LENGTHS[comicLength], style: comicStyle }), [record, g.characters, comicLength, comicStyle]);
   // In comic view the whole fight is drawn before the bell, unless the player starts early.
   const prep = useComicPrep(script, comic && (aiDrawings || remoteArt));
@@ -100,6 +101,30 @@ export function BattleView({ record, exhibition }: { record: BattleRecord; exhib
   }, [narration]);
 
   useEffect(() => { setIdx(0); setPlaying(true); completed.current = false; skipped.current = false; }, [record.battleId]);
+
+  // Online: the host's browser is the clock and guests follow it, so everyone sees the
+  // same moment. A guest who replays a finished fight watches it on their own.
+  const [localReplay, setLocalReplay] = useState(false);
+  useEffect(() => setLocalReplay(false), [record.battleId]);
+  const synced = !!room?.connected && record.kind !== 'replay';
+  const follow = synced && room?.role === 'guest' && !localReplay;
+  const hosting = synced && room?.role === 'host';
+  const pb = useSyncExternalStore(playback.subscribe, playback.get);
+  const hostAt = pb?.battleId === record.battleId ? pb : null;
+  useEffect(() => {
+    if (!follow || !hostAt) return;
+    if (hostAt.idx >= events.length && idx < events.length - 1) { skipped.current = true; stopVoice(); }
+    setIdx(hostAt.idx);
+  }, [follow, hostAt?.idx]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { if (hosting) sendPlayback(record.battleId, idx); }, [hosting, idx, record.battleId]);
+  // Repeated now and then, for anyone who joins or reconnects mid-fight.
+  useEffect(() => { if (!hosting) return; const t = setInterval(() => sendPlayback(record.battleId, idx), 4000); return () => clearInterval(t); }, [hosting, idx, record.battleId]);
+  const votes = hostAt?.votes ?? [];
+  const needed = synced ? votersNeeded() : 1;
+  const iVoted = !!room && votes.includes(room.userId);
+  const skipNow = () => { skipped.current = true; stopVoice(); setIdx(events.length); };
+  // Everyone voted: the host skips, and the guests follow.
+  useEffect(() => { if (hosting && votes.length >= needed && idx < events.length) skipNow(); }, [hosting, votes.length, needed]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // A corner moment for a person's side pauses the fight until they make a call.
   const cornerEvent = idx > 0 && !done ? events[idx - 1] : undefined;
@@ -167,7 +192,7 @@ export function BattleView({ record, exhibition }: { record: BattleRecord; exhib
   }, [musicOn, done, prepping, playing, musicChoice]);
 
   useEffect(() => {
-    if (!playing || done || pendingCorner || remoteCorner || waitingArt || prepping) return;
+    if (!playing || done || pendingCorner || remoteCorner || waitingArt || prepping || follow) return;
     const e = events[idx];
     // The next moment waits until the current line has been spoken, plus a short breath,
     // so the narration is never rushed (at most 9 s, and not at all at 4x speed).
@@ -180,7 +205,7 @@ export function BattleView({ record, exhibition }: { record: BattleRecord; exhib
     };
     t = setTimeout(next, delayFor(e, linesBySeq.has(e.seq)) / speed);
     return () => clearTimeout(t);
-  }, [idx, playing, done, speed, events, linesBySeq, pendingCorner, remoteCorner, waitingArt, prepping, voice]);
+  }, [idx, playing, done, speed, events, linesBySeq, pendingCorner, remoteCorner, waitingArt, prepping, voice, follow]);
 
   // Music dips under speech and comes back up between lines.
   useEffect(() => {
@@ -283,9 +308,14 @@ export function BattleView({ record, exhibition }: { record: BattleRecord; exhib
         sideNames={sideNames} />
       <div className="row battle-controls" style={{ justifyContent: 'space-between' }}>
         <div className="row">
-          <button className="btn primary" onClick={() => setPlaying((p) => !p)} disabled={done} aria-label={playing ? 'Pause' : 'Resume'}>{playing ? '❚❚ Pause' : '▶ Resume'}</button>
-          <button className="btn" onClick={() => { setIdx(0); setPlaying(true); }}>↺ Replay</button>
-          <button className="btn" onClick={() => { skipped.current = true; stopVoice(); setIdx(events.length); }} disabled={done}>Skip to results</button>
+          <button className="btn primary" onClick={() => setPlaying((p) => !p)} disabled={done || follow} title={follow ? 'The host controls the fight' : undefined} aria-label={playing ? 'Pause' : 'Resume'}>{playing ? '❚❚ Pause' : '▶ Resume'}</button>
+          <button className="btn" disabled={follow && !done} title={follow && !done ? 'The host controls the fight; you can replay it once it ends.' : undefined} onClick={() => { if (room?.role === 'guest') setLocalReplay(true); skipped.current = false; setIdx(0); setPlaying(true); }}>↺ Replay</button>
+          {synced && !done
+            ? <>
+                <button className={`btn${iVoted ? ' active' : ''}`} disabled={iVoted} onClick={() => voteSkip(record.battleId)} title="Skips once everyone in the room votes">⏭ {iVoted ? 'Voted' : 'Vote to skip'} ({votes.length}/{needed})</button>
+                {hosting && <button className="btn ghost" onClick={skipNow} title="Host: skip for everyone">Skip for all</button>}
+              </>
+            : <button className="btn" onClick={skipNow} disabled={done}>Skip to results</button>}
           <button className={`btn ${sound ? 'active' : ''}`} onClick={() => store.updateSettings({ sound: !sound })} aria-pressed={sound} title="Sound effects">{sound ? '🔊' : '🔈'} Sound</button>
           <button className={`btn ${musicOn ? 'active' : ''}`} onClick={() => store.updateSettings({ music: !musicOn })} aria-pressed={musicOn}
             title={musicChoice.kind === 'own' ? `Playing ${musicChoice.label}` : `Playing "${musicChoice.track.name}". Add a character's own music from their card (Your sounds).`}>🎵 Music{musicOn ? '' : ' off'}</button>
@@ -297,7 +327,7 @@ export function BattleView({ record, exhibition }: { record: BattleRecord; exhib
               ✨ {quality !== 'natural' ? 'Natural voices' : nv.startsWith('loading') ? `Downloading voices ${nv.split(':')[1]}%` : nv.startsWith('error') ? 'Voices failed (using basic)' : nv.startsWith('ready') ? 'Natural voices' : 'Natural voices…'}
             </button>
           )}
-          <button className="btn" onClick={() => store.updateSettings({ battleView: comic ? 'arena' : 'comic' })} title="Switch between the comic and the classic arena">{comic ? '🎬 Arena view' : '📖 Comic view'}</button>
+          <button className={`btn${comic ? ' active' : ''}`} onClick={() => { if (!comic && !follow && idx < 4) setIdx(0); setComic((c) => !c); }} aria-pressed={comic} title="Comics are drawn only for fights you turn this on for">{comic ? '🎬 Back to arena' : '🎨 Draw this fight'}</button>
           <button className={`btn ${showLog ? 'active' : ''}`} onClick={() => setShowLog((s) => !s)}>Event history</button>
         </div>
         <Seg value={speed} onChange={setSpeed} label="Narration speed" options={[{ v: 0.5, label: '0.5×' }, { v: 1, label: '1×' }, { v: 2, label: '2×' }, { v: 4, label: '4×' }]} />

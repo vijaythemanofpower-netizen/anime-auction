@@ -143,8 +143,7 @@ export function SettingsScreen() {
         </div>
         <div className="field">
           <span className="label">Battle view</span>
-          <Seg value={s.battleView} onChange={(v) => store.updateSettings({ battleView: v })} label="Battle view"
-            options={[{ v: 'comic', label: '📖 Comic' }, { v: 'arena', label: '🎬 Arena' }]} />
+          <span className="faint" style={{ fontSize: 12 }}>Fights play in the arena. Press 🎨 Draw this fight on any fight you want as a comic; nothing is drawn otherwise.</span>
         </div>
         <div className="field">
           <span className="label">Comic drawings</span>
