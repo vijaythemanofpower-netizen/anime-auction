@@ -8,6 +8,11 @@ import { LEGEND_CHARACTERS } from '../../engine/data/legends';
 import { canonStats } from '../../engine/data/canonStats';
 import { STAT_LABELS } from '../../engine/hidden';
 import type { StatKey } from '../../engine/types';
+import { motion } from 'framer-motion';
+import { Chapter, HeroKanji, KineticTitle, NameBand, useHeroParallax } from '../motion/HomeMotion';
+
+const BAND_A = LEGEND_CHARACTERS.slice(0, 38).map((c) => c.name);
+const BAND_B = LEGEND_CHARACTERS.slice(38).map((c) => c.name);
 
 /** Sign in right from the start, so your record follows you; or a welcome back with your record. */
 function AccountCard() {
@@ -223,16 +228,16 @@ export function Home() {
   const game = useApp((s) => s.game);
   const saves = useApp((s) => s.saves);
   const resumable = saves.filter((s) => !s.archived && s.phase !== 'champion');
+  const heroRef = useRef<HTMLElement>(null);
+  const px = useHeroParallax(heroRef);
 
   return (
     <>
-      <section className="hero home-hero">
+      <section className="hero home-hero" ref={heroRef}>
         <div className="anime-fx" aria-hidden="true"><div className="speed-burst" /></div>
-        <div className="hero-copy">
-          <h1 className="logo-title">
-            <span className="l1">Anime Auction</span>
-            <span className="l2">Ultimate Battle Arena</span>
-          </h1>
+        <HeroKanji y={px.kanji} />
+        <motion.div className="hero-copy" style={{ y: px.copy, opacity: px.fade }}>
+          <KineticTitle lines={[{ text: 'Anime Auction', className: 'l1' }, { text: 'Ultimate Battle Arena', className: 'l2' }]} />
           <div className="logo-sub">Bid · Build · Battle</div>
           <p className="hero-pitch">
             Anime fighters go under the hammer with their true power hidden. Spend <span className="coins">10,000</span> wisely,
@@ -252,12 +257,14 @@ export function Home() {
             <button className="btn sm ghost" onClick={() => store.go('explorer')}>◎ Characters</button>
             <button className="btn sm ghost" onClick={() => store.go('hall')}>♛ Hall of Legends</button>
           </div>
-        </div>
-        <LotCard />
+        </motion.div>
+        <motion.div className="lot-wrap" style={{ y: px.card, rotate: px.cardRot }}><LotCard /></motion.div>
       </section>
 
+      <NameBand names={BAND_A} />
+
       <section className="home-section">
-        <h2>How a game goes</h2>
+        <Chapter n={1} kana="流れ">How a game goes</Chapter>
         <ol className="home-steps">
           <li><b>Bid</b><p>Fighters come up one at a time. You see who they are and hints about their power, never the numbers. Outbid your friends, or let a lot go cheap.</p></li>
           <li><b>Build</b><p>A fighter's real stats unlock the moment you win them. Choose who fights, set tactics, and check the arena: some fighters suit it better.</p></li>
@@ -266,7 +273,7 @@ export function Home() {
       </section>
 
       <section className="home-section">
-        <h2>Ways to fight</h2>
+        <Chapter n={2} kana="戦い方">Ways to fight</Chapter>
         <div className="home-modes">
           {MODES.map(([title, text, wide]) => (
             <div key={title} className={`mode-panel${wide ? ' wide' : ''}`}><h3>{title}</h3><p>{text}</p></div>
@@ -274,8 +281,10 @@ export function Home() {
         </div>
       </section>
 
+      <NameBand names={BAND_B} reverse />
+
       <section className="home-section">
-        <h2>Watch the real fights</h2>
+        <Chapter n={3} kana="名勝負">Watch the real fights</Chapter>
         <p className="muted home-note">Official clips from the studios' own channels, playing muted. Turn the sound on or skip to the next.</p>
         <FightReel />
       </section>

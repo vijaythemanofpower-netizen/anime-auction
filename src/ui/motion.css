@@ -20,7 +20,8 @@
   mask-image: radial-gradient(ellipse at 50% 50%, transparent 30%, #000 75%); }
 
 /* panels ink in as they scroll into view */
-.rv { clip-path: polygon(0 0, 0 0, 0 100%, 0 100%); opacity: 0; transform: translateY(18px) skewY(1.2deg); }
+/* Hidden with opacity only: a clip that hides everything makes Chrome report the panel as not visible, so it would never reveal. */
+.rv { opacity: 0; }
 .rv.rv-in { animation: panel-ink 0.7s cubic-bezier(.2,.8,.2,1) var(--rv-delay, 0ms) forwards; }
 @keyframes panel-ink {
   0% { clip-path: polygon(0 0, 0 0, 0 100%, 0 100%); opacity: 1; transform: translateY(18px) skewY(1.2deg); }
@@ -45,3 +46,41 @@
 .sw-stripe { position: absolute; left: 0; right: 0; top: 62%; height: 6px; background: var(--violet); transform: skewY(-3deg); }
 
 @media (prefers-reduced-motion: reduce) { .motion-system .rv { clip-path: none; opacity: 1; transform: none; animation: none; } }
+
+/* ------------------------------------------------------------ home hero */
+.home-hero { position: relative; }
+.hero-kanji { position: absolute; z-index: 0; right: 24%; top: -4%; font-family: var(--font-kana); font-size: clamp(260px, 36vw, 520px); line-height: 1;
+  color: transparent; -webkit-text-stroke: 3px color-mix(in srgb, var(--violet) 55%, transparent); opacity: 0.16; pointer-events: none; user-select: none; }
+.lot-wrap { position: relative; z-index: 1; justify-self: end; width: 100%; max-width: 400px; }
+.lot-wrap .lot-card { transform: none; }
+.logo-title.kinetic .l1, .logo-title.kinetic .l2 { display: block; }
+.logo-title.kinetic .kw { display: inline-block; margin-right: 0.2em; will-change: transform; }
+@media (max-width: 900px) { .lot-wrap { justify-self: center; } .hero-kanji { right: -10%; top: 20%; } }
+
+/* chapter headings */
+.chapter { margin-bottom: 18px; color: var(--violet); }
+.chapter .ch-no { display: flex; align-items: baseline; gap: 10px; font-family: var(--font-kana); font-size: 14px; letter-spacing: 0.08em; color: var(--violet); }
+.chapter .ch-no i { font-style: normal; font-family: var(--font-body); font-weight: 700; font-size: 11px; letter-spacing: 0.22em; text-transform: uppercase; color: var(--text-dim); }
+.chapter .ch-no em { font-style: normal; color: var(--text-faint); font-size: 12px; }
+.chapter h2 { margin-top: 4px; color: var(--text); text-shadow: 4px 4px 0 var(--ink); font-size: clamp(30px, 4.2vw, 52px); text-transform: uppercase; }
+.chapter .ch-brush { display: block; width: min(260px, 60%); height: 16px; margin-top: 4px; color: var(--violet); overflow: visible; }
+
+/* names racing past */
+.name-band { position: relative; z-index: 1; margin: 56px -6vw; padding: 10px 0; overflow: hidden; background: var(--violet); color: var(--btn-ink, #fff);
+  border-block: 3px solid var(--ink); transform: rotate(-2deg); box-shadow: 0 6px 0 var(--ink); }
+.name-band.rev { background: var(--ink); color: var(--violet); border-color: var(--violet); transform: rotate(1.4deg); box-shadow: 0 -6px 0 var(--violet); }
+.nb-row { display: flex; width: max-content; white-space: nowrap; will-change: transform; }
+.nb-row span { font-family: var(--font-display); font-size: clamp(20px, 2.6vw, 30px); text-transform: uppercase; letter-spacing: 0.02em; }
+.nb-row b { display: inline-block; margin: 0 22px; font-size: 0.6em; vertical-align: middle; opacity: 0.8; }
+
+/* ------------------------------------------------- every screen: buttons and panels */
+.btn { position: relative; overflow: hidden; isolation: isolate; }
+.btn::before { content: ''; position: absolute; inset: -2px; z-index: -1; pointer-events: none;
+  background: linear-gradient(105deg, transparent 35%, rgba(255,255,255,0.22) 48%, transparent 60%); transform: translateX(-120%); }
+.btn:hover:not(:disabled)::before { transition: transform 0.55s cubic-bezier(.2,.8,.2,1); transform: translateX(120%); }
+.btn:active:not(:disabled) { transform: translate(1px, 1px) scale(0.98); }
+.panel { position: relative; }
+.panel::after { content: ''; position: absolute; right: 0; top: 0; width: 64px; height: 64px; pointer-events: none; border-top-right-radius: inherit;
+  background: radial-gradient(color-mix(in srgb, var(--violet) 45%, transparent) 1.1px, transparent 1.4px) 0 0 / 7px 7px;
+  -webkit-mask-image: linear-gradient(225deg, #000, transparent 70%); mask-image: linear-gradient(225deg, #000, transparent 70%); opacity: 0.5; }
+.reduce-motion .btn::before { display: none; }
