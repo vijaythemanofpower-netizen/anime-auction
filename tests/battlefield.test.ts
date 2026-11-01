@@ -154,3 +154,76 @@ describe('move motifs', () => {
     for (const m of moves.slice(0, 40)) expect(motifsOf(m)).toEqual(motifsOf({ ...m }));
   });
 });
+
+describe('online rooms', () => {
+  it('a guest rebuilding the battlefield from the record it receives sees exactly what the host sees', async () => {
+    const { pack, unpack, split, Reassembler } = await import('../src/online/wire');
+    for (const r of RECORDS.filter((_, i) => i % 4 === 0)) {
+      const packed = await pack({ k: 'battle', record: r });
+      const parts = split(packed);
+      const re = new Reassembler();
+      let whole: string | null = null;
+      parts.forEach((p, i) => { whole = re.add(`m-${r.battleId}`, i, parts.length, p) ?? whole; });
+      const got = (await unpack<{ record: BattleRecord }>(whole!)).record;
+      expect(JSON.stringify(buildBattlefield(got))).toBe(JSON.stringify(buildBattlefield(r)));
+    }
+  });
+
+  it('following the host at any playback position gives the same frame, marks and broken props', () => {
+    const r = RECORDS[RECORDS.length - 1];
+    const host = buildBattlefield(r), guest = buildBattlefield(JSON.parse(JSON.stringify(r)));
+    for (const e of r.result.events.filter((_, i) => i % 7 === 0)) {
+      expect(frameAt(guest, e.seq)).toEqual(frameAt(host, e.seq));
+      expect(marksAt(guest, e.seq)).toEqual(marksAt(host, e.seq));
+      expect(propStatesAt(guest, e.seq)).toEqual(propStatesAt(host, e.seq));
+    }
+  });
+});
+
+describe('character signatures', () => {
+  it('every built-in fighter has its own way of moving that changes their animation', async () => {
+    const { SIGNATURES } = await import('../src/ui/battlefield/signatures');
+    const { LEGEND_CHARACTERS } = await import('../src/engine/data/legends');
+    for (const c of LEGEND_CHARACTERS) {
+      const key = c.id.replace('legend:', '');
+      expect(SIGNATURES[key], key).toBeTruthy();
+    }
+    const base = snap(0, 0, 'front');
+    const luffy = profileOf({ ...base, charId: 'legend:luffy', archetype: 'Berserker' });
+    const plain = profileOf({ ...base, charId: 'orig:x', archetype: 'Berserker' });
+    expect(luffy.traits).toContain('stretch');
+    expect(JSON.stringify(clipFrames({ clip: 'strike', variant: 1, power: 0.8 }, luffy, 1))).not.toBe(JSON.stringify(clipFrames({ clip: 'strike', variant: 1, power: 0.8 }, plain, 1)));
+    const jotaro = profileOf({ ...base, charId: 'legend:jotaro' });
+    expect(clipFrames({ clip: 'strike', variant: 0, power: 0.8 }, jotaro, 1).body.length).toBeGreaterThan(8);
+  });
+});
+
+describe('dedicated sprites', () => {
+  it('a sheet with only some poses covers every moment with the closest one', async () => {
+    const { pickClip } = await import('../src/ui/battlefield/FighterRig');
+    const sheet = { url: 'x.webp', frameW: 384, frameH: 512, clips: { idle: { url: 'i.webp' }, strike: { url: 's.webp' }, hit: { url: 'h.webp' } } };
+    expect(pickClip(sheet, 'beam')?.name).toBe('strike');
+    expect(pickClip(sheet, 'knockback')?.name).toBe('hit');
+    expect(pickClip(sheet, 'defeated')?.name).toBe('hit');
+    expect(pickClip(sheet, 'victory')?.name).toBe('idle');
+    for (const clip of Object.keys(CLIP_VARIANTS)) expect(pickClip(sheet, clip), clip).not.toBeNull();
+  });
+
+  it('every registered sprite pose exists on disk', async () => {
+    const fs = await import('node:fs');
+    const m = JSON.parse(fs.readFileSync('public/sprites/manifest.json', 'utf8')) as Record<string, { clips: Record<string, { url?: string }> }>;
+    for (const [id, s] of Object.entries(m)) for (const [clip, c] of Object.entries(s.clips)) if (c.url) expect(fs.existsSync(`public/${c.url}`), `${id}/${clip}`).toBe(true);
+  });
+});
+
+describe('every move has a visual', () => {
+  it('each ability (generic, signature, kit and secret moves) resolves to an effect the arena can play', async () => {
+    const { ABILITIES, vfxOf } = await import('../src/engine/data/abilities');
+    const kinds = new Set(['slash', 'beam', 'projectile', 'explosion', 'barrage', 'lightning', 'fire', 'genjutsu', 'domain', 'aura', 'summon', 'shield', 'heal', 'wave', 'punch', 'ice']);
+    const all = Object.values(ABILITIES);
+    expect(all.length).toBeGreaterThan(300);
+    for (const a of all) expect(kinds.has(vfxOf(a)), a.id).toBe(true);
+    // Most moves also carry their own motif on top of the base effect.
+    expect(all.filter((a) => motifsOf(a).length > 0).length / all.length).toBeGreaterThan(0.6);
+  });
+});

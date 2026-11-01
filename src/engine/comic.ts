@@ -97,6 +97,7 @@ const ELEMENT_TAGS: Partial<Record<Tag, string>> = {
 const ARENA_TAGS: Record<string, string> = {
   volcano: 'volcano, lava, embers, red sky', tundra: 'snow, blizzard, icy mountains', storm: 'storm clouds, lightning in background', temple: 'golden light, stone pillars',
   rooftops: 'night city, rooftops, neon lights', forest: 'dark forest, moonlight, mist', ocean: 'flooded colosseum, ocean waves', colosseum: 'arena, colosseum, crowd, stone floor',
+  desert: 'desert dunes, blazing sun, heat haze, sand', ruins: 'ruined city, broken towers, dusk, rubble',
 };
 
 const SFX: Record<string, string[]> = {

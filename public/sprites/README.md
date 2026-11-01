@@ -31,3 +31,21 @@ the procedural animation.
   victory, taunt, recover, flinch, dashin, hurt. A missing clip falls back to `idle`;
   the card still dashes, jumps and recoils around the sheet.
 - Sheets are preloaded once when the first battle opens, never during a fight.
+
+## Single poses instead of sheets
+
+A clip can also be one picture: `"strike": { "url": "sprites/goku/strike.webp" }`.
+The fighter shows that pose for the length of the move and returns to `idle`;
+moments without a pose use the closest one (beam -> cast, knockback -> hit...).
+
+## Drawing poses with the local drawing app
+
+With ComfyUI running (Start Drawing AI.bat), this draws six poses per fighter
+(stance, strike, cast, hit, knocked down, victory) and registers them here:
+
+    npx vite-node tools/make-sprites.ts goku luffy gojo
+    npx vite-node tools/make-sprites.ts --all
+
+Poses already on disk are kept; delete a file to redraw it. `--ref` adds the
+fighter's portrait as a reference (helps lesser-known characters, can add scan
+lines). About 8 seconds a pose on an RTX 3060.

@@ -7,6 +7,7 @@
 // director never plays the same variant twice in a row for a fighter.
 import type { FighterSnapshot } from '../../engine/types';
 import type { Clip, MotionCue } from './director';
+import { signatureOf, type Trait } from './signatures';
 
 export interface MotionProfile {
   /** Seconds multiplier: >1 slower and heavier. */
@@ -21,6 +22,8 @@ export interface MotionProfile {
   ghosts: boolean;
   style: 'brawler' | 'blade' | 'caster' | 'shooter' | 'shadow' | 'tank';
   idle: 'bounce' | 'still' | 'sway' | 'proud' | 'float';
+  /** Character-specific ways of moving (signatures.ts). */
+  traits: Trait[];
 }
 
 export function profileOf(s: FighterSnapshot): MotionProfile {
@@ -32,14 +35,23 @@ export function profileOf(s: FighterSnapshot): MotionProfile {
   const floats = caster && s.tags.some((t) => t === 'DIVINE' || t === 'SPIRIT' || t === 'MAGIC' || t === 'WIND');
   const idle: MotionProfile['idle'] = floats ? 'float' : s.temperament === 'stoic' || s.temperament === 'calculating' || s.temperament === 'analytical' ? 'still'
     : s.temperament === 'arrogant' ? 'proud' : s.temperament === 'cheerful' || s.temperament === 'hot-blooded' || s.temperament === 'aggressive' || s.temperament === 'reckless' ? 'bounce' : 'sway';
+  const sig = signatureOf(s.charId);
+  const st = sig?.style ?? style;
+  const traits = sig?.traits ?? [];
+  const fl = sig?.floats ?? floats;
+  const heavy = traits.includes('heavy'), casual = traits.includes('casual');
+  let t = st === 'tank' ? tempo * 1.12 : st === 'shadow' ? tempo * 0.85 : tempo;
+  if (heavy) t *= 1.1;
+  if (traits.includes('blink')) t *= 0.9;
   return {
-    tempo: style === 'tank' ? tempo * 1.12 : style === 'shadow' ? tempo * 0.85 : tempo,
-    reach: style === 'shooter' || style === 'caster' ? 0.12 : style === 'blade' ? 0.5 : style === 'shadow' ? 0.55 : 0.42,
-    squash: style === 'tank' ? 0.1 : style === 'brawler' ? 0.07 : 0.045,
-    floats,
-    ghosts: style === 'shadow' || style === 'blade' || spd >= 75,
-    style,
-    idle,
+    tempo: t,
+    reach: (st === 'shooter' || st === 'caster' ? 0.12 : st === 'blade' ? 0.5 : st === 'shadow' ? 0.55 : 0.42) * (traits.includes('stretch') ? 1.35 : 1) * (traits.includes('stand') ? 0.3 : 1),
+    squash: (st === 'tank' ? 0.1 : st === 'brawler' ? 0.07 : 0.045) * (heavy ? 1.5 : 1) * (casual ? 0.5 : 1),
+    floats: fl,
+    ghosts: st === 'shadow' || st === 'blade' || spd >= 75 || traits.includes('blink') || traits.includes('stand'),
+    style: st,
+    idle: fl ? 'float' : sig?.idle ?? idle,
+    traits,
   };
 }
 
@@ -55,13 +67,50 @@ const k = (offset: number, transform: string, extra: Record<string, string | num
  * Translations are % of the fighter card, so the same clip works at every size.
  */
 export function clipFrames(cue: MotionCue, p: MotionProfile, dir: 1 | -1): ClipFrames {
-  const { clip, variant: v, power } = cue;
+  return withTraits(baseFrames(cue, p, dir), cue, p, dir);
+}
+
+/** Character signatures layered on a clip: stretching limbs, flash steps, spins, kicks, Stands, effortless or crushing blows. */
+function withTraits(f: ClipFrames, cue: MotionCue, p: MotionProfile, dir: 1 | -1): ClipFrames {
+  if (!p.traits.length || !f.body.length) return f;
+  const d = dir;
+  const has = (t: Trait) => p.traits.includes(t);
+  const out: ClipFrames = { ...f, body: [...f.body] };
+  const attack = cue.clip === 'strike' || cue.clip === 'dashin' || cue.clip === 'clash';
+  if (has('stretch') && attack) {
+    // The arm keeps going: the card stretches toward the target at the moment of impact.
+    out.body = out.body.map((k) => (k.offset && k.offset > 0.35 && k.offset < 0.7 ? { ...k, transform: `${k.transform} scale(${1.45}, 0.9)`, transformOrigin: d > 0 ? '0% 50%' : '100% 50%' } : k));
+  }
+  if (has('blink') && (attack || cue.clip === 'dodge')) {
+    // Gone for a split second, then already there.
+    out.body = out.body.flatMap((k) => (k.offset && k.offset > 0.25 && k.offset < 0.5 ? [{ ...k, opacity: 0, filter: 'blur(4px)' }] : [k]));
+    out.ghosts = true;
+  }
+  if (has('spinner') && cue.clip === 'strike' && cue.variant !== 2) {
+    out.body = out.body.map((k) => (k.offset && k.offset > 0.3 && k.offset < 0.6 ? { ...k, transform: `${k.transform} rotate(${360 * d}deg)` } : k));
+    out.ghosts = true;
+  }
+  if (has('kicks') && cue.clip === 'strike') out.base = [{ offset: 0, transform: 'rotate(0deg)' }, { offset: 0.35, transform: `rotate(${-10 * d}deg)` }, { offset: 0.5, transform: `rotate(${-38 * d}deg) translate(${8 * d}%, -4%)` }, { offset: 0.7, transform: `rotate(${-20 * d}deg)` }, { offset: 1, transform: 'rotate(0deg)' }];
+  if (has('stand') && (cue.clip === 'strike' || cue.clip === 'throw' || cue.clip === 'cast')) {
+    // The Stand / summon does the hitting: a rapid shudder while the body holds its pose.
+    out.body = [{ offset: 0, transform: 'translate(0%, 0%)' }, ...Array.from({ length: 10 }, (_, i) => ({ offset: 0.1 + i * 0.08, transform: `translate(${(i % 2 ? 2.5 : 0.5) * d}%, 0%) rotate(${(i % 2 ? 1 : -1) * d}deg)`, filter: `brightness(${1.1 + (i % 3) * 0.08})` })), { offset: 1, transform: 'translate(0%, 0%)' }];
+    out.ghosts = true;
+  }
+  if (has('casual') && (cue.clip === 'strike' || cue.clip === 'cast' || cue.clip === 'charge')) out.dur *= 0.75;
+  if (has('heavy') && (cue.clip === 'strike' || cue.clip === 'knockdown' || cue.clip === 'victory')) out.dur *= 1.15;
+  return out;
+}
+
+function baseFrames(cue: MotionCue, p: MotionProfile, dir: 1 | -1): ClipFrames {
+  const { clip, power } = cue;
+  // Heavy fighters favour the overhead slam; spinners the spinning strike.
+  const v = clip === 'strike' && p.traits.includes('heavy') && cue.variant === 1 ? 3 : clip === 'strike' && p.traits.includes('spinner') && cue.variant === 0 ? 2 : cue.variant;
   const d = dir, P = 0.6 + power * 0.6, sq = p.squash * P;
   const reach = p.reach * 100 * P;
   const base = (dur: number) => dur * p.tempo;
   switch (clip as Clip) {
     case 'strike': {
-      if (p.style === 'caster' || p.style === 'shooter') return clipFrames({ ...cue, clip: 'cast' }, p, dir);
+      if (p.style === 'caster' || p.style === 'shooter') return baseFrames({ ...cue, clip: 'cast' }, p, dir);
       if (v === 0) return { // dash in and punch / cut through
         dur: base(620), ghosts: p.ghosts || power > 0.7,
         body: [k(0, T()), k(0.22, T(-8 * d, 1, -3 * d, 1 + sq, 1 - sq)), k(0.48, T(reach * d, -2, 5 * d, 1 - sq, 1 + sq), { filter: 'blur(0.6px)' }), k(0.6, T(reach * 0.92 * d, 0, 4 * d)), k(1, T())],

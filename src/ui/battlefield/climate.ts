@@ -26,6 +26,8 @@ export const CLIMATES: Record<string, Climate> = {
   forest: { pool: [['fog', 3], ['fireflies', 4], ['rain', 2], ['storm', 1]], ground: 'earth', dark: 0.3 },
   ocean: { pool: [['rain', 3], ['wind', 3], ['storm', 2], ['fog', 2]], ground: 'water', dark: 0.15 },
   colosseum: { pool: [['clear', 4], ['wind', 2], ['rain', 2], ['heat', 2], ['dust', 2]], ground: 'sand', dark: 0.1 },
+  desert: { pool: [['heat', 4], ['dust', 4], ['clear', 2], ['wind', 2]], ground: 'sand', dark: 0.02 },
+  ruins: { pool: [['fog', 3], ['ash', 2], ['rain', 2], ['wind', 2], ['storm', 1]], ground: 'stone', dark: 0.28 },
 };
 export const climateOf = (envId: string): Climate => CLIMATES[envId] ?? CLIMATES.colosseum;
 
@@ -48,7 +50,8 @@ export const WEATHER_LABEL: Record<WeatherKind, string> = {
 
 export type PropKind =
   | 'pillar' | 'rock' | 'lava-rock' | 'ice-spike' | 'snow-pine' | 'lantern' | 'statue' | 'bell'
-  | 'water-tank' | 'sign' | 'ac-unit' | 'tree' | 'shrine' | 'column-ruin' | 'buoy' | 'banner' | 'crate' | 'brazier';
+  | 'water-tank' | 'sign' | 'ac-unit' | 'tree' | 'shrine' | 'column-ruin' | 'buoy' | 'banner' | 'crate' | 'brazier'
+  | 'obelisk' | 'cactus' | 'lamp-post' | 'broken-wall';
 
 export interface PropDef {
   id: string;
@@ -74,6 +77,8 @@ export const PROPS: Record<string, PropDef[]> = {
   rooftops: [p('r1', 'ac-unit', 0.05, 'front', 1, 3), p('r2', 'water-tank', 0.26, 'back', 0.9), p('r3', 'sign', 0.74, 'back', 0.95), p('r4', 'crate', 0.95, 'front', 1, 2)],
   forest: [p('f1', 'tree', 0.04, 'front', 1.2, 5), p('f2', 'shrine', 0.26, 'back', 0.75, 3), p('f3', 'rock', 0.74, 'back', 0.85, 3), p('f4', 'tree', 0.96, 'front', 1.15, 5)],
   ocean: [p('o1', 'column-ruin', 0.05, 'front', 1.05, 4), p('o2', 'buoy', 0.27, 'back', 0.8, 2), p('o3', 'buoy', 0.73, 'back', 0.8, 2), p('o4', 'column-ruin', 0.95, 'front', 1.05, 4)],
+  desert: [p('d1', 'obelisk', 0.05, 'front', 1.1, 5), p('d2', 'cactus', 0.27, 'back', 0.8, 2), p('d3', 'rock', 0.73, 'back', 0.9, 3), p('d4', 'cactus', 0.95, 'front', 1, 2)],
+  ruins: [p('u1', 'broken-wall', 0.05, 'front', 1.1, 4), p('u2', 'lamp-post', 0.26, 'back', 0.9, 2), p('u3', 'statue', 0.74, 'back', 0.85, 4), p('u4', 'lamp-post', 0.95, 'front', 1, 2)],
   colosseum: [p('c1', 'brazier', 0.05, 'front', 1, 3), p('c2', 'banner', 0.26, 'back', 0.9, 3), p('c3', 'banner', 0.74, 'back', 0.9, 3), p('c4', 'brazier', 0.95, 'front', 1, 3)],
 };
 export const propsOf = (envId: string): PropDef[] => PROPS[envId] ?? PROPS.colosseum;

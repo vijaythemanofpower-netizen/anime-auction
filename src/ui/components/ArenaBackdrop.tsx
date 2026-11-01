@@ -13,6 +13,8 @@ const PARTICLES: Record<string, Particles> = {
   forest: { mode: 'drift', count: 30, colors: ['#bef264', '#a855f7', '#d9f99d'], size: [2, 4], speed: [3, 6] },
   ocean: { mode: 'rise', count: 24, colors: ['rgba(186,230,253,0.7)'], size: [3, 7], speed: [5, 10] },
   colosseum: { mode: 'drift', count: 22, colors: ['#e9d5ff', '#c4b5fd'], size: [1, 3], speed: [4, 8] },
+  desert: { mode: 'drift', count: 30, colors: ['#e7c58f', '#fbbf24'], size: [1, 3], speed: [3, 6] },
+  ruins: { mode: 'fall', count: 30, colors: ['#78716c', '#a8a29e'], size: [1, 3], speed: [8, 14] },
 };
 
 function ParticleField({ envId }: { envId: string }) {
@@ -113,6 +115,26 @@ function Scene({ envId }: { envId: string }) {
         <path d="M0 400 C100 380 200 420 300 400 C400 380 500 420 600 400 C700 380 800 420 900 400 C950 390 1000 400 1000 400 L1000 560 L0 560Z" fill="#0369a1" opacity="0.8" />
         <path d="M0 440 C120 420 240 460 360 440 C480 420 600 460 720 440 C840 420 960 460 1000 440 L1000 560 L0 560Z" fill="#075985" />
       </svg>);
+    case 'desert': return (
+      <svg className="scene" viewBox="0 0 1000 560" preserveAspectRatio="xMidYMid slice">
+        <defs><linearGradient id="ds" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#3b1d06" /><stop offset="0.5" stopColor="#c2410c" /><stop offset="1" stopColor="#fbbf24" /></linearGradient><radialGradient id="dsun"><stop offset="0" stopColor="#fff7d6" /><stop offset="0.4" stopColor="#fde047" stopOpacity="0.8" /><stop offset="1" stopColor="#fbbf24" stopOpacity="0" /></radialGradient></defs>
+        <rect width="1000" height="560" fill="url(#ds)" />
+        <circle cx="760" cy="150" r="130" fill="url(#dsun)" />
+        <path d="M120 330 L200 180 L280 330Z" fill="#7c2d12" opacity="0.7" /><path d="M230 330 L290 220 L350 330Z" fill="#9a3412" opacity="0.6" />
+        <path d="M0 360 C150 300 300 340 450 320 C620 296 780 350 1000 310 L1000 560 L0 560Z" fill="#b45309" />
+        <path d="M0 420 C200 380 380 430 560 400 C740 372 880 420 1000 400 L1000 560 L0 560Z" fill="#92400e" />
+        <path d="M0 470 C260 450 520 480 1000 455 L1000 560 L0 560Z" fill="#78350f" />
+      </svg>);
+    case 'ruins': return (
+      <svg className="scene" viewBox="0 0 1000 560" preserveAspectRatio="xMidYMid slice">
+        <defs><linearGradient id="rs" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#0d0b10" /><stop offset="0.6" stopColor="#4a2a35" /><stop offset="1" stopColor="#b45360" /></linearGradient></defs>
+        <rect width="1000" height="560" fill="url(#rs)" />
+        <circle cx="240" cy="130" r="60" fill="#f87171" opacity="0.35" />
+        {[[40, 170, 70], [130, 230, 60], [210, 140, 80], [330, 260, 60], [420, 120, 90], [560, 210, 70], [650, 160, 80], [760, 250, 60], [840, 130, 90], [940, 220, 60]].map(([x, y, w], i) => (
+          <g key={i} fill="#1c151b"><path d={`M${x} 560 L${x} ${y + 20} L${x + w * 0.3} ${y} L${x + w * 0.55} ${y + 30} L${x + w * 0.8} ${y + 8} L${x + w} ${y + 40} L${x + w} 560Z`} />
+            {Array.from({ length: 6 }, (_, k) => <rect key={k} x={x + 10 + (k % 2) * (w / 2.4)} y={y + 50 + Math.floor(k / 2) * 40} width="10" height="16" fill="#0d0b10" />)}</g>))}
+        <path d="M0 440 L180 420 L300 446 L470 418 L640 444 L800 420 L1000 438 L1000 560 L0 560Z" fill="#1c151b" />
+      </svg>);
     default: return (
       <svg className="scene" viewBox="0 0 1000 560" preserveAspectRatio="xMidYMid slice">
         <defs>
@@ -128,12 +150,13 @@ function Scene({ envId }: { envId: string }) {
   }
 }
 
-export const ArenaBackdrop = memo(function ArenaBackdrop({ envId }: { envId: string }) {
+/** `ambient`: the CSS particles and flashes, used only when the GPU weather is not running. */
+export const ArenaBackdrop = memo(function ArenaBackdrop({ envId, ambient = true }: { envId: string; ambient?: boolean }) {
   return (
     <div className="backdrop" aria-hidden="true">
       <Scene envId={envId} />
-      {envId === 'storm' && <div className="storm-flash" />}
-      <ParticleField envId={envId} />
+      {ambient && envId === 'storm' && <div className="storm-flash" />}
+      {ambient && <ParticleField envId={envId} />}
       <div className="floor" />
       <div className="vignette" />
     </div>

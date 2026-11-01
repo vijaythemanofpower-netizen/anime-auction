@@ -99,7 +99,9 @@ export class FxDirector {
 
   destroy() {
     if (this.onVis) document.removeEventListener('visibilitychange', this.onVis);
+    try { this.weather.destroy(); this.soft?.destroy(true); this.hard?.destroy(true); } catch { /* not created */ }
     try { this.app?.destroy(true, { children: true }); } catch { /* already gone */ }
+    this.particles = []; this.pool = []; this.tasks = []; this.anims = []; this.auras = [];
     this.app = null;
     this.ready = false;
   }

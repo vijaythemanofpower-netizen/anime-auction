@@ -691,6 +691,7 @@ export class BattleSim {
       const T: Record<string, string> = {
         volcano: 'THE VOLCANO ERUPTS!', storm: 'LIGHTNING SPLITS THE ARENA!', tundra: 'THE ICE SHEET CRACKS!', ocean: 'A TIDAL SURGE FLOODS THE ARENA!',
         temple: 'THE TEMPLE PILLARS COLLAPSE!', rooftops: 'THE ROOFTOP GIVES WAY!', forest: 'THE ANCIENT TREES COME CRASHING DOWN!', colosseum: 'THE CROWD STORMS THE BARRIERS!',
+        desert: 'THE DUNES SWALLOW THE GROUND!', ruins: 'A WHOLE TOWER COMES DOWN!',
       };
       this.twist('arena', T[this.env.id] ?? 'THE ARENA BREAKS APART!', 'Everyone is thrown off balance; guards drop and the momentum resets.');
       this.momentum = 0;

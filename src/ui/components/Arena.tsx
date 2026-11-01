@@ -1,6 +1,6 @@
 // Visual battle stage. Everything shown is driven by the verified event at
 // the current playback position: effects never invent hits or damage.
-import { useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import type { BattleEvent, BattleInjury, BattleRecord, FighterSnapshot, Player, PublicCharacter, VfxKind } from '../../engine/types';
 import { ABILITIES, getAbility, vfxOf } from '../../engine/data/abilities';
 import { getEnvironment } from '../../engine/data/world';
@@ -21,6 +21,8 @@ import type { BridgeCtx } from '../battlefield/fxBridge';
 import type { MotionCue } from '../battlefield/director';
 
 const hasForms = (s: FighterSnapshot) => !!kitFor(s.charId, s.name)?.forms.length;
+/** Pictures fetched ahead of a fight (kept so the browser keeps them decoded). */
+const PRELOADED = new Map<string, HTMLImageElement>();
 
 export interface LiveFighter {
   snap: FighterSnapshot; hp: number; maxHp: number; st: number; maxSt: number; down: boolean; awakened: boolean; position: 'front' | 'back'; form: number;
@@ -44,7 +46,7 @@ export function conditionOf(f: { hp: number; maxHp: number }): { label: string; 
 }
 type Pt = { x: number; y: number };
 
-const ENV_HAZARD_FX: Record<string, VfxKind> = { volcano: 'explosion', storm: 'lightning', tundra: 'ice', ocean: 'wave' };
+const ENV_HAZARD_FX: Record<string, VfxKind> = { volcano: 'explosion', storm: 'lightning', tundra: 'ice', ocean: 'wave', desert: 'wave', ruins: 'explosion' };
 
 function fxKindFor(e: BattleEvent, snap: FighterSnapshot | undefined, envId: string): VfxKind | null {
   if (e.context?.environmental) return ENV_HAZARD_FX[envId] ?? 'explosion';
@@ -91,6 +93,13 @@ export function ArenaStage({ record, cur, done, fighters, momentum, players, cha
   const [pos, setPos] = useState<FighterPos>({});
   // The fight director's script for the whole battle: weather, destruction, camera and motion.
   const script = useMemo(() => buildBattlefield(record), [record]);
+  // Every fighter's picture is fetched before the bell, so cut-ins and bench entries never load mid-fight.
+  useEffect(() => {
+    for (const s of input.sides) for (const f of [...s.fighters, ...(s.reserves ?? [])]) {
+      const url = characters[f.charId]?.imageUrl;
+      if (url && !PRELOADED.has(url)) { const img = new Image(); img.referrerPolicy = 'no-referrer'; img.src = url; PRELOADED.set(url, img); }
+    }
+  }, [record.battleId]); // eslint-disable-line react-hooks/exhaustive-deps
   const seqNow = done ? Number.MAX_SAFE_INTEGER : cur?.seq ?? 0;
   const frame = cur ? (done ? script.frames[script.frames.length - 1] : frameAt(script, cur.seq)) : script.frames[0];
   // GPU effects replace the simpler CSS effects once the canvas is ready.
@@ -173,7 +182,7 @@ export function ArenaStage({ record, cur, done, fighters, momentum, players, cha
           style={{ ['--form' as string]: f.formColor ?? '#f5c451', ['--sw' as string]: sw, ['--side' as string]: pcolor(side), ['--lx' as string]: side === 0 ? '46px' : '-46px', ['--fall' as string]: side === 0 ? '-14deg' : '14deg' } as CSSProperties}>
           {!reduced && <RigGhosts art={art} />}
           <div className="pf" ref={(el) => { if (el) standRefs.current.set(f.snap.charId, el); else standRefs.current.delete(f.snap.charId); }}>
-            <Body id={f.snap.charId} art={art} cue={frame && cur && !done ? frame.motion[f.snap.charId] : done && frame ? frame.motion[f.snap.charId] : undefined} seq={cur?.seq ?? 0} side={side} snap={f.snap} reduced={!!reduced} speed={speed} />
+            <Body pose={poseOf(f)} rest={f.down ? 'defeated' : f.floored ? 'knockdown' : 'idle'} id={f.snap.charId} art={art} cue={frame && cur && !done ? frame.motion[f.snap.charId] : done && frame ? frame.motion[f.snap.charId] : undefined} seq={cur?.seq ?? 0} side={side} snap={f.snap} reduced={!!reduced} speed={speed} />
             <InjuryCracks injuries={f.injuries} fresh={live?.type === 'injury' && live.target === f.snap.charId ? live.seq : null} flip={side === 1} />
             {f.fromBench && <span className="badge bench-badge">FROM THE BENCH</span>}
             {f.form >= 1.06 && <span className="badge good">TOP FORM</span>}
@@ -263,7 +272,7 @@ export function ArenaStage({ record, cur, done, fighters, momentum, players, cha
     <>
     <div ref={arenaRef} className={`arena2${size > 2 ? ' squad' : ''}${cam?.letterbox && !done ? ' letterbox' : ''}${reduced ? ' still' : ''}`} style={{ ['--env-accent' as string]: env.palette[2] + '55', ['--hype' as string]: frame?.hype ?? 0 } as CSSProperties}>
       <div className="cam" ref={camRef} style={camStyle}>
-      <ArenaBackdrop envId={input.environmentId} />
+      <ArenaBackdrop envId={input.environmentId} ambient={!gpu || !!reduced} />
       {input.environmentId === 'colosseum' && <Crowd hype={frame?.hype ?? 0} seq={cur?.seq ?? 0} />}
       <SkyAndGround frame={frame} seq={cur?.seq ?? 0} envId={input.environmentId} />
       <PropsLayer script={script} seq={seqNow} layer="back" hitNow={live ? frame?.propHits ?? [] : []} wind={frame?.weather.wind ?? 0} />
@@ -590,10 +599,20 @@ function PlayByPlay({ events, upto, names }: { events: BattleEvent[]; upto: numb
 }
 
 /** The fighter's animated body: their own sprite sheet if one exists, else the procedural rig. */
-function Body({ id, art, cue, seq, side, snap, reduced, speed }: { id: string; art: ReactNode; cue: MotionCue | undefined; seq: number; side: 0 | 1; snap: FighterSnapshot; reduced: boolean; speed: number }) {
+/** How a fighter carries their damage between moves. */
+function poseOf(f: LiveFighter): string {
+  if (f.down) return '';
+  const p: string[] = [];
+  if (f.hp / f.maxHp < 0.35 || f.staggered) p.push('worn');
+  if (f.injuries.some((i) => i.part === 'leg')) p.push('limp');
+  if (f.injuries.some((i) => i.part === 'arm' || i.part === 'torso')) p.push('arm');
+  return p.join(' ');
+}
+
+function Body({ id, art, cue, seq, side, snap, reduced, speed, pose, rest }: { id: string; art: ReactNode; cue: MotionCue | undefined; seq: number; side: 0 | 1; snap: FighterSnapshot; reduced: boolean; speed: number; pose: string; rest: string }) {
   const sheet = useSpriteSheet(id);
   const profile = useMemo(() => profileOf(snap), [snap]);
-  return <FighterRig art={art} cue={cue} seq={seq} dir={side === 0 ? 1 : -1} profile={profile} reduced={reduced} speed={speed} sheet={sheet} />;
+  return <FighterRig art={art} cue={cue} seq={seq} dir={side === 0 ? 1 : -1} profile={profile} reduced={reduced} speed={speed} sheet={sheet} pose={pose} rest={rest} />;
 }
 
 /** The fighter's picture: their form's picture once they transform (if there is one), else their portrait. */

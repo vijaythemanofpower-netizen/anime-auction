@@ -211,4 +211,11 @@ export class WeatherSystem {
   }
 
   get count() { return this.ps.length; }
+
+  /** Frees the GPU textures (called when the battle closes). */
+  destroy() {
+    this.clear();
+    this.pool = [];
+    if (this.tex) for (const t of Object.values(this.tex)) t.destroy(true);
+  }
 }

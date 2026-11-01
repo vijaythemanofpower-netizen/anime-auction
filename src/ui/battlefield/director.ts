@@ -66,7 +66,7 @@ export interface CameraCue {
 }
 
 export interface Light { at: 'actor' | 'target' | 'mid'; color: string; power: number }
-export type HazardKind = 'lightning' | 'eruption' | 'blizzard' | 'riptide';
+export type HazardKind = 'lightning' | 'eruption' | 'blizzard' | 'riptide' | 'sandstorm' | 'collapse';
 
 export interface Frame {
   weather: WeatherState;
@@ -116,7 +116,7 @@ function heavyOf(e: BattleEvent): number {
   return 0.45;
 }
 
-const HAZARD_OF: Record<string, HazardKind> = { storm: 'lightning', volcano: 'eruption', tundra: 'blizzard', ocean: 'riptide' };
+const HAZARD_OF: Record<string, HazardKind> = { storm: 'lightning', volcano: 'eruption', tundra: 'blizzard', ocean: 'riptide', desert: 'sandstorm', ruins: 'collapse' };
 
 // ----------------------------------------------------------------- build
 
@@ -236,6 +236,8 @@ export function buildBattlefield(record: BattleRecord): BattlefieldScript {
           else if (envId === 'storm') mark(seq, 'scorch', near(target!), 40, '#1e1b4b');
           else if (envId === 'tundra') mark(seq, 'frost', near(target!), 55, '#e0f2fe');
           else if (envId === 'ocean') { mark(seq, 'puddle', near(target!), 70, '#38bdf8'); splash = true; }
+          else if (envId === 'ruins') { mark(seq, 'rubble', near(target!, 0.8), 55, '#000'); mark(seq, 'crack', near(target!), 60, '#000'); }
+          else if (envId === 'desert') mark(seq, 'melt', near(target!), 60, '#000');
           break;
         }
         const clip: Clip = melee ? 'strike' : kind === 'beam' || kind === 'lightning' || kind === 'fire' ? 'beam' : kind === 'projectile' || kind === 'explosion' || kind === 'ice' || kind === 'wave' ? 'throw' : 'cast';
@@ -355,6 +357,8 @@ export function buildBattlefield(record: BattleRecord): BattlefieldScript {
         if (hz === 'blizzard') bend('blizzard', 'The blizzard', 10);
         if (hz === 'eruption') bend('ash', 'The eruption', 10, 0.2);
         if (hz === 'riptide') bend('rain', 'The riptide', 8);
+        if (hz === 'sandstorm') bend('dust', 'The sandstorm', 12, 0.15);
+        if (hz === 'collapse') { const h = hitProp(seq, rng.chance(0.5) ? 0 : 1, 2, 'back'); if (h) propHits.push(h); }
         camera = shot([{ shot: 'hazard', focus: 'wide', zoom: 1.02, shake: 2, letterbox: false, slowmo: false }]);
         hype = Math.max(hype, 0.7);
         break;

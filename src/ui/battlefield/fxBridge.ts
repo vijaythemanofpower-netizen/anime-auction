@@ -76,6 +76,13 @@ export function playFrame(fx: FxDirector, c: BridgeCtx) {
         fx.wash('#e0f2fe', 0.35, 1400);
         for (const s of spots) fx.at(200, () => fx.burst(s, '#ffffff', 40, 12, { dir: Math.PI * (w.wind < 0 ? 1 : 0), spread: 0.5, size: 10 }));
         break;
+      case 'sandstorm':
+        fx.wash('#d6a96b', 0.32, 1500);
+        for (const s of spots) fx.at(150, () => fx.burst(s, '#e7c58f', 46, 13, { dir: Math.PI * (w.wind < 0 ? 1 : 0), spread: 0.45, size: 12, color2: '#a8865b' }));
+        break;
+      case 'collapse':
+        for (let i = 0; i < 12; i++) fx.at(i * 70, () => { const s = spots[i % spots.length]; fx.projectile({ x: s.x + rand(-160, 160), y: -50 }, { x: s.x + rand(-60, 60), y: s.y + rand(0, 50) }, '#57534e', { size: rand(16, 34), dur: rand(420, 600), color2: '#a8a29e', onHit: () => fx.burst({ x: s.x, y: s.y + 50 }, '#78716c', 16, 8, { grav: 0.35, size: 11 }) }); });
+        break;
       case 'riptide':
         fx.crescent({ x: w.wind < 0 ? fx.w + 60 : -60, y: fx.h * 0.75 }, { x: w.wind < 0 ? -60 : fx.w + 60, y: fx.h * 0.72 }, '#38bdf8', { size: 140, dur: 1100, color2: '#e0f2fe' });
         for (const s of spots) fx.at(450, () => fx.weather.splashAt(s.x, s.y + 60, 30));

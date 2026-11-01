@@ -192,6 +192,27 @@ export function playFx(fx: FxDirector, ctx: PlayCtx): boolean {
     case 'transform': if (from) { const c = String(e.context?.color ?? '#f5c451'); aura(fx, from, c, '#ffffff', 1.8); if (!reduced) fx.speedLines(from, c, 1200); } return true;
     case 'awakening': if (from) { aura(fx, from, '#f5c451', '#fff7d6', 1.6); if (!reduced) fx.speedLines(from, '#fde68a', 1000); } return true;
     case 'heal': if (to) KIND.heal(fx, to, to, c, c2, () => undefined); return true;
+    case 'status': case 'status_tick': {
+      // Every status shows on the fighter it lands on (applied: a burst; ticking: a smaller pulse).
+      const at = to ?? from;
+      const st = e.status?.type;
+      if (!at || !st || (e.type === 'status' && e.status && !e.status.applied)) return false;
+      const big = e.type === 'status' ? 1 : 0.5;
+      const rise = (color: string, n: number, o: { vy?: number; size?: number; grav?: number } = {}) => { for (let i = 0; i < n * big; i++) fx.at(i * 25, () => fx.spark({ x: at.x + (Math.random() - 0.5) * 80, y: at.y + 40 + Math.random() * 40 }, color, { vy: o.vy ?? -3, vx: (Math.random() - 0.5) * 1.2, life: 650, size: o.size ?? 14, grav: o.grav ?? -0.02 })); };
+      switch (st) {
+        case 'burn': rise('#f97316', 26); rise('#fde047', 10, { size: 10 }); break;
+        case 'bleed': fx.burst(at, '#b91c1c', Math.round(18 * big), 6, { grav: 0.35, size: 9, color2: '#7f1d1d' }); break;
+        case 'freeze': fx.ring(at, '#bae6fd', { radius: 90, width: 12 }); fx.burst(at, '#e0f2fe', Math.round(22 * big), 7, { size: 10, grav: 0.1 }); break;
+        case 'stun': for (let i = 0; i < 3; i++) fx.at(i * 120, () => fx.ring({ x: at.x, y: at.y - 70 }, '#fde047', { radius: 40, width: 5, dur: 380 })); rise('#fde68a', 8, { vy: -1, size: 9 }); break;
+        case 'weaken': rise('#6b21a8', 18, { vy: 2, grav: 0.05, size: 16 }); break;
+        case 'haste': fx.speedLines(at, '#a7f3d0', 380, 20); rise('#6ee7b7', 12, { vy: -5, size: 10 }); break;
+        case 'focus': fx.charge(at, '#f5c451', 500, 90, Math.round(20 * big)); break;
+        case 'provoked': fx.ring(at, '#ef4444', { radius: 80, width: 8 }); rise('#ef4444', 10, { size: 10 }); break;
+        case 'regen': rise('#4ade80', 16, { vy: -2.5 }); break;
+        case 'shield': fx.ring(at, '#93c5fd', { radius: 100, width: 14, dur: 600 }); break;
+      }
+      return true;
+    }
     case 'environment': fx.wash(c, 0.3, 700); return true;
     case 'rival': if (!reduced) fx.speedLines({ x: fx.w / 2, y: fx.h / 2 }, '#f9a8d4', 1600); return true;
     case 'combo':

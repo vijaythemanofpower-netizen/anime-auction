@@ -14,6 +14,8 @@ const STYLE_FIT: Record<string, { good: Archetype[]; bad: Archetype[] }> = {
   rooftops: { good: ['Assassin', 'Ranger'], bad: ['Tank'] },
   forest: { good: ['Assassin', 'Summoner'], bad: ['Ranger'] },
   ocean: { good: ['Controller', 'Tank'], bad: ['Berserker'] },
+  desert: { good: ['Berserker', 'Ranger'], bad: ['Mage'] },
+  ruins: { good: ['Assassin', 'Controller'], bad: ['Support'] },
   colosseum: { good: ['Duelist', 'Strategist'], bad: [] },
 };
 
