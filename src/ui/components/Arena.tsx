@@ -10,6 +10,7 @@ import { CharArt } from './Portrait';
 import { FighterStatus } from './InjuryReport';
 import { FxLayer } from '../fx/FxLayer';
 import { useApp } from '../../store/store';
+import { useFormPicture } from '../formPortraits';
 
 export interface LiveFighter {
   snap: FighterSnapshot; hp: number; maxHp: number; st: number; maxSt: number; down: boolean; awakened: boolean; position: 'front' | 'back'; form: number;
@@ -131,7 +132,7 @@ export function ArenaStage({ record, cur, done, fighters, momentum, players, cha
         <div key={f.snap.charId} className={`stand${f.fromBench ? ' from-bench' : ''}${f.hp / f.maxHp < 0.3 && !f.down ? ' hurt' : ''}${acting ? ' acting' : ''}${acting && (melee || isClash) ? ' lunge' : ''}${hit ? ' hit' : ''}${blocking ? ' blocking' : ''}${f.floored ? ' floored' : ''}${f.staggered && !f.down ? ' staggered' : ''}${f.down ? ' down' : ''}${f.awakened ? ' awakened' : ''}${f.stage ? ` formed stage-${Math.min(3, f.stage)}` : ''}`}
           style={{ ['--form' as string]: f.formColor ?? '#f5c451', ['--sw' as string]: sw, ['--side' as string]: pcolor(side), ['--lx' as string]: side === 0 ? '46px' : '-46px', ['--fall' as string]: side === 0 ? '-14deg' : '14deg' } as CSSProperties}>
           <div className="pf" ref={(el) => { if (el) standRefs.current.set(f.snap.charId, el); else standRefs.current.delete(f.snap.charId); }}>
-            {pc ? <CharArt c={pc} /> : null}
+            {pc ? <FighterArt c={pc} stage={f.stage ?? 0} /> : null}
             <InjuryCracks injuries={f.injuries} fresh={live?.type === 'injury' && live.target === f.snap.charId ? live.seq : null} flip={side === 1} />
             {f.fromBench && <span className="badge bench-badge">FROM THE BENCH</span>}
             {f.formName && <span className="badge form-badge">{f.formName}</span>}
@@ -252,7 +253,7 @@ export function ArenaStage({ record, cur, done, fighters, momentum, players, cha
       {(live?.type === 'transform' || live?.type === 'secret') && live.actor && characters[live.actor] && (
         <div className={`cutin${fighters.get(live.actor)?.snap.side === 1 ? ' right' : ''}`} key={`tf${live.seq}`} style={{ ['--c' as string]: live.type === 'secret' ? '#f43f5e' : String(live.context?.color ?? '#f5c451') } as CSSProperties}>
           <div className="ci-lines" />
-          <div className={`ci-img formed stage-${Math.min(3, Number(live.context?.stage ?? 1))}`} style={{ ['--form' as string]: String(live.context?.color ?? '#f43f5e') } as CSSProperties}><CharArt c={characters[live.actor]} /></div>
+          <div className={`ci-img formed stage-${Math.min(3, Number(live.context?.stage ?? 1))}`} style={{ ['--form' as string]: String(live.context?.color ?? '#f43f5e') } as CSSProperties}><FighterArt c={characters[live.actor]} stage={live.type === 'transform' ? Number(live.context?.stage ?? 1) : fighters.get(live.actor)?.stage ?? 0} /></div>
         </div>
       )}
       {cutIn && live?.actor && characters[live.actor] && (
@@ -502,4 +503,11 @@ function PlayByPlay({ events, upto, names }: { events: BattleEvent[]; upto: numb
   }
   if (!lines.length) return null;
   return <div className="pbp" aria-live="polite">{lines.map((l) => <div key={l.seq} className={`pbp-line ${l.tone}`}>{l.text}</div>)}</div>;
+}
+
+/** The fighter's picture: their form's picture once they transform (if there is one), else their portrait. */
+function FighterArt({ c, stage }: { c: PublicCharacter; stage: number }) {
+  const url = useFormPicture(c, stage);
+  if (!url) return <CharArt c={c} />;
+  return <img className="form-pic" key={url} src={url} alt={`${c.name} transformed`} style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: '50% 18%' }} />;
 }

@@ -10,7 +10,7 @@ import * as G from '../../engine/game';
 import { store, useApp } from '../../store/store';
 import { CharacterCard, Modal, PublicProfile, Seg, SourceBadge } from '../components/common';
 import { CharArt } from '../components/Portrait';
-import { MySounds } from '../components/MySounds';
+import { FormPictures, MySounds } from '../components/MySounds';
 import { AiMoves } from '../components/AiMoves';
 import { withAiMoves } from '../ai/moveWriter';
 import { missingFrom, searchJikan } from '../../engine/providers/jikan';
@@ -214,6 +214,7 @@ export function Explorer({ embedded }: { embedded?: boolean }) {
               <p className="faint">True power, combat stats, hidden traits and the hidden ability are revealed only after purchase.</p>
               <AiMoves c={detail} onChange={(c) => { setDetail(c); setItems((prev) => prev.map((x) => (x.id === c.id ? c : x))); store.viewCharacter(c); }} />
               <MySounds c={detail} />
+              <FormPictures c={detail} />
               {poolMode && (
                 <button className={`btn ${inPool(detail.id) ? 'danger' : 'primary'}`} onClick={() => toggle(detail)}>
                   {inPool(detail.id) ? 'Remove from auction pool' : 'Add to auction pool'}

@@ -62,3 +62,18 @@ export async function deleteClip(key: string): Promise<void> {
   (await clipKeys()).delete(key);
   changed();
 }
+
+// Form pictures: your own image for a character's transformation (Sage Mode, Gear Fifth...),
+// shown on the arena portrait when they reach that form. Stored here too, never uploaded
+// except to share with your room while you host a game.
+export const MAX_IMAGE_BYTES = 6 * 1024 * 1024;
+/** formpic:<charId>:<stage> is your picture for that character's form (stage 1 = first form). */
+export const formPicKey = (charId: string, stage: number) => `formpic:${charId}:${stage}`;
+
+export async function putImage(key: string, file: Blob): Promise<void> {
+  if (!file.type.startsWith('image/')) throw new Error('That file is not an image.');
+  if (file.size > MAX_IMAGE_BYTES) throw new Error('Pictures can be up to 6 MB.');
+  await tx('readwrite', (s) => s.put(file, key));
+  (await clipKeys()).add(key);
+  changed();
+}

@@ -249,6 +249,9 @@ async function pushArtist(force: boolean, onlyTo?: string) {
 
 const panelPath = (code: string, key: string) => `${code}/${key.replace(/[^A-Za-z0-9_-]/g, '_')}.jpg`;
 
+/** Host: shares any picture with the room (comic panels, form portraits). */
+export function shareImage(key: string, blob: Blob): Promise<void> { return sharePanel(key, blob); }
+
 /** Host: uploads a finished panel (one at a time) and tells the room where it is. */
 function sharePanel(key: string, blob: Blob): Promise<void> {
   uploads = uploads.then(async () => {

@@ -20,6 +20,7 @@ import { ComicStage, useComicHold, useComicPrep } from '../comic/ComicStage';
 import { chooseMusic, music } from '../music';
 import { clipKeys, onClipsChanged } from '../../store/media';
 import { playback, sendPlayback, useRoom, voteSkip, votersNeeded } from '../../online/room';
+import { prepareFormPortraits } from '../formPortraits';
 
 
 function delayFor(e: BattleEvent, hasLine: boolean): number {
@@ -101,6 +102,8 @@ export function BattleView({ record, exhibition }: { record: BattleRecord; exhib
   }, [narration]);
 
   useEffect(() => { setIdx(0); setPlaying(true); completed.current = false; skipped.current = false; }, [record.battleId]);
+  // Pictures for the forms reached in this fight: your own, or painted now by the drawing app.
+  useEffect(() => { void prepareFormPortraits(record, g.characters, aiDrawings); }, [record.battleId, aiDrawings]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Online: the host's browser is the clock and guests follow it, so everyone sees the
   // same moment. A guest who replays a finished fight watches it on their own.
