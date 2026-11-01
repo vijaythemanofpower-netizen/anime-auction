@@ -1,78 +1,64 @@
-# Runs automatically when Claude Code stops because the usage limit was reached
-# (StopFailure hook with matcher "rate_limit" in %USERPROFILE%\.claude\settings.json).
-# It hands the open work to the backup AIs (tools/handoff.ps1: Codex, then Gemini)
-# in a new window, so the work goes on while Claude is out of quota.
+# Runs when Claude Code ends a turn because of an API error (StopFailure hook, matcher
+# "rate_limit", registered in %USERPROFILE%\.claude\settings.json).
 #
-# It only starts a hand-off when Anime Auction was being worked on:
-#   - the Claude session was inside this folder, or
-#   - files in this folder changed in the last 3 hours.
-# At most one hand-off per hour, however many sessions hit the limit.
-#
-# Which tasks run:
-#   - the "## Codex task" / "## Gemini task" sections of HANDOFF.md, as written;
-#   - if both say "none" but there is uncommitted work, Codex gets a task to finish it
-#     (built from the files changed and Claude's last message).
+# It decides whether this is a genuine subscription usage limit (apiError
+# "usage_limit_reached" in the session transcript, or the "You've hit your ... limit"
+# message) or just ordinary rate limiting, and then:
+#   - if the failover supervisor is running (tools/failover/supervisor.ps1), it writes
+#     handoff-logs/failover/signal.json and the supervisor takes over;
+#   - otherwise it opens a window that hands the work to Codex right away.
+# Nothing here commits, pushes or deploys. Every decision is logged in
+# handoff-logs/failover/failover.log.
 
 $ErrorActionPreference = 'Continue'
-$repo = Split-Path -Parent $PSScriptRoot
-$logs = Join-Path $repo 'handoff-logs'
-New-Item -ItemType Directory -Force $logs | Out-Null
-$log = Join-Path $logs 'on-limit.log'
-function Log($t) { Add-Content -Path $log -Value "$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')  $t" }
+$lib = Join-Path $PSScriptRoot 'failover\failover-lib.ps1'
+. $lib
 
 $raw = [Console]::In.ReadToEnd()
 $hook = $null
 try { $hook = $raw | ConvertFrom-Json } catch { }
-# The hook's matcher already limits this to "rate_limit"; unreadable input is treated as that.
-$err = if ($hook -and $hook.error) { [string]$hook.error } else { 'rate_limit' }
-$cwd = if ($hook -and $hook.cwd) { [string]$hook.cwd } else { '' }
-Log "Claude stopped: error=$err cwd=$cwd"
-if ($err -and $err -ne 'rate_limit') { Log 'Not a usage limit: nothing to do.'; exit 0 }
+$cwd = if ($hook -and $hook.cwd) { [string]$hook.cwd } else { (Get-Location).Path }
+$repo = (& git -C $cwd rev-parse --show-toplevel 2>$null)
+if (-not $repo) { $repo = Split-Path -Parent $PSScriptRoot }
+$repo = $repo -replace '/', '\'
+$State = Initialize-Failover -Repo $repo -TranscriptDir ''
+$err = if ($hook -and $hook.error) { [string]$hook.error } else { 'unknown' }
+$details = if ($hook -and $hook.error_details) { [string]$hook.error_details } else { '' }
+$msg = if ($hook -and $hook.last_assistant_message) { [string]$hook.last_assistant_message } else { '' }
+$transcript = if ($hook -and $hook.transcript_path) { [string]$hook.transcript_path } else { '' }
 
-Set-Location $repo
-
-# Was this project being worked on?
-$inRepo = $cwd -and ([IO.Path]::GetFullPath($cwd).TrimEnd('\') + '\').StartsWith(($repo.TrimEnd('\') + '\'), [StringComparison]::OrdinalIgnoreCase)
-$changed = @(git status --porcelain 2>$null | ForEach-Object { $_.Substring(3).Trim('"') })
-$cutoff = (Get-Date).AddHours(-3)
-$recent = @($changed + 'HANDOFF.md' | Where-Object { $_ -and (Test-Path $_) -and (Get-Item $_).LastWriteTime -gt $cutoff })
-if (-not $inRepo -and $recent.Count -eq 0) { Log 'Anime Auction was not being worked on: nothing to do.'; exit 0 }
-
-# One hand-off per hour.
-$lock = Join-Path $logs '.on-limit.lock'
-if ((Test-Path $lock) -and (Get-Item $lock).LastWriteTime -gt (Get-Date).AddHours(-1)) { Log 'A hand-off already started within the last hour: skipped.'; exit 0 }
-Set-Content $lock (Get-Date)
-
-# Make sure there is something to hand over.
-function Task-For($text, $name) {
-  $m = [regex]::Match($text, '(?ms)^##\s+' + $name + ' task\s*$(.*?)(?=^##\s|\z)')
-  if (-not $m.Success) { return '' }
-  $body = $m.Groups[1].Value.Trim()
-  if ($body -match '^(none|-|n/a)\b') { return '' }
-  return $body
+# Is it the subscription limit? The transcript says so exactly; the message text is the fallback.
+$kind = 'other'; $resetsAt = $null; $detail = "$err $details $msg".Trim()
+if ($transcript -and (Test-Path $transcript)) {
+  foreach ($line in (Get-Content $transcript -Tail 40 -Encoding UTF8)) {
+    if ($line -notmatch '"usage_limit_reached"') { continue }
+    try {
+      $j = $line | ConvertFrom-Json
+      $kind = 'usage_limit'
+      $detail = (@($j.message.content) | ForEach-Object { $_.text }) -join ' '
+      $r = $j.apiErrorParams.rate_limit_info.resetsAt; if (-not $r) { $r = $j.quotaLimits.resetsAt }
+      if ($r) { $resetsAt = (ConvertFrom-Epoch $r).ToString('o') }
+    } catch { }
+  }
 }
-$handoff = if (Test-Path 'HANDOFF.md') { Get-Content 'HANDOFF.md' -Raw } else { "# Hand-off`n`n## Codex task`nnone`n`n## Gemini task`nnone`n" }
-if (-not (Task-For $handoff 'Codex') -and -not (Task-For $handoff 'Gemini')) {
-  if ($changed.Count -eq 0) { Log 'HANDOFF.md has no tasks and nothing is uncommitted: nothing to hand over.'; exit 0 }
-  $last = if ($hook -and $hook.last_assistant_message) { ([string]$hook.last_assistant_message).Trim() } else { '' }
-  if ($last.Length -gt 1500) { $last = $last.Substring(0, 1500) + '...' }
-  $files = ($changed | Select-Object -First 30 | ForEach-Object { "- $_" }) -join "`n"
-  $task = @"
-Finish the work Claude was doing when its usage limit ran out ($(Get-Date -Format 'MMM d yyyy HH:mm')).
-Files changed but not committed:
-$files
-Claude's last message before it stopped:
-> $($last -replace "`n", "`n> ")
-Read the changed files (``git diff``) to see what was being built, complete it in the same style, and make the type-check and tests pass.
-"@
-  $handoff = [regex]::Replace($handoff, '(?ms)^##\s+Codex task\s*$.*?(?=^##\s|\z)', "## Codex task`n$task`n`n")
-  if ($handoff -notmatch '(?m)^##\s+Codex task') { $handoff += "`n## Codex task`n$task`n" }
-  Set-Content -Path 'HANDOFF.md' -Value $handoff -Encoding utf8
-  Log 'HANDOFF.md had no tasks: wrote a Codex task to finish the uncommitted work.'
+if ($kind -ne 'usage_limit' -and $err -eq 'rate_limit' -and "$details $msg" -match "(?i)hit your (session |weekly |usage )?limit|usage limit|usage_limit_reached") { $kind = 'usage_limit' }
+
+if ($kind -ne 'usage_limit') {
+  Write-FailoverLog $State 'stop-failure' "${err}: $detail" 'ignored (not a usage limit)'
+  exit 0
 }
 
-# Run the hand-off in its own window so it keeps going after this hook returns.
-if ($env:ON_LIMIT_DRYRUN) { Log 'Dry run: would start tools/handoff.ps1 now.'; Remove-Item $lock -ErrorAction SilentlyContinue; exit 0 }
-Start-Process powershell -ArgumentList @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', (Join-Path $PSScriptRoot 'handoff.ps1')) -WorkingDirectory $repo -WindowStyle Normal
-Log 'Started tools/handoff.ps1 (Codex, then Gemini) in a new window.'
+[pscustomobject]@{ at = (Get-Date).ToString('o'); kind = 'usage_limit'; detail = $detail; transcript = $transcript; resetsAt = $resetsAt } |
+  ConvertTo-Json | Set-Content -Path $State.Signal -Encoding utf8
+Write-FailoverLog $State 'stop-failure' $detail 'usage limit: signal written'
+
+# The supervisor picks the signal up itself. Without one, start the hand-over now in its own window.
+$sup = $null
+if (Test-Path $State.Lock) { $sup = Get-Process -Id ([int](Get-Content $State.Lock -Raw).Trim()) -ErrorAction SilentlyContinue }
+if ($sup) { exit 0 }
+if ($env:ON_LIMIT_DRYRUN) { Write-FailoverLog $State 'stop-failure' 'dry run' 'would start Codex hand-over'; exit 0 }
+$args2 = @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', "`"$(Join-Path $PSScriptRoot 'failover\supervisor.ps1')`"", '-Repo', "`"$repo`"", '-FailoverOnly', '-Reason', "`"usage limit`"")
+if ($transcript) { $args2 += @('-Transcript', "`"$transcript`"") }
+Start-Process powershell.exe -ArgumentList $args2 -WorkingDirectory $repo -WindowStyle Normal
+Write-FailoverLog $State 'stop-failure' 'no supervisor running' 'started Codex hand-over window'
 exit 0
