@@ -3,9 +3,12 @@
 // silhouettes and screen-wide washes, plus time control for hit-stop and
 // slow motion. Recipes in recipes.ts compose these into attacks.
 import { Application, Container, Graphics, Sprite, Texture, type Ticker } from 'pixi.js';
+import type { AuraStyle } from '../vfx/profiles';
 import { WeatherSystem } from './weather';
 
 export type Pt = { x: number; y: number };
+/** A lasting aura around a transformed fighter, styled like the character (vfx/profiles.ts). */
+export interface AuraSpec { at: Pt; color: string; color2?: string; power: number; style?: AuraStyle }
 
 interface Particle {
   s: Sprite; vx: number; vy: number; life: number; max: number;
@@ -59,7 +62,7 @@ export class FxDirector {
   /** Weather particles, drawn under the attack effects. */
   readonly weather = new WeatherSystem();
   /** Fighters in a transformed / awakened state keep a living aura. */
-  private auras: Array<{ at: Pt; color: string; power: number }> = [];
+  private auras: AuraSpec[] = [];
   private auraPulse = 0;
   private auraCarry = 0;
   /** Particle budget for this device (1 = full). */
@@ -110,7 +113,7 @@ export class FxDirector {
   resize(w: number, h: number) { this.w = w; this.h = h; this.weather.resize(w, h); }
 
   /** Living auras around transformed fighters (set every event; empty to clear). */
-  setAuras(list: Array<{ at: Pt; color: string; power: number }>) { this.auras = list; }
+  setAuras(list: AuraSpec[]) { this.auras = list; }
 
   clear() {
     for (const p of this.particles) this.release(p.s);
@@ -149,7 +152,14 @@ export class FxDirector {
         this.auraCarry -= 1;
         for (const a of this.auras) {
           if (Math.random() > a.power) continue;
-          this.spark({ x: a.at.x + rand(-70, 70), y: a.at.y + rand(0, 110) }, a.color, { vy: -rand(2.5, 5), vx: rand(-0.5, 0.5), life: rand(700, 1100), size: rand(26, 44), endSize: 4, alpha: 0.5, grav: -0.04, drag: 0.98 });
+          // The aura's look follows the character's style (flames rise, water drips, clouds drift, lightning crackles).
+          const c2 = a.color2 ?? '#ffffff';
+          if (a.style === 'flame') this.spark({ x: a.at.x + rand(-55, 55), y: a.at.y + rand(60, 120) }, Math.random() < 0.3 ? c2 : a.color, { vy: -rand(4, 7), vx: rand(-0.6, 0.6), life: rand(500, 800), size: rand(22, 36), endSize: 3, alpha: 0.65, grav: -0.06, drag: 0.97 });
+          else if (a.style === 'water') this.spark({ x: a.at.x + rand(-60, 60), y: a.at.y + rand(-10, 90) }, a.color, { vy: rand(-2, 1), vx: rand(-1.5, 1.5), life: rand(700, 1000), size: rand(7, 12), grav: 0.08, drag: 0.98, hard: true });
+          else if (a.style === 'cloud') this.spark({ x: a.at.x + rand(-80, 80), y: a.at.y + rand(0, 110) }, '#ffffff', { vy: -rand(0.8, 2), vx: rand(-0.6, 0.6), life: rand(1000, 1400), size: rand(30, 50), endSize: 60, alpha: 0.28, grav: -0.01, drag: 0.99 });
+          else this.spark({ x: a.at.x + rand(-70, 70), y: a.at.y + rand(0, 110) }, (a.style === 'shadow' || a.style === 'void') && Math.random() < 0.5 ? c2 : a.color, { vy: -rand(2.5, 5), vx: rand(-0.5, 0.5), life: rand(700, 1100), size: rand(26, 44), endSize: 4, alpha: 0.5, grav: -0.04, drag: 0.98 });
+          if (a.style === 'electric' && Math.random() < 0.06) this.bolt({ x: a.at.x + rand(-40, 40), y: a.at.y + rand(-20, 60) }, { x: a.at.x + rand(-110, 110), y: a.at.y + rand(-60, 120) }, Math.random() < 0.5 ? a.color : c2, { dur: 160, width: 2.5, branches: 1 });
+          if (a.style === 'blade' && Math.random() < 0.03) this.slash(a.at, c2, { angle: rand(0, 360), radius: 90, width: 3 });
           if (Math.random() < 0.5) this.spark({ x: a.at.x + rand(-50, 50), y: a.at.y + rand(20, 90) }, '#ffffff', { vy: -rand(3, 6), vx: rand(-0.8, 0.8), life: rand(400, 700), size: rand(6, 12), grav: -0.03, drag: 0.98, hard: true });
         }
       }

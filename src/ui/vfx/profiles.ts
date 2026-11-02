@@ -70,8 +70,19 @@ export const PROFILES: Record<string, VfxProfile> = {
   rimuru: P({ primary: '#38bdf8', secondary: '#6366f1', aura: 'water', smoke: { color: '#0b1a3a', density: 0.5, glow: true }, motes: { kind: 'droplet', rate: 14, color: '#bae6fd' }, lightning: { color: '#818cf8', rate: 0.4 }, water: true, rings: 0.25 }),
 };
 
+/** Aura style for the rest of the built-ins (their colours come from the form). */
+const STYLE: Record<string, AuraStyle> = {
+  ace: 'flame', endeavor: 'flame', natsu: 'flame', roy: 'flame', todoroki: 'flame', bakugo: 'flame', escanor: 'flame', akaza: 'ki', gilgamesh: 'void',
+  kakashi: 'electric', minato: 'electric', killua: 'electric', yuno: 'cloud', gaara: 'cloud', lee: 'ki', pain: 'void', meruem: 'void',
+  toshiro: 'water', giyu: 'water', rukia: 'water', byakuya: 'blade', saber: 'blade', kirito: 'blade', mikasa: 'blade', sanji: 'flame',
+  law: 'void', shanks: 'ki', whitebeard: 'ki', broly: 'ki', gohan: 'ki', piccolo: 'ki', yuji: 'ki', megumi: 'shadow', yuta: 'void',
+  todo: 'ki', nanami: 'blade', nobara: 'ki', shinobu: 'blade', inosuke: 'blade', shigaraki: 'shadow', kurapika: 'blade', edward: 'electric',
+  deku: 'electric', allmight: 'ki', denji: 'blade', power: 'shadow', kaneki: 'shadow', asta: 'shadow', yor: 'blade', mob: 'void',
+  jotaro: 'ki', dio: 'shadow', frieren: 'void', rimuru: 'water',
+};
+
 /** The profile for a world key or character id; others get one built from their accent colour. */
 export function profileFor(keyOrId: string, accent = '#a78bfa', tone = '#ffffff'): VfxProfile {
-  const key = keyOrId.startsWith('legend:') ? keyOrId.slice(7) : keyOrId;
-  return PROFILES[key] ?? P({ primary: accent, secondary: tone, aura: 'ki', smoke: { color: '#14121c', density: 0.5, glow: false }, motes: { kind: 'mote', rate: 10, color: accent }, rings: 0.2 });
+  const key = keyOrId.startsWith('legend:') ? keyOrId.slice(7).split('#')[0] : keyOrId;
+  return PROFILES[key] ?? P({ primary: accent, secondary: tone, aura: STYLE[key] ?? 'ki', smoke: { color: '#14121c', density: 0.5, glow: false }, motes: { kind: 'mote', rate: 10, color: accent }, rings: 0.2 });
 }

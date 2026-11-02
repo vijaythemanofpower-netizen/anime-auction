@@ -2,7 +2,7 @@
 // keeps transformed fighters' auras alive, and draws the arena's own hazards
 // (lightning from the sky, lava bombs, a riptide, a blizzard gust), rain
 // splashing up from impacts, and debris when a prop is hit.
-import type { FxDirector, Pt } from '../fx/engine';
+import type { FxDirector, Pt, AuraSpec } from '../fx/engine';
 import type { Frame } from './director';
 import type { GroundKind } from './climate';
 
@@ -17,7 +17,7 @@ export interface BridgeCtx {
   propAt: (id: string) => Pt | undefined;
   actor?: string;
   target?: string;
-  auras: Array<{ at: Pt; color: string; power: number }>;
+  auras: AuraSpec[];
   reduced: boolean;
 }
 

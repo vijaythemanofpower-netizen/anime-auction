@@ -4,6 +4,7 @@ import type { BattleEvent, VfxKind } from '../../engine/types';
 import type { FxDirector, Pt } from './engine';
 import { ABILITIES } from '../../engine/data/abilities';
 import { chargeMotif, motifsOf, strikeMotif } from './motifs';
+import { profileFor, type AuraStyle } from '../vfx/profiles';
 
 export interface Staging {
   /** Black-and-white inverted flash, the classic anime impact frame. */
@@ -55,6 +56,50 @@ function aura(fx: FxDirector, at: Pt, c: string, c2: string, scale = 1) {
   fx.ring({ x: at.x, y: at.y + 90 }, c, { radius: 110 * scale, width: 10 });
   for (let i = 0; i < 50 * scale; i++) fx.at(i * 18, () => fx.spark({ x: at.x + (Math.random() - 0.5) * 120 * scale, y: at.y + 90 }, i % 3 ? c : c2, { vy: -(4 + Math.random() * 5), vx: (Math.random() - 0.5) * 1.5, life: 700, size: 16, grav: -0.02, drag: 0.98 }));
   fx.orb(at, c, 70 * scale, 1000, { alpha: 0.5 });
+}
+
+/** A transformation looks like the character: a ki explosion, a flame pillar, lightning, a void, water, shadow, blades or a white cloud. */
+export function formBurst(fx: FxDirector, at: Pt, style: AuraStyle, c: string, c2: string, reduced: boolean) {
+  const foot = { x: at.x, y: at.y + 90 };
+  aura(fx, at, c, c2, reduced ? 1 : 1.5);
+  if (reduced) return;
+  const r = (a: number, b: number) => a + Math.random() * (b - a);
+  switch (style) {
+    case 'flame':
+      for (let i = 0; i < 70; i++) fx.at(i * 14, () => fx.spark({ x: at.x + r(-60, 60), y: foot.y }, i % 4 ? c : c2, { vy: -r(6, 11), vx: r(-1, 1), life: r(600, 900), size: r(22, 40), endSize: 4, alpha: 0.75, grav: -0.05, drag: 0.97 }));
+      fx.flames(foot, { x: at.x, y: at.y - 160 }, c, 900, c2);
+      break;
+    case 'electric':
+      for (let i = 0; i < 9; i++) fx.at(i * 110, () => { const a = r(0, Math.PI * 2); fx.bolt({ x: at.x + Math.cos(a) * 30, y: at.y + Math.sin(a) * 30 }, { x: at.x + Math.cos(a) * r(120, 200), y: at.y + Math.sin(a) * r(120, 200) }, i % 2 ? c : c2, { dur: 260, width: 4, branches: 3 }); });
+      fx.burst(at, c2, 40, 14, { size: 8 });
+      break;
+    case 'void':
+      fx.vortex(at, c, c2, 90, 1100);
+      fx.charge(at, c2, 900, 220, 60);
+      fx.wash(c, 0.25, 900, { radial: at });
+      break;
+    case 'shadow':
+      fx.wash('#05010a', 0.45, 900, { radial: at, hold: 250 });
+      fx.vortex(at, c, '#000000', 80, 1000);
+      fx.burst(at, c, 50, 12, { size: 18, color2: c2 });
+      break;
+    case 'water':
+      for (let i = 0; i < 3; i++) fx.ring(foot, i % 2 ? c2 : c, { radius: 120 + i * 60, width: 8, delay: i * 180 });
+      for (let i = 0; i < 50; i++) fx.at(i * 12, () => fx.spark({ x: at.x + r(-40, 40), y: at.y + r(-20, 60) }, i % 3 ? c : '#e0f2fe', { vy: -r(5, 9), vx: r(-4, 4), life: r(600, 900), size: r(8, 14), grav: 0.25, drag: 0.98, hard: true }));
+      break;
+    case 'blade':
+      for (let i = 0; i < 6; i++) fx.slash(at, i % 2 ? c : c2, { angle: i * 60 + r(-15, 15), radius: 150, width: 7, delay: i * 70 });
+      fx.burst(at, '#ffffff', 24, 12, { size: 7 });
+      break;
+    case 'cloud':
+      fx.orb(at, '#ffffff', 100, 1100, { alpha: 0.35, grow: 1.5 });
+      for (let i = 0; i < 40; i++) fx.at(i * 20, () => fx.spark({ x: at.x + r(-90, 90), y: at.y + r(-60, 100) }, i % 3 ? '#ffffff' : c, { vy: -r(1, 3), vx: r(-2, 2), life: r(900, 1300), size: r(26, 46), endSize: 60, alpha: 0.25, grav: -0.01, drag: 0.98 }));
+      break;
+    default:
+      fx.charge(at, c, 700, 200, 50);
+      fx.at(650, () => { fx.ring(at, c, { radius: 260, width: 16 }); fx.ring(at, c2, { radius: 180, width: 8, delay: 90 }); fx.burst(at, c, 60, 15, { size: 14, color2: c2 }); });
+  }
+  fx.speedLines(at, c, 1200);
 }
 
 // ------------------------------------------------------- signature moves
@@ -189,7 +234,7 @@ export function playFx(fx: FxDirector, ctx: PlayCtx): boolean {
     case 'knockdown': if (to) { fx.explode(to, '#f97316', 1.1); if (!reduced) { fx.hitStop(180); stage.impactFrame(); } } return true;
     case 'injury': if (to) fx.burst(to, '#ef4444', 14, 6, { size: 10, grav: 0.2 }); return true;
     case 'defeat': if (to) { fx.ring(to, '#ef4444', { radius: 260, width: 20, dur: 900 }); fx.burst(to, '#ffffff', 60, 15, { size: 16 }); if (!reduced) { fx.slowMo(1300, 0.3); fx.speedLines(to, '#ffffff', 1100); stage.impactFrame(); } } return true;
-    case 'transform': if (from) { const c = String(e.context?.color ?? '#f5c451'); aura(fx, from, c, '#ffffff', 1.8); if (!reduced) fx.speedLines(from, c, 1200); } return true;
+    case 'transform': if (from) { const c = String(e.context?.color ?? '#f5c451'); const pr = profileFor(e.actor ?? '', c); formBurst(fx, from, pr.aura === 'none' ? 'ki' : pr.aura, c, pr.secondary, reduced); } return true;
     case 'awakening': if (from) { aura(fx, from, '#f5c451', '#fff7d6', 1.6); if (!reduced) fx.speedLines(from, '#fde68a', 1000); } return true;
     case 'heal': if (to) KIND.heal(fx, to, to, c, c2, () => undefined); return true;
     case 'status': case 'status_tick': {

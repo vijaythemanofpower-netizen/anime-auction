@@ -1,6 +1,7 @@
 // Visual battle stage. Everything shown is driven by the verified event at
 // the current playback position: effects never invent hits or damage.
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react';
+import { profileFor } from '../vfx/profiles';
 import type { BattleEvent, BattleInjury, BattleRecord, FighterSnapshot, Player, PublicCharacter, VfxKind } from '../../engine/types';
 import { ABILITIES, getAbility, vfxOf } from '../../engine/data/abilities';
 import { getEnvironment } from '../../engine/data/world';
@@ -231,7 +232,7 @@ export function ArenaStage({ record, cur, done, fighters, players, characters, s
 
   // The GPU layer's share of the battlefield: weather, auras, hazards, splashes, debris.
   const auras = [...fighters.values()].filter((f) => !f.down && (f.stage || f.awakened) && pos[f.snap.charId])
-    .map((f) => ({ at: { x: pos[f.snap.charId].x, y: pos[f.snap.charId].y }, color: f.formColor || '#f5c451', power: Math.min(1, 0.5 + (f.stage ?? 0) * 0.2 + (f.awakened ? 0.15 : 0)) }));
+    .map((f) => { const pr = profileFor(f.snap.charId, f.formColor || '#f5c451'); return { at: { x: pos[f.snap.charId].x, y: pos[f.snap.charId].y }, color: f.formColor || pr.primary, color2: pr.secondary, style: pr.aura === 'none' ? 'ki' as const : pr.aura, power: Math.min(1, 0.5 + (f.stage ?? 0) * 0.2 + (f.awakened ? 0.15 : 0)) }; });
   const field: BridgeCtx | null = frame ? {
     frame, ground: script.climate.ground, pos, actor: live?.actor, target: live?.target, auras, reduced: !!reduced,
     propAt: (id) => {
