@@ -137,6 +137,66 @@ export const WORLDS: World[] = [
       { prompt: `long hair, older, dark coat, colossal titans marching behind him, smoke, apocalyptic sky, ${CINE}`, title: 'Keep moving [forward.]', line: 'Bid, build, battle. No turning back.' },
     ],
   },
+  {
+    key: 'vegeta', house: 'SAIYAN ROYAL GUARD', name: 'Vegeta', series: 'Dragon Ball', accent: '#3d8bff', tone: '#ffd400', ink: '#03050d', effect: 'sparks',
+    quote: 'I am the prince of all Saiyans. Remember that when you bid.',
+    type: 'block', frame: 'hud', kana: 'ベジータ',
+    scenes: [
+      { prompt: `blue saiyan armor, arms crossed, smirk, widow's peak black hair, rocky cliff, ${CINE}`, title: 'The [Prince.]', line: 'Pride is a power source.' },
+      { prompt: `super saiyan blue, blue spiky hair, blue aura, clenched fist, ${CINE}`, title: 'Super Saiyan [Blue.]', line: 'Always one step behind. Never for long.' },
+      { prompt: `final flash, both hands forward, giant yellow energy beam, golden hair, ${CINE}`, title: 'Final [Flash.]', line: 'Bring everything. Hold nothing back.' },
+    ],
+  },
+  {
+    key: 'sasuke', house: 'UCHIHA / ARCHIVE', name: 'Sasuke Uchiha', series: 'Naruto', accent: '#9b5cff', tone: '#ff2d55', ink: '#05030b', effect: 'lightning',
+    quote: 'I have a goal, and I will reach it.',
+    type: 'serif', frame: 'clean', kana: 'サスケ',
+    scenes: [
+      { prompt: `black hair, white high collar shirt, sharingan red eyes, cold stare, rainy night, ${CINE}`, title: 'The last [Uchiha.]', line: 'He walks alone, on purpose.' },
+      { prompt: `chidori, blue lightning in hand, sharingan, lightning sparks, ${CINE}`, title: '[Chidori.]', line: 'A thousand birds, one strike.' },
+      { prompt: `rinnegan left eye, purple susanoo behind him, black cloak, ${CINE}`, title: 'Eyes of [the gods.]', line: 'He sees the auction three moves ahead.' },
+    ],
+  },
+  {
+    key: 'zoro', house: 'THREE SWORD STYLE', name: 'Roronoa Zoro', series: 'One Piece', accent: '#3ddc84', tone: '#e5e7eb', ink: '#030805', effect: 'dust',
+    quote: 'Nothing happened.',
+    type: 'condensed', frame: 'ink', kana: 'ゾロ',
+    scenes: [
+      { prompt: `green hair, three swords at hip, green haramaki, scar over left eye, ${CINE}`, title: 'Three [swords.]', line: 'Lost again. Still going to win.' },
+      { prompt: `santoryu stance, sword in mouth, two swords crossed, slashing wind, ${CINE}`, title: 'Santo[ryu.]', line: 'Two hands, one mouth, three blades.' },
+      { prompt: `asura, dark aura, glowing eye, nine swords illusion, ${CINE}`, title: '[Asura.]', line: 'A demon of a swordsman for your squad.' },
+    ],
+  },
+  {
+    key: 'rengoku', house: 'FLAME HASHIRA', name: 'Kyojuro Rengoku', series: 'Demon Slayer', accent: '#ff7a1a', tone: '#ffd23f', ink: '#0d0502', effect: 'embers',
+    quote: 'Set your heart ablaze.',
+    type: 'block', frame: 'ink', kana: '煉獄',
+    scenes: [
+      { prompt: `yellow and red flame hair, white haori with flame pattern, big confident smile, ${CINE}`, title: 'Flame [Hashira.]', line: 'Loud, kind, impossible to stop.' },
+      { prompt: `flame breathing, katana wreathed in fire, flames everywhere, ${CINE}`, title: 'Flame [Breathing.]', line: 'Every slash leaves the air burning.' },
+      { prompt: `ninth form rengoku, giant fire dragon, sunrise, ${CINE}`, title: 'Set your heart [ablaze.]', line: 'Protect what matters. Then win.' },
+    ],
+  },
+  {
+    key: 'killua', house: 'ZOLDYCK ESTATE', name: 'Killua Zoldyck', series: 'Hunter x Hunter', accent: '#7fd8ff', tone: '#c9b6ff', ink: '#03070c', effect: 'lightning',
+    quote: "I will protect my friend. That is all.",
+    type: 'condensed', frame: 'clean', kana: 'キルア',
+    scenes: [
+      { prompt: `white spiky hair, blue eyes, purple shirt, skateboard, smirk, ${CINE}`, title: 'Ex-[assassin.]', line: 'Born into the family business. Quit.' },
+      { prompt: `godspeed, white hair, blue lightning all over body, ${CINE}`, title: 'God[speed.]', line: 'He moves before you think.' },
+      { prompt: `assassin claws, cold eyes, lightning, dark alley, ${CINE}`, title: 'Rhythm [Echo.]', line: 'Fast fighters win auctions too.' },
+    ],
+  },
+  {
+    key: 'saitama', house: 'HERO ASSOC. / CLASS B', name: 'Saitama', series: 'One Punch Man', accent: '#ffd400', tone: '#ff3b3b', ink: '#0b0904', effect: 'dust',
+    quote: 'OK.',
+    type: 'block', frame: 'hud', kana: 'サイタマ',
+    scenes: [
+      { prompt: `bald, yellow suit, white cape, red gloves, bored expression, city, ${CINE}`, title: 'Hero for [fun.]', line: 'One punch. Every time.' },
+      { prompt: `serious face, bald, yellow suit, cape flowing, intense shadows, ${CINE}`, title: 'Serious [mode.]', line: 'The rare times he tries.' },
+      { prompt: `serious punch, fist forward, shockwave splitting clouds, ${CINE}`, title: 'Serious [Punch.]', line: 'Bid on him and the tournament is over.' },
+    ],
+  },
 ];
 
 /** A world at random, different from the last one this browser saw when possible. */
@@ -147,4 +207,11 @@ export function pickWorld(): World {
   const w = pool[Math.floor(Math.random() * pool.length)] ?? WORLDS[0];
   try { localStorage.setItem('aa-home-world', w.key); } catch { /* storage unavailable */ }
   return w;
+}
+
+/** n different worlds at random, the first one different from last visit's opener. */
+export function pickWorlds(n: number): World[] {
+  const first = pickWorld();
+  const rest = WORLDS.filter((w) => w.key !== first.key).map((w) => [Math.random(), w] as const).sort((a, b) => a[0] - b[0]).map(([, w]) => w);
+  return [first, ...rest].slice(0, n);
 }

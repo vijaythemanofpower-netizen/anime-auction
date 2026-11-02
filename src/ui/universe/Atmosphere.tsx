@@ -66,6 +66,9 @@ export function Atmosphere() {
   const canvas = useRef<HTMLCanvasElement>(null);
   const moodRef = useRef<Mood>(moodFor(screen, phase));
   moodRef.current = moodFor(screen, phase);
+  // The home page's full-screen panels cover the canvas completely, so it rests there.
+  const coveredRef = useRef(screen === 'home');
+  coveredRef.current = screen === 'home';
 
   useEffect(() => {
     const c = canvas.current;
@@ -147,7 +150,7 @@ export function Atmosphere() {
     if (!ok) { draw(16); return () => window.removeEventListener('resize', resize); }
     const loop = (now: number) => {
       const dt = Math.min(50, now - last); last = now;
-      if (!document.hidden) draw(dt);
+      if (!document.hidden && !coveredRef.current) draw(dt);
       raf = requestAnimationFrame(loop);
     };
     raf = requestAnimationFrame(loop);

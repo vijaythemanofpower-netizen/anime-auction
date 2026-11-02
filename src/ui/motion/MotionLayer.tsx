@@ -82,7 +82,7 @@ export function MotionLayer() {
       for (const en of entries) if (en.isIntersecting) { en.target.classList.add('rv-in'); io.unobserve(en.target); }
     }, { rootMargin: '0px 0px -8% 0px', threshold: 0.08 });
     const mark = (scope: ParentNode) => {
-      const fresh = [...scope.querySelectorAll<HTMLElement>(REVEAL)].filter((el) => !el.classList.contains('rv') && !el.closest('.arena2, .comic-page, .modal, .toast'));
+      const fresh = [...scope.querySelectorAll<HTMLElement>(REVEAL)].filter((el) => !el.classList.contains('rv') && !el.closest('.arena2, .comic-page, .modal, .toast, .home-world'));
       fresh.forEach((el, i) => {
         el.classList.add('rv');
         // Siblings that enter together cascade, like panels read left to right.

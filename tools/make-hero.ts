@@ -14,6 +14,8 @@ import { WORLDS } from '../src/ui/home/worlds';
 const COMFY = process.env.COMFY_URL ?? 'http://127.0.0.1:8188';
 const OUT = path.resolve('public/hero');
 const W = 1344, H = 768;
+/** Final size after the hires pass (about 2.5K wide). */
+const HW = 2560, HH = 1464;
 
 const args = process.argv.slice(2);
 const redo = args.find((a) => a.startsWith('--redo='))?.slice(7);
@@ -24,19 +26,31 @@ if (!keys.length) { console.log('Usage: npx vite-node tools/make-hero.ts <key...
 /** Look details the model forgets (same idea as the sprite tool). */
 const HINT: Record<string, string> = {
   sukuna: 'pink hair, black facial markings, extra eyes under eyes', levi: 'short black hair, undercut', eren: 'brown hair, green eyes, male',
-  jinwoo: 'short black hair, male, korean man', gojo: 'white spiky hair, tall man', tanjiro: 'burgundy hair, scar on forehead, hanafuda earrings',
+  jinwoo: 'short black hair, male, korean man', vegeta: 'black spiky hair, widows peak', zoro: 'green short hair, male', saitama: 'bald head, round face', rengoku: 'two-tone yellow and red hair, red eyes', killua: 'white spiky hair, boy', gojo: 'white spiky hair, tall man', tanjiro: 'burgundy hair, scar on forehead, hanafuda earrings',
 };
 
-function graph(prompt: string, seed: number, prefix: string) {
+/** Details the extra-detail pass sometimes adds that don't belong to the character. */
+const AVOID: Record<string, string> = {
+  goku: 'scar, facial scar, cross scar', naruto: 'scar', gojo: 'scar', tanjiro: 'extra scars', sasuke: 'akatsuki, red clouds', killua: 'scar',
+  vegeta: 'scar, mustache', saitama: 'hair', rengoku: 'scar', jinwoo: 'blond hair', eren: 'scar',
+};
+
+function graph(prompt: string, seed: number, prefix: string, avoid = '') {
   return {
     ckpt: { class_type: 'CheckpointLoaderSimple', inputs: { ckpt_name: 'NoobAI-XL-v1.1.safetensors' } },
     lora: { class_type: 'LoraLoader', inputs: { lora_name: 'dmd2_sdxl_4step_lora_fp16.safetensors', strength_model: 1, strength_clip: 1, model: ['ckpt', 0], clip: ['ckpt', 1] } },
     pos: { class_type: 'CLIPTextEncode', inputs: { text: prompt, clip: ['lora', 1] } },
-    neg: { class_type: 'CLIPTextEncode', inputs: { text: `${NEGATIVE}, multiple people, duplicate, clone, frame, border, scanlines, (text, logo, title, watermark, letters, signature, japanese text:1.5), (white border, frame:1.4), extra arms, deformed hands`, clip: ['lora', 1] } },
+    neg: { class_type: 'CLIPTextEncode', inputs: { text: `${NEGATIVE}, multiple people, duplicate, clone, frame, border, scanlines, (text, logo, title, watermark, letters, signature, japanese text:1.5), (white border, frame:1.4), extra arms, deformed hands${avoid ? `, (${avoid}:1.3)` : ''}`, clip: ['lora', 1] } },
     latent: { class_type: 'EmptyLatentImage', inputs: { width: W, height: H, batch_size: 1 } },
     sample: { class_type: 'KSampler', inputs: { seed, steps: 8, cfg: 1, sampler_name: 'lcm', scheduler: 'sgm_uniform', denoise: 1, model: ['lora', 0], positive: ['pos', 0], negative: ['neg', 0], latent_image: ['latent', 0] } },
-    decode: { class_type: 'VAEDecode', inputs: { samples: ['sample', 0], vae: ['ckpt', 2] } },
-    save: { class_type: 'SaveAnimatedWEBP', inputs: { images: ['decode', 0], filename_prefix: prefix, fps: 1, lossless: false, quality: 84, method: 'default' } },
+    // Hires fix: enlarge the picture smoothly and draw again over it, so the 2.5K image gains
+    // real detail (line work, hair, effects) instead of being stretched.
+    base: { class_type: 'VAEDecode', inputs: { samples: ['sample', 0], vae: ['ckpt', 2] } },
+    up: { class_type: 'ImageScale', inputs: { image: ['base', 0], upscale_method: 'lanczos', width: HW, height: HH, crop: 'disabled' } },
+    enc: { class_type: 'VAEEncodeTiled', inputs: { pixels: ['up', 0], vae: ['ckpt', 2], tile_size: 768, overlap: 64, temporal_size: 64, temporal_overlap: 8 } },
+    refine: { class_type: 'KSampler', inputs: { seed, steps: 8, cfg: 1, sampler_name: 'lcm', scheduler: 'sgm_uniform', denoise: 0.5, model: ['lora', 0], positive: ['pos', 0], negative: ['neg', 0], latent_image: ['enc', 0] } },
+    decode: { class_type: 'VAEDecodeTiled', inputs: { samples: ['refine', 0], vae: ['ckpt', 2], tile_size: 768, overlap: 64, temporal_size: 64, temporal_overlap: 8 } },
+    save: { class_type: 'SaveAnimatedWEBP', inputs: { images: ['decode', 0], filename_prefix: prefix, fps: 1, lossless: false, quality: 90, method: 'default' } },
   };
 }
 
@@ -69,11 +83,11 @@ for (const key of keys) {
   for (let i = 0; i < world.scenes.length; i++) {
     const n = i + 1;
     const file = path.join(dir, `${n}.webp`);
-    const forced = redo === `${key}:${n}`;
+    const forced = redo === `${key}:${n}` || args.includes('--force');
     if (fs.existsSync(file) && !forced) continue;
     const prompt = `${who}, ${HINT[key] ? `${HINT[key]}, ` : ''}solo, ${world.scenes[i].prompt}, best quality, newest, very aesthetic`;
     const seed = Math.abs([...`${key}:hero:${n}`].reduce((h, ch) => (h * 31 + ch.charCodeAt(0)) | 0, 17)) + bump * 7919;
-    const img = await run(graph(prompt, seed, `aa_hero/${key}_${n}`));
+    const img = await run(graph(prompt, seed, `aa_hero/${key}_${n}`, AVOID[key]));
     const bytes = Buffer.from(await (await fetch(`${COMFY}/view?filename=${encodeURIComponent(img.filename)}&subfolder=${encodeURIComponent(img.subfolder)}&type=${img.type}`)).arrayBuffer());
     fs.writeFileSync(file, bytes);
     console.log(`${world.name} scene ${n}: ${(bytes.length / 1024).toFixed(0)} KB`);

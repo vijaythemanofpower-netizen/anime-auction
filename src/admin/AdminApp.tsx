@@ -2,6 +2,9 @@
 // admins). Every action calls an admin_* database function, which checks on
 // the server that the caller is an admin; this page only shows the results.
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
+import type { CSSProperties } from 'react';
+import { WORLDS } from '../ui/home/worlds';
+import { sceneSrcSet, sceneUrl } from '../ui/home/HomeStory';
 import { supabase } from '../online/client';
 import { initAuth, sendSignInLink, signOut, useAuth } from '../online/auth';
 
@@ -58,6 +61,14 @@ export function AdminApp() {
   }, [a.userId]);
 
   return (
+    <>
+    {/* The portal's banner: the same cinematic art as the game, with a control-room label. */}
+    <div className="page-banner" aria-hidden="true" style={{ '--acc': PORTAL_WORLD.accent, '--ink2': PORTAL_WORLD.ink } as CSSProperties}>
+      <img src={sceneUrl(PORTAL_WORLD, 1)} srcSet={sceneSrcSet(PORTAL_WORLD, 1)} sizes="100vw" alt="" decoding="async" />
+      <div className="pb-scrim" />
+      <div className="pb-hud"><span><i />HOST PORTAL / CONTROL ROOM</span><span>{PORTAL_WORLD.house}</span></div>
+      <div className="pb-kana">管理</div>
+    </div>
     <div className="app">
       <header className="topbar">
         <div className="brand"><span className="brand-name">Anime <em>Auction</em></span> <span className="tag" style={{ marginLeft: 8 }}>HOST PORTAL</span></div>
@@ -67,7 +78,7 @@ export function AdminApp() {
           {a.userId && <button className="btn sm ghost" onClick={() => void signOut()}>Sign out</button>}
         </nav>
       </header>
-      <main className="main">
+      <main className="main bannered">
         {!a.ready ? <div className="empty"><div className="spinner" /></div>
           : !a.userId ? <SignIn />
             : isAdmin === null ? <div className="empty"><div className="spinner" /></div>
@@ -76,8 +87,11 @@ export function AdminApp() {
                   : <NotAdmin id={a.userId} email={a.email} />}
       </main>
     </div>
+    </>
   );
 }
+
+const PORTAL_WORLD = WORLDS.find((w) => w.key === 'levi') ?? WORLDS[0];
 
 function Gate({ title, children }: { title: string; children: ReactNode }) {
   return (

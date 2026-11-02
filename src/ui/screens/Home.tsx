@@ -3,8 +3,8 @@ import { store, useApp } from '../../store/store';
 import { ONLINE_AVAILABLE } from '../../online/client';
 import { signInAsGuest, useAuth } from '../../online/auth';
 import { openAccountDialog } from '../components/AccountMenu';
-import { HomeStory, sceneUrl } from '../home/HomeStory';
-import { WORLDS, pickWorld, type World } from '../home/worlds';
+import { Panel, sceneUrl, usePanelMotion, type PanelSpec } from '../home/HomeStory';
+import { pickWorlds, type World } from '../home/worlds';
 import { useMotionOk } from '../motion/useMotionOk';
 
 /** Sign in right from the start, so your record follows you; or a welcome back with your record. */
@@ -130,7 +130,7 @@ const MODES: Array<[title: string, text: string, wide?: boolean]> = [
 ];
 
 /** The game's actions, shown on the story's last scene. */
-function Actions() {
+function Actions({ account = true }: { account?: boolean }) {
   const game = useApp((s) => s.game);
   const saves = useApp((s) => s.saves);
   const resumable = saves.filter((s) => !s.archived && s.phase !== 'champion');
@@ -142,7 +142,7 @@ function Actions() {
         {ONLINE_AVAILABLE && <button className="btn lg" onClick={() => store.go('online')}>🌐 Play Online with Friends</button>}
         {saves.length > 0 && <button className="btn" onClick={() => store.go('saves')}>⟲ Continue Saved Game {resumable.length ? <span className="tag">{resumable.length}</span> : null}</button>}
       </div>
-      <AccountCard />
+      {account && <AccountCard />}
       <div className="home-links">
         <button className="btn sm ghost" onClick={() => store.go('howto')}>? How to Play</button>
         <button className="btn sm ghost" onClick={() => store.go('explorer')}>◎ Characters</button>
@@ -152,28 +152,34 @@ function Actions() {
   );
 }
 
-/** One character's world, at random: their scenes as you scroll, then the game in their colours. */
+/** Six panels, six different characters: the pitch, how a game goes, the modes, and the way in. */
 export function Home() {
   const motionOk = useMotionOk();
-  const [world, setWorld] = useState<World>(() => pickWorld());
-  // Load this world's scenes up front so the crossfades never show a blank frame.
-  useEffect(() => { for (let n = 1; n <= 3; n++) { const img = new Image(); img.src = sceneUrl(world, n); } }, [world]);
-  // The top bar and buttons take this world's accent while the home page is open.
+  const [worlds, setWorlds] = useState<World[]>(() => pickWorlds(6));
+  const lead = worlds[0];
+  const rootRef = useRef<HTMLDivElement>(null);
+  usePanelMotion(rootRef, motionOk, worlds.map((w) => w.key).join());
+  // Fetch and decode the first scene before anything else, and the next panel's soon after,
+  // so no panel ever arrives blank or sharpens in front of you.
+  useEffect(() => {
+    const px = window.innerWidth * (window.devicePixelRatio || 1);
+    const size = px <= 1280 ? 1280 : px <= 1920 ? 1920 : 2560;
+    worlds.forEach((w, i) => {
+      const img = new Image();
+      img.decoding = 'async';
+      img.src = sceneUrl(w, SCENES[i], size);
+      void img.decode().catch(() => undefined);
+    });
+  }, [worlds]);
+  // The top bar and buttons take the opening world's accent while the home page is open.
   useEffect(() => {
     const root = document.documentElement.style;
-    const vars: Array<[string, string]> = [['--violet', world.accent], ['--violet-2', world.tone], ['--crimson', world.accent], ['--crimson-2', world.tone]];
+    const vars: Array<[string, string]> = [['--violet', lead.accent], ['--violet-2', lead.tone], ['--crimson', lead.accent], ['--crimson-2', lead.tone]];
     for (const [k, v] of vars) root.setProperty(k, v);
-    document.documentElement.dataset.world = world.key;
+    document.documentElement.dataset.world = lead.key;
     return () => { for (const [k] of vars) root.removeProperty(k); delete document.documentElement.dataset.world; };
-  }, [world]);
-  const another = () => {
-    const pool = WORLDS.filter((w) => w.key !== world.key);
-    const next = pool[Math.floor(Math.random() * pool.length)];
-    try { localStorage.setItem('aa-home-world', next.key); } catch { /* storage unavailable */ }
-    setWorld(next);
-    window.scrollTo({ top: 0, behavior: motionOk ? 'smooth' : 'auto' });
-  };
-  // The story sits right under the top bar, whatever its height on this screen.
+  }, [lead]);
+  // The panels sit right under the top bar, whatever its height on this screen.
   const [tb, setTb] = useState(62);
   useEffect(() => {
     const bar = document.querySelector<HTMLElement>('.topbar');
@@ -184,38 +190,47 @@ export function Home() {
     ro.observe(bar);
     return () => ro.disconnect();
   }, []);
-  const vars = { '--acc': world.accent, '--tone': world.tone, '--ink2': world.ink, '--tb': `${tb}px` } as CSSProperties;
+  const reshuffle = () => {
+    setWorlds(pickWorlds(6));
+    window.scrollTo({ top: 0, behavior: 'auto' });
+  };
+
+  const panels: PanelSpec[] = [
+    { world: worlds[0], scene: 3, layout: 'hero', label: 'ANIME AUCTION', title: 'Bid on [legends.]', body: <p>Anime fighters go under the hammer with their true power hidden. Spend <b className="coins">10,000</b> coins wisely, build a team, and survive a tournament settled by a real combat simulation. 2–6 players, on one screen or online.</p>, extra: <div className="story-actions"><Actions account={false} /></div> },
+    { world: worlds[1], scene: 1, layout: 'right', label: '01 / BID', title: 'Every fighter goes [under the hammer.]', body: <p>Fighters come up one at a time. You see who they are and hints about their power, never the numbers. Outbid your friends, or let a lot go cheap and pounce later.</p>, extra: <ul className="hpanel-facts"><li><b>10,000</b> coins each</li><li><b>Hidden</b> stats until you win</li><li><b>Live</b> bids against friends or NPCs</li></ul> },
+    { world: worlds[2], scene: 2, layout: 'left', label: '02 / BUILD', title: 'Hidden power. [Real stats.]', body: <p>A fighter&apos;s real stats unlock the moment you win them. Choose who fights, set tactics, and read the arena: fighters whose element or style suits it hit harder.</p> },
+    { world: worlds[3], scene: 3, layout: 'center', label: '03 / BATTLE', title: 'Transform. [Fight.] Win.', body: <p>A seeded combat engine settles every match: Sage Mode, Bankai and Gear Fifth mid-fight, secret moves when a teammate falls, plot twists, and up to five corner calls from you.</p> },
+    { world: worlds[4], scene: 2, layout: 'split', label: '04 / WAYS TO FIGHT', title: 'Pick your [war.]', body: <p>Same draft, four ways to settle it.</p>, extra: <div className="hpanel-modes">{MODES.map(([title, text]) => <div key={title}><h3>{title}</h3><p>{text}</p></div>)}</div> },
+    { world: worlds[5], scene: 1, layout: 'finale', label: '05 / YOUR MOVE', title: 'Your friends are [waiting.]', body: <p>Make a room, share the code or invite friends straight in, and everyone watches the same fight at the same moment.</p>,
+      extra: <div className="story-actions"><div className="menu"><button className="btn primary lg" onClick={() => store.go('setup')}>✦ Create New Game</button>{ONLINE_AVAILABLE && <button className="btn lg" onClick={() => store.go('online')}>🌐 Play Online with Friends</button>}</div><AccountCard /><button className="story-switch inline" onClick={reshuffle}>⟳ Show me other worlds</button></div> },
+  ];
 
   return (
-    <div className="home-world" style={vars}>
-      <HomeStory world={world} motionOk={motionOk} actions={<Actions />} onSwitch={another} />
-
+    <div ref={rootRef} className="home-world" style={{ '--tb': `${tb}px`, '--acc': lead.accent, '--tone': lead.tone, '--ink2': lead.ink } as CSSProperties}>
+      {panels.map((p, i) => <Panel key={`${p.world.key}-${i}`} p={p} index={i} total={panels.length} motionOk={motionOk} eager={i < 2} />)}
       <section className="world-section">
-        <h2 className="world-h"><span className="no">01</span>How a game goes</h2>
-        <ol className="world-steps">
-          <li><b>Bid</b><p>Fighters come up one at a time. You see who they are and hints about their power, never the numbers. Outbid your friends, or let a lot go cheap.</p></li>
-          <li><b>Build</b><p>A fighter's real stats unlock the moment you win them. Choose who fights, set tactics, and check the arena: some fighters suit it better.</p></li>
-          <li><b>Battle</b><p>A seeded combat engine settles every match, with transformations, secret moves and plot twists. Call shots from the corner while it plays.</p></li>
-        </ol>
+        <h2 className="world-h"><span className="no">06</span>Watch the real fights</h2>
+        <p className="home-note" style={{ marginTop: 0 }}>Official clips from the studios&apos; own channels, playing muted. Turn the sound on or skip to the next.</p>
+        <LazyReel />
       </section>
-
-      <section className="world-section">
-        <h2 className="world-h"><span className="no">02</span>Ways to fight</h2>
-        <div className="world-modes">
-          {MODES.map(([title, text, wide]) => <div key={title} className={wide ? 'wide' : ''}><h3>{title}</h3><p>{text}</p></div>)}
-        </div>
-      </section>
-
-      <section className="world-section">
-        <h2 className="world-h"><span className="no">03</span>Watch the real fights</h2>
-        <p className="home-note" style={{ marginTop: 0 }}>Official clips from the studios' own channels, playing muted. Turn the sound on or skip to the next.</p>
-        <FightReel />
-      </section>
-
-      <div className="world-foot">
-        <button className="btn primary lg" onClick={() => store.go('setup')}>✦ Create New Game</button>
-        <div style={{ marginTop: 16 }}><button className="story-switch inline" onClick={another}>⟳ Visit another world</button></div>
-      </div>
     </div>
   );
 }
+
+/** The YouTube player is heavy (its script keeps the main thread busy), so it loads only
+ *  when the reel is near the screen and unloads again once you scroll well away. */
+function LazyReel() {
+  const ref = useRef<HTMLDivElement>(null);
+  const [near, setNear] = useState(false);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const io = new IntersectionObserver(([e]) => setNear(e.isIntersecting), { rootMargin: '300px 0px' });
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
+  return <div ref={ref} className="reel-slot">{near ? <FightReel /> : <div className="fight-reel" style={{ backgroundImage: `url(${import.meta.env.BASE_URL}scenes/${POSTERS[0]}.jpg)` }} />}</div>;
+}
+
+/** Which scene each panel uses (the hero opens on the strongest one). */
+const SCENES: Array<1 | 2 | 3> = [3, 1, 2, 3, 2, 1];

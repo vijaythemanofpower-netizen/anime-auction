@@ -1,6 +1,6 @@
 // Your profile window (career dashboard + friends), invite pop-ups, and the
 // "Invite friends" list in a room lobby. Data: store/career.ts and online/friends.ts.
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState, type CSSProperties } from 'react';
 import { createPortal } from 'react-dom';
 import { useAuth } from '../../online/auth';
 import { acceptFriend, addFriend, dismissInvite, inviteFriend, removeFriend, searchPlayers, useFriends, type Invite } from '../../online/friends';
@@ -8,6 +8,8 @@ import { joinRoom, useRoom } from '../../online/room';
 import { useCareer, type Career } from '../../store/career';
 import { store } from '../../store/store';
 import { Modal, Seg } from './common';
+import { WORLDS } from '../home/worlds';
+import { sceneSrcSet, sceneUrl } from '../home/HomeStory';
 
 let opener: ((tab: 'stats' | 'friends') => void) | null = null;
 export function openProfile(tab: 'stats' | 'friends' = 'stats') { opener?.(tab); }
@@ -21,10 +23,30 @@ export function SocialLayer() {
       <InviteToasts />
       {tab && createPortal(
         <Modal title="Your profile" onClose={() => setTab(null)} wide>
+          <ProfileBand />
           <Seg value={tab} onChange={setTab} label="Profile view" options={[{ v: 'stats', label: '📊 Career' }, { v: 'friends', label: '👥 Friends' }]} />
           <div style={{ marginTop: 12 }}>{tab === 'stats' ? <CareerDashboard /> : <FriendsPanel />}</div>
         </Modal>, document.body)}
     </>
+  );
+}
+
+/** The profile's header: your name over a character scene, a different one each time. */
+function ProfileBand() {
+  const a = useAuth();
+  const c = useCareer();
+  const world = useMemo(() => WORLDS[Math.floor(Math.random() * WORLDS.length)], []);
+  const name = a.profile?.display_name ?? a.email?.split('@')[0] ?? 'Player';
+  return (
+    <div className="profile-band" style={{ '--acc': world.accent, '--ink2': world.ink } as CSSProperties}>
+      <img src={sceneUrl(world, 3, 1280)} srcSet={sceneSrcSet(world, 3)} sizes="(max-width: 760px) 100vw, 900px" alt="" decoding="async" />
+      <div className="pband-scrim" />
+      <div className="pband-copy">
+        <div className="pband-eyebrow">PLAYER FILE · {world.house}</div>
+        <div className="pband-name">{name}</div>
+        <div className="pband-stats"><span><b>{c.titles}</b> titles</span><span><b>{c.fightsWon}</b> fights won</span><span><b>{c.mvps}</b> MVPs</span></div>
+      </div>
+    </div>
   );
 }
 
