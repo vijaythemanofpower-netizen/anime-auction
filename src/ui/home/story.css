@@ -1,0 +1,130 @@
+/* Home page scroll story (HomeStory.tsx): one character's world, full screen.
+   Colours come from the world (--acc, --tone, --ink2), set on .home-world. */
+
+.home-world { width: 100vw; margin: -24px 0 0 calc(50% - 50vw); color: #f3efe6; background: var(--ink2); }
+/* World accents are bright, so primary buttons (top bar too) take dark text on the home page. */
+html[data-world] .btn.primary { color: #0b0b0b !important; font-weight: 800; }
+.story { position: relative; height: 330vh; }
+.story-stage { position: sticky; top: var(--tb); height: calc(100svh - var(--tb)); overflow: hidden; background: var(--ink2); isolation: isolate; }
+
+/* Scenes: stacked, crossfaded by scroll, slowly pushed in. */
+.story-scene { position: absolute; inset: 0; will-change: opacity; }
+.story-scene img { width: 100%; height: 100%; object-fit: cover; object-position: 62% 30%; user-select: none; }
+.story-scrim { position: absolute; inset: 0; z-index: 1; pointer-events: none;
+  background: linear-gradient(90deg, var(--ink2) 0%, color-mix(in srgb, var(--ink2) 78%, transparent) 26%, transparent 58%),
+    linear-gradient(0deg, var(--ink2) 0%, transparent 34%), linear-gradient(180deg, color-mix(in srgb, var(--ink2) 70%, transparent) 0%, transparent 18%); }
+.story-scrim.alt { background: linear-gradient(270deg, var(--ink2) 0%, color-mix(in srgb, var(--ink2) 72%, transparent) 26%, transparent 56%), linear-gradient(0deg, var(--ink2) 0%, transparent 30%); }
+.story-scrim.last { background: linear-gradient(90deg, var(--ink2) 0%, color-mix(in srgb, var(--ink2) 86%, transparent) 34%, transparent 66%), linear-gradient(0deg, var(--ink2) 0%, transparent 40%); }
+
+/* The big background kana, faint, behind the copy. */
+.story-kana { position: absolute; z-index: 1; right: 3%; top: 50%; transform: translateY(-50%); writing-mode: vertical-rl; font-family: var(--font-kana); font-size: clamp(90px, 16vh, 190px); line-height: 1; color: var(--acc); opacity: 0.16; pointer-events: none; letter-spacing: 0.04em; }
+
+/* HUD: corner brackets, studio label, scene counter, micro footer. */
+.story-hud { position: absolute; inset: 14px; z-index: 3; pointer-events: none; font-family: ui-monospace, Consolas, monospace; font-size: 11px; letter-spacing: 0.12em; color: color-mix(in srgb, #f3efe6 72%, transparent); }
+.hud-corner { position: absolute; width: 22px; height: 22px; border-color: var(--acc); border-style: solid; border-width: 0; opacity: 0.9; }
+.hud-corner.tl { top: 0; left: 0; border-top-width: 2px; border-left-width: 2px; }
+.hud-corner.tr { top: 0; right: 0; border-top-width: 2px; border-right-width: 2px; }
+.hud-corner.bl { bottom: 0; left: 0; border-bottom-width: 2px; border-left-width: 2px; }
+.hud-corner.br { bottom: 0; right: 0; border-bottom-width: 2px; border-right-width: 2px; }
+.hud-top, .hud-bottom { position: absolute; left: 32px; right: 32px; display: flex; justify-content: space-between; gap: 16px; }
+.hud-top { top: 6px; } .hud-bottom { bottom: 6px; }
+.hud-house { display: inline-flex; align-items: center; gap: 8px; color: #f3efe6; }
+.hud-house i { width: 7px; height: 7px; border-radius: 50%; background: var(--acc); box-shadow: 0 0 8px var(--acc); }
+.hud-count { color: var(--acc); }
+.hud-scroll { color: var(--acc); }
+
+/* Scroll progress, right edge. */
+.story-rail { position: absolute; z-index: 3; right: 6px; top: 22%; bottom: 22%; width: 2px; background: rgba(255, 255, 255, 0.14); }
+.story-rail i { position: absolute; inset: 0; background: var(--acc); transform-origin: top; }
+
+/* Copy: bottom-left by default, top-right on the middle scene. */
+.story-copy { position: absolute; z-index: 4; left: clamp(24px, 6vw, 96px); bottom: clamp(56px, 12vh, 120px); max-width: min(560px, 46vw); }
+.story-copy.alt { left: auto; right: clamp(40px, 7vw, 110px); bottom: auto; top: clamp(64px, 14vh, 140px); text-align: right; }
+.story-copy.last { max-width: min(620px, 52vw); bottom: clamp(40px, 8vh, 90px); }
+.story-eyebrow { font-family: ui-monospace, Consolas, monospace; font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--acc); margin-bottom: 12px; }
+.story-title { margin: 0; font-family: var(--font-display); font-weight: 400; font-size: clamp(44px, 7.4vw, 104px); line-height: 0.95; letter-spacing: 0.005em; color: #f6f1e7; text-shadow: 0 4px 24px rgba(0, 0, 0, 0.55); }
+.story-title em { font-style: normal; color: var(--acc); }
+.story-line { margin: 14px 0 0; font-size: 15px; line-height: 1.55; color: color-mix(in srgb, #f3efe6 82%, transparent); max-width: 420px; }
+.story-copy.alt .story-line { margin-left: auto; }
+.story-quote { margin: 22px 0 0; padding: 12px 14px; max-width: 340px; background: color-mix(in srgb, var(--ink2) 84%, transparent); border: 1px solid color-mix(in srgb, var(--acc) 45%, transparent); border-left: 3px solid var(--acc); border-radius: 8px; }
+.story-quote blockquote { margin: 0; font-size: 14px; line-height: 1.45; color: #f6f1e7; }
+.story-quote figcaption { margin-top: 6px; font-family: ui-monospace, Consolas, monospace; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--acc); }
+.story-actions { margin-top: 22px; display: flex; flex-direction: column; gap: 12px; }
+.story-actions .menu { display: flex; flex-wrap: wrap; gap: 10px; }
+.story-actions .home-links { display: flex; flex-wrap: wrap; gap: 6px; }
+.story-actions .account-card { max-width: 520px; }
+.story-switch { position: absolute; z-index: 5; right: clamp(28px, 4vw, 56px); bottom: 34px; font-family: ui-monospace, Consolas, monospace; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: #f3efe6; background: color-mix(in srgb, var(--ink2) 70%, transparent); border: 1px solid color-mix(in srgb, var(--acc) 60%, transparent); border-radius: 999px; padding: 8px 14px; cursor: pointer; }
+.story-switch:hover { background: var(--acc); color: #0b0b0b; }
+
+/* Per-world type. */
+.type-serif .story-title { font-family: Georgia, 'Times New Roman', serif; font-style: italic; font-weight: 400; letter-spacing: -0.01em; text-transform: none; }
+.type-serif .story-title em { font-style: italic; }
+.type-condensed .story-title { text-transform: uppercase; letter-spacing: 0.03em; }
+.type-condensed .story-title em { color: transparent; -webkit-text-stroke: 2px var(--acc); }
+.type-block .story-title { text-transform: uppercase; }
+
+/* Per-world frame. */
+.frame-clean .hud-corner { display: none; }
+.frame-clean .story-hud { inset: 18px 24px; }
+.frame-ink .story-stage::after { content: ''; position: absolute; inset: 10px; z-index: 2; pointer-events: none; border: 3px solid #0b0b0b; box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--acc) 50%, transparent); border-radius: 4px; }
+.frame-ink .hud-corner { border-width: 0 !important; }
+.frame-ink .story-kana { opacity: 0.24; }
+.frame-hud .story-stage::before { content: ''; position: absolute; inset: 0; z-index: 2; pointer-events: none; background: repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.025) 0 1px, transparent 1px 3px); }
+
+/* Particles. */
+.story-fx { position: absolute; inset: 0; z-index: 2; pointer-events: none; overflow: hidden; }
+.story-fx i { position: absolute; bottom: -20px; width: calc(5px * var(--s)); height: calc(5px * var(--s)); border-radius: 50%; opacity: var(--o); animation: fx-rise linear infinite; }
+.fx-embers i, .fx-sparks i { background: var(--acc); box-shadow: 0 0 8px var(--acc), 0 0 2px #fff; }
+.fx-sparks i { width: calc(2px * var(--s)); height: calc(9px * var(--s)); border-radius: 2px; }
+.fx-water i { background: transparent; border: 1px solid color-mix(in srgb, var(--acc) 80%, #fff); width: calc(9px * var(--s)); height: calc(9px * var(--s)); }
+.fx-void i { bottom: auto; top: calc(var(--o) * 100%); background: #fff; box-shadow: 0 0 6px var(--tone); animation-name: fx-twinkle; }
+.fx-shadow i { width: calc(18px * var(--s)); height: calc(40px * var(--s)); background: radial-gradient(closest-side, color-mix(in srgb, var(--acc) 70%, transparent), transparent); filter: blur(4px); }
+.fx-ash i, .fx-dust i { bottom: auto; top: -20px; background: color-mix(in srgb, #cfc8bd 70%, transparent); animation-name: fx-fall; }
+.fx-dust i { background: color-mix(in srgb, var(--acc) 40%, #8a8378); }
+.fx-leaves i { bottom: auto; top: -20px; width: calc(10px * var(--s)); height: calc(5px * var(--s)); border-radius: 0 100% 0 100%; background: color-mix(in srgb, var(--acc) 70%, #3f6b2a); animation-name: fx-leaf; }
+@keyframes fx-rise { from { transform: translateY(0) translateX(0); } to { transform: translateY(-110vh) translateX(30px); opacity: 0; } }
+@keyframes fx-fall { from { transform: translateY(0) translateX(0); } to { transform: translateY(110vh) translateX(-40px); } }
+@keyframes fx-leaf { from { transform: translateY(0) translateX(0) rotate(0); } to { transform: translateY(110vh) translateX(-120px) rotate(720deg); } }
+@keyframes fx-twinkle { 0%, 100% { opacity: 0.1; } 50% { opacity: var(--o); } }
+
+/* Below the story: the rest of the page, in the world's colours. */
+.world-section { max-width: 1180px; margin: 0 auto; padding: 72px clamp(16px, 4vw, 40px) 24px; }
+.world-h { display: flex; align-items: baseline; gap: 14px; margin: 0 0 24px; font-family: var(--font-display); font-weight: 400; font-size: 28px; text-transform: uppercase; letter-spacing: 0.02em; color: #f6f1e7; border-bottom: 1px solid color-mix(in srgb, var(--acc) 40%, transparent); padding-bottom: 12px; }
+.world-h .no { font-family: ui-monospace, Consolas, monospace; font-size: 11px; letter-spacing: 0.16em; color: var(--acc); }
+.world-steps { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; counter-reset: step; }
+.world-steps li { counter-increment: step; padding: 18px; border: 1px solid color-mix(in srgb, var(--acc) 30%, transparent); border-top: 3px solid var(--acc); border-radius: 8px; background: color-mix(in srgb, #fff 3%, transparent); }
+.world-steps li::before { content: '0' counter(step); display: block; font-family: ui-monospace, Consolas, monospace; font-size: 11px; letter-spacing: 0.14em; color: var(--acc); margin-bottom: 8px; }
+.world-steps b { font-family: var(--font-display); font-weight: 400; font-size: 28px; text-transform: uppercase; }
+.world-steps p, .world-modes p { margin: 8px 0 0; font-size: 15px; line-height: 1.55; color: color-mix(in srgb, #f3efe6 80%, transparent); }
+.world-modes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+.world-modes > div { padding: 18px; border: 1px solid color-mix(in srgb, #fff 12%, transparent); border-radius: 8px; }
+.world-modes > div.wide { grid-column: 1 / -1; border-color: color-mix(in srgb, var(--acc) 45%, transparent); }
+.world-modes h3 { margin: 0; font-size: 18px; color: var(--acc); }
+.world-foot { text-align: center; padding: 40px 16px 72px; }
+
+/* Phones: the scene fills the screen, the copy sits at the bottom over a scrim. */
+@media (max-width: 760px) {
+  .home-world { margin-top: -16px; }
+  .story { height: 300vh; }
+  .story-scene img { object-position: 66% 25%; }
+  .story-scrim, .story-scrim.alt, .story-scrim.last { background: linear-gradient(0deg, var(--ink2) 0%, color-mix(in srgb, var(--ink2) 88%, transparent) 38%, transparent 70%), linear-gradient(180deg, color-mix(in srgb, var(--ink2) 70%, transparent) 0%, transparent 16%); }
+  .story-copy, .story-copy.alt, .story-copy.last { left: 20px; right: 20px; top: auto; bottom: 64px; max-width: none; text-align: left; }
+  .story-copy.alt .story-line { margin-left: 0; }
+  .story-title { font-size: clamp(38px, 12vw, 56px); }
+  .story-line { font-size: 14px; }
+  .story-quote { display: none; }
+  .story-kana { font-size: 72px; top: 30%; opacity: 0.12; }
+  .hud-mid { display: none; }
+  .hud-top, .hud-bottom { left: 26px; right: 26px; }
+  .hud-bottom span:first-child { display: none; }
+  .story-switch { bottom: 26px; right: 26px; padding: 6px 10px; }
+  .story-actions .btn.lg { width: 100%; }
+  .world-steps, .world-modes { grid-template-columns: 1fr; }
+}
+
+@media (prefers-reduced-motion: reduce) { .story-fx { display: none; } }
+.story-switch.inline { position: static; }
+.story-kana.alt { right: auto; left: 3%; }
+
+/* The last scene holds the game's actions, so its headline is a size down. */
+.story-copy.last .story-title { font-size: clamp(40px, 5.2vw, 76px); }
