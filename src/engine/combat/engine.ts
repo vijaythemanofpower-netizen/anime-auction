@@ -20,7 +20,7 @@ import { elementMultiplier, getEnvironment, getSynergy, type Environment } from 
 import { type CombatFighter, INJURY_LIMIT, createFighter, hasStatus, hpPct, injuryLoad, injuryPenalty } from './fighter';
 
 
-type PlotKind = 'intruder' | 'shift' | 'sealed' | 'flashback' | 'suddendeath' | 'betrayal';
+type PlotKind = 'intruder' | 'shift' | 'sealed' | 'flashback' | 'suddendeath' | 'betrayal' | 'clone' | 'limiter' | 'hidden' | 'voice';
 /** Share of fights that get a plot twist. */
 const PLOT_CHANCE = 0.35;
 export const MAX_ACTIONS = 320;
@@ -114,7 +114,7 @@ export class BattleSim {
     this.flavorRng = new Rng(deriveSeed('flavor', input.seed));
     this.plotRng = new Rng(deriveSeed('plot', input.seed));
     if (this.plotRng.chance(PLOT_CHANCE)) {
-      const kinds: PlotKind[] = ['intruder', 'shift', 'sealed', 'flashback', 'suddendeath', ...(input.mode !== 'solo' ? ['betrayal' as const] : [])];
+      const kinds: PlotKind[] = ['intruder', 'shift', 'sealed', 'flashback', 'suddendeath', 'clone', 'limiter', 'hidden', 'voice', ...(input.mode !== 'solo' ? ['betrayal' as const] : [])];
       this.plot = { kind: this.plotRng.pick(kinds), at: this.plotRng.int(16, 44), done: false };
     }
   }
@@ -602,6 +602,50 @@ export class BattleSim {
         victim.staggered = true;
         this.shiftMomentum(side === 0 ? 1 : 0, 25, 'the betrayal');
         this.twist('plot-betrayal', 'BETRAYAL?!', `${this.name(traitor)} turns and strikes ${this.name(victim)}! Mind control? A grudge? Nobody knows!`, traitor, victim);
+        break;
+      }
+      case 'clone': {
+        // The fighter who looked finished was never really there.
+        const fake = live.slice().sort((a, b) => hpPct(a) - hpPct(b))[0];
+        const foe = this.alive(fake.side === 0 ? 1 : 0).slice().sort((a, b) => hpPct(b) - hpPct(a))[0];
+        if (!foe || hpPct(fake) > 0.6) { if (this.turn > p.at + 30) p.kind = 'limiter'; return; }
+        fake.hp = Math.min(fake.maxHp, fake.hp + Math.round(fake.maxHp * 0.15));
+        hit(foe, 0.08);
+        foe.staggered = true;
+        foe.guard = clamp(foe.guard - 25, 0, 100);
+        const trick = R.pick(['a shadow clone', 'an afterimage', 'a substitution', 'a decoy', 'an illusion']);
+        this.shiftMomentum(fake.side, 20, `${this.name(fake)}'s trick`);
+        this.twist('plot-clone', 'IT WAS A FAKE!', `The ${this.name(fake)} taking that beating was ${trick}! The real one strikes ${this.name(foe)} from behind!`, fake, foe);
+        break;
+      }
+      case 'limiter': {
+        // The side that is behind gambles everything.
+        const hpOf = (s: 0 | 1) => this.alive(s).reduce((n, f) => n + hpPct(f), 0) / Math.max(1, this.alive(s).length);
+        const side: 0 | 1 = hpOf(0) <= hpOf(1) ? 0 : 1;
+        const f = this.alive(side).slice().sort((a, b) => b.eff.attack - a.eff.attack)[0];
+        f.mods.dmg += 0.2;
+        f.mods.def -= 0.1;
+        this.shiftMomentum(side, 15, `${this.name(f)}'s gamble`);
+        this.twist('plot-limiter', 'LIMITER OFF!', `${this.name(f)} tears off the restraint they've worn all fight. Raw power floods out, but their guard is wide open!`, f);
+        break;
+      }
+      case 'hidden': {
+        // Nobody rated the weakest fighter, until now.
+        const under = live.slice().sort((a, b) => a.eff.attack - b.eff.attack)[0];
+        under.secretOpen = true;
+        under.mods.dmg += 0.1;
+        under.statuses.push({ type: 'focus', duration: 2, magnitude: 0.2 });
+        this.twist('plot-hidden', 'HIDDEN POWER!', `Everyone wrote off ${this.name(under)}. Big mistake: they've been holding back a technique nobody has seen.`, under);
+        break;
+      }
+      case 'voice': {
+        const low = live.filter((f) => hpPct(f) < 0.45).sort((a, b) => hpPct(a) - hpPct(b))[0];
+        if (!low) { if (this.turn > p.at + 30) p.kind = 'shift'; return; }
+        for (const f of this.alive(low.side)) f.statuses.push({ type: 'focus', duration: 2, magnitude: 0.15 });
+        low.guard = clamp(low.guard + 30, 0, 100);
+        this.shiftMomentum(low.side, 20, 'a voice from the past');
+        const who = R.pick(['their old master', 'a fallen friend', 'the rival they never beat', 'their younger self', 'someone waiting for them back home']);
+        this.twist('plot-voice', 'A VOICE FROM THE PAST!', `Down and fading, ${this.name(low)} hears ${who}. Their eyes change.`, low);
         break;
       }
     }

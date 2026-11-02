@@ -77,3 +77,35 @@ describe('live predictions', () => {
     expect(asked).toBeGreaterThan(5);
   });
 });
+
+describe('new plot twists (engine 2.11)', () => {
+  it('fakes, limiters, hidden power and voices from the past all happen, and the booth reacts', async () => {
+    const { simulateBattle } = await import('../src/engine/combat/engine');
+    const { generateHidden } = await import('../src/engine/hidden');
+    const { narrate, validateNarration } = await import('../src/engine/narration');
+    const ctx = { prices: {}, playerNames: { p0: 'A', p1: 'B' }, previousLoss: {}, stageName: 'Test' };
+    const { ENGINE_VERSION } = await import('../src/engine/types');
+    const chars = Object.fromEntries(LEGEND_CHARACTERS.map((c) => [c.id, c]));
+    const keys = ['naruto', 'luffy', 'ichigo', 'tanjiro', 'gojo', 'levi', 'killua', 'deku'];
+    const seen = new Set<string>();
+    let reacted = false;
+    for (let seed = 1; seed <= 400 && seen.size < 4; seed++) {
+      const snap = (k: string, side: 0 | 1) => {
+        const c = chars[`legend:${k}`]; const h = generateHidden(c, seed);
+        return { charId: c.id, name: c.name, playerId: 'p' + side, side, archetype: c.archetype, temperament: c.temperament, reach: c.reach, tags: c.tags, stats: h.stats, traits: h.traits, abilities: [...c.knownAbilities, h.hiddenAbility, h.evolution.unlockAbility], position: 'front' as const, fatigue: 0, injuries: [], price: 500, vulnerability: h.vulnerability };
+      };
+      const side = (i: 0 | 1, k: string) => ({ playerId: 'p' + i, strategy: 'balanced' as const, mental: 'silent' as const, synergies: [], fighters: [snap(k, i)], coach: 'auto' as const, reserves: [] });
+      const input = { battleId: 't' + seed, engineVersion: ENGINE_VERSION, seed, mode: 'solo', environmentId: 'colosseum', sides: [side(0, keys[seed % 8]), side(1, keys[(seed * 3 + 1) % 8])], rivalry: null, calls: [] } as never;
+      const result = simulateBattle(input);
+      const tw = result.events.filter((e) => e.type === 'twist' && ['plot-clone', 'plot-limiter', 'plot-hidden', 'plot-voice'].includes(String(e.context?.twist)));
+      tw.forEach((e) => seen.add(String(e.context?.twist)));
+      if (tw.length) {
+        const lines = narrate(input, result, ctx);
+        expect(validateNarration(lines, input, result)).toEqual([]);
+        if (lines.some((l) => /fake this whole time|misdirection|never saw it coming|nothing left to lose|All or nothing|underdog has teeth|on their card|still believing|on its feet/.test(l.text))) reacted = true;
+      }
+    }
+    expect([...seen].sort()).toEqual(['plot-clone', 'plot-hidden', 'plot-limiter', 'plot-voice']);
+    expect(reacted).toBe(true);
+  });
+});

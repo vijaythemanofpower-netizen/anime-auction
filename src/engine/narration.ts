@@ -44,6 +44,24 @@ const COUNTER = ['THAT COUNTER CHANGES EVERYTHING!', 'Punished on the spot!', 'C
 const DEFEAT = ['AND THAT\'S IT FOR', 'LIGHTS OUT FOR', 'IT\'S ALL OVER FOR'];
 const STILL = ['WAIT — STILL STANDING!', 'REFUSING TO FALL!', 'NOT. GOING. DOWN.', "THEY JUST WON'T STAY DOWN!", 'PURE STUBBORNNESS!', 'HOW ARE THEY STILL UP?!'];
 
+/** The commentators' reaction to each plot twist ({a} = the fighter it is about, {t} = the one it hits). */
+const TWIST_REACT: Record<string, string[]> = {
+  'plot-intruder': ['Security! Is there any security in this arena?!', 'Nobody invited them, and nobody can stop them!'],
+  'plot-shift': ['The arena itself just picked a side!', 'Throw the game plan away. This is a different fight now.'],
+  'plot-sealed': ['Their trump card, gone! What do they have left?', 'That is the move they built this whole fight around!'],
+  'plot-flashback': ['We have seen this before. Never count {a} out!', 'You can feel it. Something just changed in {a}.'],
+  'plot-suddendeath': ['One hit. One hit decides everything now.', 'Nobody breathe!'],
+  'plot-betrayal': ['I did NOT see that coming!', 'Trust is a luxury in this arena.'],
+  'plot-clone': ['We were watching a fake this whole time?!', '{t} never saw it coming. None of us did!', 'Classic misdirection, and it worked!'],
+  'plot-limiter': ['All or nothing! This could end very fast, either way.', 'That is a fighter with nothing left to lose!'],
+  'plot-hidden': ['Who had {a} doing THAT on their card? Nobody!', 'The underdog has teeth!'],
+  'plot-voice': ['Get up, {a}. Somebody is still believing in you.', 'Oh, this crowd is on its feet!'],
+  revive: ['Back from the brink!', 'The fight is not over until it is over!'],
+  secondwind: ['Refuses to stay down! Unbelievable heart!'],
+  rally: ['Listen to this place!', 'The noise is deafening!'],
+  arena: ['The arena is coming apart around them!'],
+};
+
 export function narrate(input: BattleInput, result: BattleResult, ctx: NarrationContext): NarrationLine[] {
   const rng = new Rng(deriveSeed('narration', input.seed, input.battleId));
   const fighters = new Map(input.sides.flatMap((s) => [...s.fighters, ...(s.reserves ?? [])]).map((f) => [f.charId, f]));
@@ -170,10 +188,14 @@ export function narrate(input: BattleInput, result: BattleResult, ctx: Narration
         else if (k === 'ignore' && rng.chance(0.5)) say(e, `${nm(e.actor)} doesn't even blink.`, 'calm');
         break;
       }
-      case 'twist':
+      case 'twist': {
         say(e, String(e.context?.title), 'shock');
         say(e, e.explanation.replace(String(e.context?.title), '').trim(), 'tense');
+        // A reaction from the booth, so the turn lands (only sometimes, so it stays fresh).
+        const react = TWIST_REACT[String(e.context?.twist)];
+        if (react && rng.chance(0.7)) say(e, pick(react).replace('{a}', nm(e.actor)).replace('{t}', nm(e.target)), 'shock');
         break;
+      }
       case 'reinforcement':
         if (e.context?.backfire) { say(e, `OH NO! ${nm(e.actor).toUpperCase()} CHARGES IN AND CRASHES RIGHT INTO THEIR OWN TEAMMATE!`, 'shock'); break; }
         say(e, e.context?.jumped ? `${nm(e.actor).toUpperCase()} JUMPS IN ON THEIR OWN!` : `REINFORCEMENTS! ${nm(e.actor).toUpperCase()} COMES OFF THE BENCH!`, 'shock');
