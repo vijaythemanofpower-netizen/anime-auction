@@ -480,6 +480,12 @@ export const LEGEND_MOVESETS: Record<string, Ability[]> = {
     mv('escanor', 'noon', 'Sunshine', 'buff', 'self', 16, 5, 0, 'aura', '#fde047', 'The sun climbs and so does he: bigger, brighter, more arrogant.', 'Grows stronger toward noon: focus for 3 actions.', { el: 'HOLY', st: st('focus', 1, 3, 0.4) }),
     mv('escanor', 'oneman', 'The One Ultimate', 'ultimate', 'enemy', 44, 7, 3.0, 'explosion', '#fef08a', 'At noon he becomes the sun itself. Who decided that?', 'One minute of absolute power.', { el: 'HOLY', tr: 'hp_below_50', pierce: true, shout: 'WHO DECIDED THAT?' }),
   ],
+  rimuru: [
+    mv('rimuru', 'predator', 'Predator', 'attack', 'enemy', 16, 2, 1.7, 'wave', '#38bdf8', 'His slime body stretches open and swallows the attack, then the attacker.', 'Devours and copies.', { el: 'MAGIC' }),
+    mv('rimuru', 'blacklightning', 'Black Lightning', 'attack', 'enemy', 18, 2, 1.75, 'lightning', '#6366f1', 'Black lightning copied from a storm wolf crashes down.', 'A copied storm.', { el: 'LIGHTNING' }),
+    mv('rimuru', 'sage', 'Great Sage Analysis', 'buff', 'self', 16, 5, 0, 'aura', '#7dd3fc', "A calm voice in his head reads the enemy's every move.", 'Analysis complete: focus for 3 actions.', { el: 'MAGIC', st: st('focus', 1, 3, 0.4) }),
+    mv('rimuru', 'beelzebuth', 'Beelzebuth', 'ultimate', 'all_enemies', 44, 7, 1.8, 'domain', '#1e1b4b', 'A black void opens behind him and starts eating everything in the arena.', 'The Lord of Gluttony devours.', { el: 'DARK', tr: 'hp_below_50' }),
+  ],
 };
 
 export const LEGEND_MOVES: Ability[] = Object.values(LEGEND_MOVESETS).flat();

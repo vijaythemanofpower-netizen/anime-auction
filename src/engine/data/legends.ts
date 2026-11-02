@@ -91,6 +91,7 @@ const ROWS: Row[] = [
   ['kirito', 'Kirito', 36765, 'b36765-BnLbXg0Tzzh9.png', 'Sword Art Online', 'Duelist', 'calculating', ['WARRIOR', 'DARK'], 'Elucidator & Dark Repulser', 'Dual Blades', 'Lightning-fast sword skills', 'The Black Swordsman who cleared a death game from the inside.', ['Black Swordsman'], 'Dual Blades Kirito', { speed: 6 }],
   ['frieren', 'Frieren', 176754, 'b176754-PCnpqIOkjhFk.png', 'Frieren: Beyond Journey\'s End', 'Mage', 'patient', ['MAGIC', 'LIGHTNING'], 'Staff', 'A thousand years of magic', 'Hides her true mana', 'An elf mage who helped defeat the Demon King and is still learning what people mean to her.', ['Frieren the Slayer'], 'Unsuppressed Frieren', { battleIQ: 8 }],
   ['escanor', 'Escanor', 90202, 'b90202-1H7FIX2hDmYd.png', 'The Seven Deadly Sins', 'Tank', 'arrogant', ['HOLY', 'FIRE'], 'Divine Axe Rhitta', 'Sunshine', 'Stronger as the sun rises', 'The Lion\'s Sin of Pride, who grows mightier until noon.', ['Lion\'s Sin of Pride'], 'The One Escanor', { attack: 8 }],
+  ['rimuru', 'Rimuru Tempest', 123962, 'b123962-eL9yGV0NLMF7.png', 'That Time I Got Reincarnated as a Slime', 'Mage', 'cheerful', ['MAGIC', 'DRAGON'], 'Predator & a black katana', 'Copies every skill he eats', 'Analyses, devours and adapts', "A man reborn as a slime who eats his enemies' skills and became a Demon Lord ruling a nation of monsters.", ['Demon Lord Rimuru', 'Satoru Mikami'], 'True Dragon Rimuru', { adaptability: 10 }],
 ];
 
 // Used to pick a fitting voice; everyone else in the roster is male.

@@ -77,4 +77,5 @@ export const LEGEND_FACTS: Record<string, string[]> = {
   kirito: ['Kirito was trapped in the game Sword Art Online.', 'He fights with two swords at once using Dual Blades.', 'He is known as the Black Swordsman.'],
   frieren: ['Frieren is an elf mage who lives for over a thousand years.', 'She was part of the hero party that defeated the Demon King.', 'She collects strange and useless spells.'],
   escanor: ['Escanor is the Lion\'s Sin of Pride.', 'He becomes stronger as the sun rises, peaking at noon.', 'His axe Rhitta is extremely heavy.'],
+  rimuru: ['Rimuru was a Japanese office worker reborn as a slime.', 'His Predator skill lets him eat things and copy their abilities.', 'He founded the monster nation of Tempest and became a Demon Lord.'],
 };

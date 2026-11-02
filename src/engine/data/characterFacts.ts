@@ -42,6 +42,7 @@ const TRIVIA: Record<string, string> = {
   jinwoo: 'Solo Leveling began as a Korean web novel before becoming a webtoon and an anime.',
   meruem: 'Meruem\'s name means "the light that illuminates everything" in the Chimera Ants\' story.',
   escanor: 'Escanor is based on a knight of Arthurian legend whose strength grew with the sun.',
+  rimuru: 'Rimuru began as a web novel in 2013 and became one of the best-selling isekai light novels.',
   gilgamesh: 'Gilgamesh is based on the hero of the Epic of Gilgamesh, one of the oldest stories ever written.',
   saber: 'Saber\'s true identity, King Arthur, was one of Fate/stay night\'s biggest early reveals.',
 };

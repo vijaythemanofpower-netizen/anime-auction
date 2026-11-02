@@ -78,7 +78,7 @@ const LEGEND_TAGS: Record<string, string> = {
   jinwoo: 'sung jin-woo, ore dake level up na ken', jotaro: 'kujo jotaro, jojo no kimyou na bouken', dio: 'dio brando, jojo no kimyou na bouken', mob: 'kageyama shigeo, mob psycho 100',
   kaneki: 'kaneki ken, tokyo ghoul', asta: 'asta (black clover), black clover', yuno: 'yuno (black clover), black clover', power: 'power (chainsaw man), chainsaw man',
   yor: 'yor briar, spy x family', gilgamesh: 'gilgamesh (fate), fate/zero', saber: 'artoria pendragon (fate), saber (fate), fate/zero', kirito: 'kirito, sword art online',
-  frieren: 'frieren, sousou no frieren', escanor: 'escanor, nanatsu no taizai',
+  frieren: 'frieren, sousou no frieren', escanor: 'escanor, nanatsu no taizai', rimuru: 'rimuru tempest, tensei shitara slime datta ken',
 };
 
 const SERIES_TAGS: Record<string, string> = {

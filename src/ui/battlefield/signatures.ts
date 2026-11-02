@@ -51,6 +51,7 @@ export const SIGNATURES: Record<string, Signature> = {
   power: S('brawler', ['heavy'], { idle: 'bounce' }), yor: S('shadow', ['kicks', 'spinner'], { idle: 'still' }), gilgamesh: S('caster', ['casual', 'stand'], { idle: 'proud' }),
   saber: S('blade', [], { idle: 'still' }), kirito: S('blade', ['spinner'], { idle: 'still' }), frieren: S('caster', ['casual'], { idle: 'still', floats: true }),
   escanor: S('tank', ['heavy', 'casual'], { idle: 'proud' }),
+  rimuru: S('caster', ['blink'], { idle: 'still' }),
 };
 
 /** The built-in's key from a fighter id ("legend:luffy", "legend:luffy#b" in tests). */

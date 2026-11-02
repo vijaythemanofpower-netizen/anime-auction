@@ -320,6 +320,9 @@ export const KITS: Record<string, Kit> = {
   escanor: kit('escanor', [['Noon', 'hp70', '#fbbf24', 'escanor, midday, giant, glowing'], ['The One', 'last', '#facc15', 'escanor the one, glowing sun, giant muscles']],
     [['sunshine_burst', 'Sunshine Burst', 'e', 2.0, 'FIRE', 'He glows like the sun and burns everyone.', 1], ['pride_flare', 'Pride Flare', 'a', 2.2, 'FIRE', 'A tiny sun thrown with one hand.', 1], ['rhitta_slam', 'Rhitta Slam', 'a', 1.8, 'FIRE', 'He swings the giant axe.']],
     ['who_decided', '"Who decided that?"', 'u', 3.0, 'FIRE', 'last', 'The sun is at its highest. Nobody is above him.']),
+  rimuru: kit('rimuru', [['Demon Lord', 'hp70', '#38bdf8', 'rimuru tempest, demon lord, black wings, golden eyes'], ['True Dragon', 'last', '#a5b4fc', 'rimuru tempest, silver hair, glowing golden eyes, dragon aura']],
+    [['megido', 'Megido', 'e', 2.0, 'HOLY', 'Water drops in the sky focus sunlight into a hundred beams.', 1], ['veldora_breath', "Storm Dragon's Breath", 'a', 2.2, 'WIND', "He borrows Veldora's storm and breathes it out.", 1], ['slime_body', 'Slime Body', 'b', 0.3, 'WATER', 'Blows sink into his body and do nothing.']],
+    ['ciel', 'Ciel has calculated', 'u', 3.0, 'MAGIC', 'last', 'His wisdom has already worked out every outcome. This one ends with him winning.']),
 };
 
 /** Raid villains (looked up from AniList, keyed by name): signature moves, forms and a secret. */

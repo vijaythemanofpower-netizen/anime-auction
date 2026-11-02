@@ -67,6 +67,7 @@ export const PROFILES: Record<string, VfxProfile> = {
   zenitsu: P({ primary: '#fde047', secondary: '#f59e0b', aura: 'electric', smoke: { color: '#1a1606', density: 0.35, glow: false }, motes: { kind: 'spark', rate: 18, color: '#fff3a0' }, lightning: { color: '#ffe66b', rate: 1.8 } }),
   gon: P({ primary: '#22c55e', secondary: '#f97316', aura: 'ki', smoke: { color: '#0c1a0e', density: 0.5, glow: false }, motes: { kind: 'leaf', rate: 10, color: '#5aa84a' }, rings: 0.3 }),
   hisoka: P({ primary: '#ec4899', secondary: '#a855f7', aura: 'void', smoke: { color: '#22081a', density: 0.45, glow: true }, motes: { kind: 'petal', rate: 10, color: '#ff8ad0' } }),
+  rimuru: P({ primary: '#38bdf8', secondary: '#6366f1', aura: 'water', smoke: { color: '#0b1a3a', density: 0.5, glow: true }, motes: { kind: 'droplet', rate: 14, color: '#bae6fd' }, lightning: { color: '#818cf8', rate: 0.4 }, water: true, rings: 0.25 }),
 };
 
 /** The profile for a world key or character id; others get one built from their accent colour. */

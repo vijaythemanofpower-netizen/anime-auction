@@ -9,9 +9,9 @@ import { narrate, validateNarration } from '../src/engine/narration';
 import { setup, runAuction, runTournament } from './helpers';
 
 describe('anime legends', () => {
-  it('has 76 real characters with official AniList images and unique ids', () => {
-    expect(LEGEND_CHARACTERS).toHaveLength(76);
-    expect(new Set(LEGEND_CHARACTERS.map((c) => c.id)).size).toBe(76);
+  it('has 77 real characters with official AniList images and unique ids', () => {
+    expect(LEGEND_CHARACTERS).toHaveLength(77);
+    expect(new Set(LEGEND_CHARACTERS.map((c) => c.id)).size).toBe(77);
     for (const c of LEGEND_CHARACTERS) {
       expect(c.source).toBe('legend');
       expect(c.imageUrl).toMatch(/^https:\/\/s4\.anilist\.co\/file\/anilistcdn\/character\/large\//);
