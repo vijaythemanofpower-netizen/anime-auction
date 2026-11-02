@@ -4,7 +4,10 @@ import type { GameState, Player } from '../../engine/types';
 import * as A from '../../engine/auction';
 import * as G from '../../engine/game';
 import { store, useApp } from '../../store/store';
+import type { PublicCharacter } from '../../engine/types';
 import { CharArt } from '../components/Portrait';
+import { WORLDS } from '../home/worlds';
+import { sceneSrcSet, sceneUrl } from '../home/HomeStory';
 import { Coins, Emblem, Modal, PlayerChip, PrivacyGate, PublicProfile, SourceBadge, TagChip } from '../components/common';
 
 function useNow(interval = 200) {
@@ -89,7 +92,7 @@ export function AuctionPhase() {
         </div>
         <div className="col">
           <div className={`lot-art${sold ? '' : ' reveal-anim'}`} key={lot.lotNumber}>
-            <CharArt c={c} />
+            <LotArt c={c} />
             {sold && (
               <div className="sold-stamp">
                 <span>{lot.status === 'sold' ? 'SOLD' : lot.status === 'assigned' ? 'ASSIGNED' : 'NO SALE'}</span>
@@ -302,4 +305,11 @@ function EconomyTable({ g }: { g: GameState }) {
       </table>
     </div>
   );
+}
+
+/** The lot's picture: the HD scene for featured characters (sharp at this size), else their portrait. */
+function LotArt({ c }: { c: PublicCharacter }) {
+  const world = c.id.startsWith('legend:') ? WORLDS.find((w) => w.key === c.id.slice(7)) : undefined;
+  if (!world) return <CharArt c={c} />;
+  return <img className="lot-hd" src={sceneUrl(world, 1, 1280)} srcSet={sceneSrcSet(world, 1)} sizes="(max-width: 860px) 90vw, 30vw" alt={`Artwork of ${c.name}`} decoding="async" />;
 }

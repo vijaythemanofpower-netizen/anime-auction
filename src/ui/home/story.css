@@ -14,7 +14,7 @@ html[data-world] .btn.primary { color: #0b0b0b !important; font-weight: 800; }
 .hpanel-artwrap { position: absolute; inset: 0; overflow: hidden; }
 .lay-right .hpanel-artwrap, .lay-split .hpanel-artwrap { transform: scaleX(-1); }
 .hpanel-art { position: absolute; inset: -6% 0; width: 100%; height: 112%; transform: scale(1.08); object-fit: cover; object-position: 60% 28%; backface-visibility: hidden; user-select: none; }
-.hpanel.live .hpanel-art { will-change: transform; }
+.hpanel.is-live .hpanel-art { will-change: transform; }
 
 /* Scrims: ink behind the copy, shaped to each layout. */
 .hpanel-scrim { position: absolute; inset: 0; z-index: 1; pointer-events: none; }
@@ -26,9 +26,9 @@ html[data-world] .btn.primary { color: #0b0b0b !important; font-weight: 800; }
 /* A slow band of light crossing the art, so a still frame still feels lit and alive. */
 .hpanel-sweep { position: absolute; inset: -20% -40%; z-index: 1; pointer-events: none; background: linear-gradient(105deg, transparent 44%, color-mix(in srgb, var(--acc) 10%, transparent) 50%, transparent 56%); animation: sweep 9s ease-in-out infinite; }
 /* Covered panels don't animate their light or particles; the global speed-lines rest on home. */
-.hpanel:not(.live) .story-fx { display: none; }
+.hpanel:not(.is-live) .story-fx { display: none; }
 html[data-world] .scroll-speedlines { display: none; }
-.hpanel:not(.live) .hpanel-sweep { animation-play-state: paused; visibility: hidden; }
+.hpanel:not(.is-live) .hpanel-sweep { animation-play-state: paused; visibility: hidden; }
 @keyframes sweep { 0% { transform: translateX(-30%); } 55%, 100% { transform: translateX(30%); } }
 
 /* The big background kana. */
@@ -192,3 +192,30 @@ html[data-world] .scroll-speedlines { display: none; }
 .page-banner.busy .pb-kana { display: none; }
 /* Lite mode (set by usePanelMotion on devices that miss frames): extras off, art stays sharp. */
 .home-world.lite .story-fx, .home-world.lite .hpanel-sweep, .home-world.lite .frame-hud .hpanel-stage::before { display: none; }
+
+/* Character showcase (Explorer.tsx): big cinematic tiles for the featured cast. */
+.showcase { display: flex; flex-direction: column; gap: 10px; }
+.showcase-head { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.showcase-head .eyebrow { font-family: ui-monospace, Consolas, monospace; letter-spacing: 0.16em; text-transform: uppercase; }
+.showcase-rail { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(300px, 34%); gap: 12px; overflow-x: auto; scroll-snap-type: x mandatory; padding-bottom: 8px; scrollbar-width: thin; }
+.show-tile { position: relative; height: 300px; padding: 0; border: 0; border-top: 3px solid var(--acc); border-radius: 8px; overflow: hidden; background: var(--ink2); cursor: pointer; scroll-snap-align: start; text-align: left; color: #f6f1e7; }
+.show-tile img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 62% 25%; transition: transform 0.4s ease-out; }
+.show-tile:hover img, .show-tile:focus-visible img { transform: scale(1.04); }
+.show-scrim { position: absolute; inset: 0; background: linear-gradient(0deg, var(--ink2) 0%, color-mix(in srgb, var(--ink2) 70%, transparent) 38%, transparent 70%); }
+.show-kana { position: absolute; top: 12px; right: 12px; writing-mode: vertical-rl; font-family: var(--font-kana); font-size: 34px; color: var(--acc); opacity: 0.5; }
+.show-copy { position: absolute; left: 16px; right: 16px; bottom: 14px; display: flex; flex-direction: column; gap: 2px; }
+.show-series { font-family: ui-monospace, Consolas, monospace; font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--acc); }
+.show-name { font-family: var(--font-display); font-size: 30px; line-height: 1; text-transform: uppercase; }
+.type-serif .show-name { font-family: Georgia, 'Times New Roman', serif; font-style: italic; text-transform: none; }
+.show-quote { font-size: 13px; color: color-mix(in srgb, #f3efe6 78%, transparent); }
+@media (max-width: 760px) { .showcase-rail { grid-auto-columns: 82%; } .show-tile { height: 240px; } }
+@media (prefers-reduced-motion: reduce) { .show-tile img { transition: none; } }
+.lot-art .lot-hd { width: 100%; height: 100%; object-fit: cover; object-position: 58% 28%; display: block; }
+
+/* Cinematic VFX canvas (vfx/CinematicVfx.ts): sits over the panel's image, under the scrim
+   and the copy. Once it has the art, the page image and the CSS effects step aside. */
+.vfx-canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; pointer-events: none; }
+.hpanel.gpu .hpanel-artwrap { visibility: hidden; }
+.hpanel.gpu .story-fx, .hpanel.gpu .hpanel-sweep { display: none; }
+.vfx-canvas.vfx-fx { z-index: 2; }
+.page-banner .vfx-canvas.vfx-fx { z-index: auto; }

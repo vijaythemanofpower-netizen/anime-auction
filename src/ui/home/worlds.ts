@@ -211,7 +211,9 @@ export function pickWorld(): World {
 
 /** n different worlds at random, the first one different from last visit's opener. */
 export function pickWorlds(n: number): World[] {
-  const first = pickWorld();
+  // ?world=<key> opens on that character (handy for sharing a favourite, and for testing).
+  const asked = typeof location !== 'undefined' ? new URLSearchParams(location.search).get('world') : null;
+  const first = WORLDS.find((w) => w.key === asked) ?? pickWorld();
   const rest = WORLDS.filter((w) => w.key !== first.key).map((w) => [Math.random(), w] as const).sort((a, b) => a[0] - b[0]).map(([, w]) => w);
   return [first, ...rest].slice(0, n);
 }

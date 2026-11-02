@@ -1,8 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import type { CSSProperties } from 'react';
 import type { Archetype, PublicCharacter, Tag } from '../../engine/types';
 import type { CharacterProvider, SearchQuery, SeriesInfo } from '../../engine/providers/provider';
 import { legendProvider, localProvider } from '../../engine/providers/local';
 import { LEGEND_CHARACTERS, LEGEND_SERIES } from '../../engine/data/legends';
+import { WORLDS } from '../home/worlds';
+import { sceneUrl } from '../home/HomeStory';
 import { aniListProvider, randomPopular } from '../../engine/providers/anilist';
 import { ORIGINAL_CHARACTERS, ORIGINAL_SERIES } from '../../engine/data/originals';
 import { ARCHETYPES } from '../../engine/data/archetypes';
@@ -128,6 +131,7 @@ export function Explorer({ embedded }: { embedded?: boolean }) {
           {poolMode && <button className="btn primary" onClick={() => store.go('game')}>Back to pool ({game!.pool.length})</button>}
         </div>
       )}
+      {!embedded && <Showcase onOpen={(id) => { const c = LEGEND_CHARACTERS.find((x) => x.id === `legend:${id}`); if (c) open(c); }} />}
       <div className="panel col" style={{ gap: 12 }}>
         <div className="row">
           <Seg value={source} label="Data source" onChange={(v) => { setSource(v); setItems([]); setSeriesId(''); }}
@@ -234,5 +238,24 @@ export function Explorer({ embedded }: { embedded?: boolean }) {
         </Modal>
       )}
     </div>
+  );
+}
+
+/** The featured cast: big cinematic tiles with the HD art, each in its own colours. */
+function Showcase({ onOpen }: { onOpen: (key: string) => void }) {
+  return (
+    <section className="showcase" aria-label="Featured characters">
+      <div className="showcase-head"><span className="eyebrow">Featured</span><span className="faint">{WORLDS.length} legends with their own worlds. Scroll sideways, tap one for their card.</span></div>
+      <div className="showcase-rail">
+        {WORLDS.map((w, i) => (
+          <button key={w.key} className={`show-tile type-${w.type}`} onClick={() => onOpen(w.key)} style={{ '--acc': w.accent, '--ink2': w.ink } as CSSProperties} aria-label={`${w.name}, ${w.series}`}>
+            <img src={sceneUrl(w, (i % 3) + 1, 1280)} alt="" loading="lazy" decoding="async" />
+            <span className="show-scrim" />
+            <span className="show-kana" aria-hidden="true">{w.kana}</span>
+            <span className="show-copy"><span className="show-series">{w.series}</span><span className="show-name">{w.name}</span><span className="show-quote">“{w.quote}”</span></span>
+          </button>
+        ))}
+      </div>
+    </section>
   );
 }

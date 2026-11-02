@@ -4,6 +4,8 @@
 // Everything moves with transforms only, so scrolling stays smooth.
 import { useEffect, useMemo, type CSSProperties, type ReactNode, type RefObject } from 'react';
 import { motion } from 'framer-motion';
+import { CinematicVfx, deviceQuality, type Quality } from '../vfx/CinematicVfx';
+import { profileFor } from '../vfx/profiles';
 import type { Effect, World } from './worlds';
 
 const BASE = import.meta.env.BASE_URL;
@@ -35,6 +37,12 @@ export function Particles({ effect, seed, count = 22 }: { effect: Effect; seed: 
   );
 }
 
+/** The scene size this screen needs (CSS pixels times pixel ratio). */
+export function artSize(): 1280 | 1920 | 2560 {
+  const px = (typeof window === 'undefined' ? 1920 : window.innerWidth * (window.devicePixelRatio || 1));
+  return px <= 1280 ? 1280 : px <= 1920 ? 1920 : 2560;
+}
+
 export type PanelLayout = 'hero' | 'right' | 'left' | 'center' | 'split' | 'finale';
 
 export interface PanelSpec {
@@ -54,7 +62,7 @@ export function Panel({ p, index, total, motionOk, eager }: { p: PanelSpec; inde
   const w = p.world;
   const vars = { '--acc': w.accent, '--tone': w.tone, '--ink2': w.ink } as CSSProperties;
   return (
-    <section className={`hpanel lay-${p.layout} frame-${w.frame} type-${w.type}${index === 0 ? ' live' : ''}`} style={vars} aria-label={`${p.label}: ${w.name}`}>
+    <section data-world={w.key} data-art={sceneUrl(w, p.scene, artSize())} className={`hpanel lay-${p.layout} frame-${w.frame} type-${w.type}${index === 0 ? ' is-live' : ''}`} style={vars} aria-label={`${p.label}: ${w.name}`}>
       <div className="hpanel-stage">
         {/* Mirrored on right-hand layouts, so the character faces the copy instead of sitting under it. */}
         <div className="hpanel-artwrap">
@@ -121,7 +129,9 @@ export function usePanelMotion(root: RefObject<HTMLElement>, motionOk: boolean, 
       panels.forEach((p, i) => {
         const prog = (y + vh - tops[i]) / (vh + h);
         const on = prog > 0 && prog < 1.02;
-        if (on !== p.classList.contains('live')) p.classList.toggle('live', on);
+        if (on !== p.classList.contains('is-live')) p.classList.toggle('is-live', on);
+        // The panel that has fully arrived (pinned) gets the cinematic layer.
+        if (y >= tops[i] - 2 && (i === panels.length - 1 || y < tops[i + 1] - 2)) activate(i);
         const art = arts[i];
         if (!art || !on || !motionOk) return;
         const t = Math.max(0, Math.min(1, prog));
@@ -131,13 +141,43 @@ export function usePanelMotion(root: RefObject<HTMLElement>, motionOk: boolean, 
       });
     };
     const onScroll = () => { if (!raf) raf = requestAnimationFrame(frame); };
+
+    // The cinematic layer: one WebGL canvas that moves into the panel on screen and brings
+    // that character to life with their own effects.
+    let vfx: CinematicVfx | null = null, active = -1, monitor = 0;
+    const order: Quality[] = ['high', 'medium', 'low'];
+    if (motionOk) {
+      vfx = new CinematicVfx(deviceQuality());
+      // Every 2 s: if frames keep running long, step quality down; at the bottom, fall back to
+      // the still art (sharp, no effects) rather than stutter.
+      monitor = window.setInterval(() => {
+        if (!vfx) return;
+        const st = vfx.takeStats();
+        if (st.frames < 30 || st.slow / st.frames <= 0.25) return;
+        const i = order.indexOf(vfx.quality);
+        if (i < order.length - 1) vfx.setQuality(order[i + 1]);
+        else { vfx.pause(true); panels.forEach((pn) => pn.classList.remove('gpu')); el.classList.add('lite'); window.clearInterval(monitor); }
+      }, 2000);
+    }
+    const activate = (i: number) => {
+      if (!vfx || i === active || i < 0) return;
+      active = i;
+      const pn = panels[i], stage = pn.querySelector<HTMLElement>('.hpanel-stage');
+      if (!stage) return;
+      void vfx.mount(stage, stage.querySelector('.hpanel-artwrap'), stage.querySelector('.hpanel-scrim')).then(() => {
+        panels.forEach((x) => x.classList.remove('gpu'));
+        return vfx!.show(profileFor(pn.dataset.world ?? ''), pn.dataset.art, pn.classList.contains('lay-right') || pn.classList.contains('lay-split'));
+      }).then(() => { if (active === i) pn.classList.add('gpu'); });
+    };
     // Small, low-memory or few-core devices start in lite mode.
     const nav = navigator as Navigator & { deviceMemory?: number };
     if ((nav.deviceMemory ?? 8) <= 4 || (navigator.hardwareConcurrency ?? 8) <= 4) el.classList.add('lite');
-    const onResize = () => { measure(); onScroll(); };
-    measure(); frame(performance.now());
+    const onResize = () => { measure(); onScroll(); if (vfx && active >= 0) { const st = panels[active].querySelector<HTMLElement>('.hpanel-stage'); if (st) vfx.resize(st.clientWidth, st.clientHeight); } };
+    measure(); frame(performance.now()); activate(0);
     window.addEventListener('scroll', onScroll, { passive: true });
     window.addEventListener('resize', onResize);
-    return () => { window.removeEventListener('scroll', onScroll); window.removeEventListener('resize', onResize); if (raf) cancelAnimationFrame(raf); };
+    const onVisible = () => vfx?.pause(document.hidden);
+    document.addEventListener('visibilitychange', onVisible);
+    return () => { window.removeEventListener('scroll', onScroll); window.removeEventListener('resize', onResize); document.removeEventListener('visibilitychange', onVisible); if (raf) cancelAnimationFrame(raf); window.clearInterval(monitor); vfx?.canvas?.remove(); vfx?.fxCanvas?.remove(); vfx?.destroy(); panels.forEach((x) => x.classList.remove('gpu')); };
   }, [root, motionOk, key]);
 }
