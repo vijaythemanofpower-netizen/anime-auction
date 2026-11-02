@@ -92,10 +92,14 @@ const ROWS: Row[] = [
   ['frieren', 'Frieren', 176754, 'b176754-PCnpqIOkjhFk.png', 'Frieren: Beyond Journey\'s End', 'Mage', 'patient', ['MAGIC', 'LIGHTNING'], 'Staff', 'A thousand years of magic', 'Hides her true mana', 'An elf mage who helped defeat the Demon King and is still learning what people mean to her.', ['Frieren the Slayer'], 'Unsuppressed Frieren', { battleIQ: 8 }],
   ['escanor', 'Escanor', 90202, 'b90202-1H7FIX2hDmYd.png', 'The Seven Deadly Sins', 'Tank', 'arrogant', ['HOLY', 'FIRE'], 'Divine Axe Rhitta', 'Sunshine', 'Stronger as the sun rises', 'The Lion\'s Sin of Pride, who grows mightier until noon.', ['Lion\'s Sin of Pride'], 'The One Escanor', { attack: 8 }],
   ['rimuru', 'Rimuru Tempest', 123962, 'b123962-eL9yGV0NLMF7.png', 'That Time I Got Reincarnated as a Slime', 'Mage', 'cheerful', ['MAGIC', 'DRAGON'], 'Predator & a black katana', 'Copies every skill he eats', 'Analyses, devours and adapts', "A man reborn as a slime who eats his enemies' skills and became a Demon Lord ruling a nation of monsters.", ['Demon Lord Rimuru', 'Satoru Mikami'], 'True Dragon Rimuru', { adaptability: 10 }],
+  ['meliodas', 'Meliodas', 72921, 'b72921-XDHNd1wflN6P.png', 'The Seven Deadly Sins', 'Duelist', 'cheerful', ['DEMON', 'DARK'], 'Broken dragon-hilt sword', 'Full Counter', 'Easygoing until the demon mark appears', 'The captain of the Seven Deadly Sins, a cheerful tavern owner who is secretly the son of the Demon King.', ['Dragon Sin of Wrath'], 'Demon King Meliodas', { technique: 6 }],
+  ['guts', 'Guts', 422, 'b422-XTaiTuvRohsV.png', 'Berserk', 'Berserker', 'stoic', ['WARRIOR', 'DARK'], 'Dragonslayer greatsword', 'Never stops fighting', 'Brute force and a cannon arm', "The Black Swordsman, a mercenary who swings a sword too big to be a sword and fights on through any wound.", ['Black Swordsman'], 'Berserker Armor Guts', { stamina: 10 }],
+  ['gintoki', 'Gintoki Sakata', 672, 'b672-cP5VPriN67xJ.png', 'Gintama', 'Duelist', 'patient', ['WARRIOR'], 'Wooden sword "Lake Toya"', 'Lazy until it matters', 'Improvised swordplay', 'A lazy, sweets-loving odd-jobs man who was once the legendary samurai Shiroyasha.', ['Gin-san', 'Shiroyasha'], 'Shiroyasha Gintoki', { battleIQ: 6 }],
+  ['tatsumaki', 'Tatsumaki', 81929, 'b81929-WPVp2LQoWgkc.png', 'One-Punch Man', 'Controller', 'arrogant', ['MAGIC', 'WIND'], 'Psychic power', 'The strongest esper', 'Crushes everything from a distance', 'The Tornado of Terror, the number two S-Class hero, a tiny esper whose psychic power can lift a city.', ['Tornado of Terror'], 'Full Power Tatsumaki', { technique: 8 }],
 ];
 
 // Used to pick a fitting voice; everyone else in the roster is male.
-const FEMALE = new Set(['mikasa', 'nobara', 'shinobu', 'rukia', 'yor', 'saber', 'frieren', 'power']);
+const FEMALE = new Set(['mikasa', 'nobara', 'shinobu', 'rukia', 'yor', 'saber', 'frieren', 'power', 'tatsumaki']);
 
 const slug = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
 

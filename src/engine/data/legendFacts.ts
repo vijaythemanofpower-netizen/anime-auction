@@ -78,4 +78,8 @@ export const LEGEND_FACTS: Record<string, string[]> = {
   frieren: ['Frieren is an elf mage who lives for over a thousand years.', 'She was part of the hero party that defeated the Demon King.', 'She collects strange and useless spells.'],
   escanor: ['Escanor is the Lion\'s Sin of Pride.', 'He becomes stronger as the sun rises, peaking at noon.', 'His axe Rhitta is extremely heavy.'],
   rimuru: ['Rimuru was a Japanese office worker reborn as a slime.', 'His Predator skill lets him eat things and copy their abilities.', 'He founded the monster nation of Tempest and became a Demon Lord.'],
+  meliodas: ['Meliodas is the captain of the Seven Deadly Sins.', 'His Full Counter reflects magic attacks back with double the power.', 'He is the son of the Demon King, though he looks like a boy.'],
+  guts: ['Guts is known as the Black Swordsman.', 'His sword Dragonslayer was too big to be called a sword.', 'His left arm is an iron prosthetic with a hidden cannon.'],
+  gintoki: ['Gintoki runs an odd-jobs business called Yorozuya.', 'He fights with a wooden sword bought from a TV shopping channel.', 'In the war he was feared as the Shiroyasha, the White Demon.'],
+  tatsumaki: ['Tatsumaki is the number two S-Class hero.', 'She is a powerful esper who can lift whole buildings.', 'She is the older sister of Fubuki.'],
 };

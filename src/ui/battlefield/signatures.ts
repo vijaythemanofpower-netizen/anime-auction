@@ -52,6 +52,8 @@ export const SIGNATURES: Record<string, Signature> = {
   saber: S('blade', [], { idle: 'still' }), kirito: S('blade', ['spinner'], { idle: 'still' }), frieren: S('caster', ['casual'], { idle: 'still', floats: true }),
   escanor: S('tank', ['heavy', 'casual'], { idle: 'proud' }),
   rimuru: S('caster', ['blink'], { idle: 'still' }),
+  meliodas: S('blade', ['blink'], { idle: 'still' }), guts: S('blade', ['heavy'], { idle: 'proud' }), gintoki: S('blade', ['casual'], { idle: 'sway' }),
+  tatsumaki: S('caster', [], { idle: 'still', floats: true }),
 };
 
 /** The built-in's key from a fighter id ("legend:luffy", "legend:luffy#b" in tests). */

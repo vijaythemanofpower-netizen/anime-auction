@@ -323,6 +323,18 @@ export const KITS: Record<string, Kit> = {
   rimuru: kit('rimuru', [['Demon Lord', 'hp70', '#38bdf8', 'rimuru tempest, demon lord, black wings, golden eyes'], ['True Dragon', 'last', '#a5b4fc', 'rimuru tempest, silver hair, glowing golden eyes, dragon aura']],
     [['megido', 'Megido', 'e', 2.0, 'HOLY', 'Water drops in the sky focus sunlight into a hundred beams.', 1], ['veldora_breath', "Storm Dragon's Breath", 'a', 2.2, 'WIND', "He borrows Veldora's storm and breathes it out.", 1], ['slime_body', 'Slime Body', 'b', 0.3, 'WATER', 'Blows sink into his body and do nothing.']],
     ['ciel', 'Ciel has calculated', 'u', 3.0, 'MAGIC', 'last', 'His wisdom has already worked out every outcome. This one ends with him winning.']),
+  meliodas: kit('meliodas', [['Assault Mode', 'hp70', '#334155', 'meliodas, assault mode, black eyes, demon mark on forehead, cold expression'], ['Demon King', 'last', '#0f172a', 'meliodas, demon king, black markings over body, dark aura']],
+    [['god_bless', 'Demon Mark Rush', 'a', 2.1, 'DARK', 'Black markings crawl over him and he blurs forward.', 1], ['lost_vayne', 'Lostvayne Clones', 'e', 1.8, 'WARRIOR', 'Four copies of him attack from four sides.'], ['counter_vanish', 'Counter Vanish', 'd', 0.3, 'DARK', 'He cancels every spell in the arena.', 1]],
+    ['elizabeth', 'For Elizabeth', 'u', 3.0, 'DARK', 'ally', 'He made a promise three thousand years ago. He is keeping it.']),
+  guts: kit('guts', [['Berserker Armor', 'hp50', '#7f1d1d', 'guts, berserker armor, wolf helmet, glowing red eyes, black armor']],
+    [['crossbow', 'Repeating Crossbow', 'e', 1.7, 'WARRIOR', 'His mechanical arm fires a spray of bolts.'], ['hammer', 'Iron Swing', 'a', 2.2, 'WARRIOR', 'A swing that flattens everything in an arc.', 1], ['grit', 'Grit Teeth', 'b', 0.3, 'WARRIOR', 'He has survived worse. Much worse.']],
+    ['struggler', 'The Struggler', 'u', 3.1, 'DARK', 'last', 'Every demon in the night has tried to kill him. None of them managed.']),
+  gintoki: kit('gintoki', [['Shiroyasha', 'hp50', '#e7e5e4', 'gintoki sakata, shiroyasha, white armor, white headband, serious face']],
+    [['toya_flurry', 'Wooden Sword Flurry', 'a', 2.0, 'WARRIOR', 'A storm of wooden-sword strikes, every one aimed.', 1], ['jump', 'Scooter Crash', 'a', 1.8, 'WARRIOR', 'He rides his scooter straight into them.'], ['soul', 'Bushido', 'b', 0.3, 'WARRIOR', 'He protects what is in front of him, whatever it costs.']],
+    ['soul_sword', 'The Sword in My Soul', 'u', 3.0, 'WARRIOR', 'ally', 'My sword protects whatever is within my reach.']),
+  tatsumaki: kit('tatsumaki', [['Full Power', 'hp50', '#22c55e', 'tatsumaki, glowing green aura, floating, hair rising, angry']],
+    [['meteor', 'Meteor Pull', 'e', 2.2, 'MAGIC', 'She drags a meteor out of the sky.', 1], ['twist', 'Neck Twist', 'a', 1.8, 'MAGIC', 'An invisible hand grabs and twists.'], ['lift', 'Lift Off', 'b', 0.3, 'WIND', 'She floats out of reach.']],
+    ['city', 'Lift the City', 'u', 3.1, 'MAGIC', 'last', 'She pulls the whole city out of the ground and holds it over them.']),
 };
 
 /** Raid villains (looked up from AniList, keyed by name): signature moves, forms and a secret. */

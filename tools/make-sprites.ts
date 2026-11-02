@@ -13,6 +13,7 @@ import path from 'node:path';
 import { LEGEND_CHARACTERS } from '../src/engine/data/legends';
 import { NEGATIVE, characterTags } from '../src/engine/comic';
 import { SIGNATURES } from '../src/ui/battlefield/signatures';
+import { LOOK, LOOK_AVOID } from '../src/engine/data/looks';
 
 const COMFY = process.env.COMFY_URL ?? 'http://127.0.0.1:8188';
 const OUT = path.resolve('public/sprites');
@@ -55,11 +56,8 @@ async function upload(url: string): Promise<string | null> {
 
 /** Look-alikes the model mixes up, kept out per fighter. */
 /** Look details the model forgets for some fighters. */
-const HINT: Record<string, string> = {
-  sukuna: 'pink hair, black facial markings, extra eyes under eyes, white kimono, black sash', levi: 'short black hair, undercut, survey corps uniform, 3d maneuver gear, holding two blades',
-  sasuke: 'black hair, white high-collar shirt, purple rope belt', eren: 'short brown hair, green eyes, male, survey corps uniform, 3d maneuver gear', pain: 'orange spiky hair, many facial piercings, purple ripple pattern eyes, black cloak with red clouds', minato: 'spiky blond hair, white haori with red flame pattern on hem, green flak vest', madara: 'long spiky black hair, red samurai armor', escanor: 'very muscular tall man, short blond hair, thin mustache, white shirt open', kaneki: 'white hair, black mask covering mouth with zipper teeth, black bodysuit', akaza: 'short pink hair, dark blue line tattoos all over body, yellow eyes, shirtless, white pants', inosuke: 'wearing a boar head mask, shirtless, fur pants, two jagged swords', shigaraki: 'messy pale blue hair, severed hands attached to face and arms, black clothes, red eyes', kenpachi: 'spiky black hair with small bells, eyepatch, scar across face, tall muscular man, torn white haori', deku: 'green curly hair, green hero costume', zoro: 'green hair, three swords, green haramaki',
-};
-const AVOID: Record<string, string> = { sasuke: 'akatsuki, akatsuki outfit, red clouds, uchiha itachi', itachi: 'uchiha sasuke', gohan: 'son goku', minato: 'uzumaki naruto', yuta: 'gojou satoru', pain: 'uzumaki naruto, blond hair, whisker markings', minato: 'akatsuki, red clouds', madara: 'mask, orange mask, uchiha obito', akaza: 'kamado tanjirou, checkered haori', inosuke: 'human face' };
+const HINT = LOOK;
+const AVOID = LOOK_AVOID;
 
 function graph(prompt: string, seed: number, ref: string | null, prefix: string, avoid = '') {
   const g: Record<string, unknown> = {
@@ -111,7 +109,7 @@ for (const key of keys) {
     if (!fs.existsSync(file)) {
       // The model's own tag for the character keeps the outfit the same in every pose.
       const who = characterTags(c, c.name).replace(/\(/g, '\\(').replace(/\)/g, '\\)');
-      const prompt = `${who}, ${HINT[key] ? `${HINT[key]}, ` : ''}solo, full body, ${pose}, official outfit, anime screencap, cel shading, dramatic rim lighting, dark background, black background, best quality, newest, very aesthetic`;
+      const prompt = `${who}, ${HINT[key] ? `${HINT[key]}, ` : ''}solo, full body, ${pose}, official outfit, full color, vibrant colors, anime screencap, cel shading, dramatic rim lighting, dark background, black background, best quality, newest, very aesthetic`;
       // --seed=N tries a different drawing for poses that came out wrong.
       const bump = Number(args.find((a) => a.startsWith('--seed='))?.slice(7) ?? 0);
       const seed = Math.abs([...`${key}:${clip}`].reduce((h, ch) => (h * 31 + ch.charCodeAt(0)) | 0, 11)) + bump * 7919;

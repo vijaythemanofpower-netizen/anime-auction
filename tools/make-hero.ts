@@ -25,8 +25,9 @@ if (!keys.length) { console.log('Usage: npx vite-node tools/make-hero.ts <key...
 
 /** Look details the model forgets (same idea as the sprite tool). */
 const HINT: Record<string, string> = {
-  sukuna: 'pink hair, black facial markings, extra eyes under eyes', levi: '(short black hair:1.3), undercut, grey eyes', eren: 'brown hair, green eyes, male',
-  jinwoo: 'short black hair, (black hair:1.3), male, korean man', luffy: 'black hair, (light skin:1.2), straw hat', goku: 'black spiky hair, (smooth clean face:1.2)', vegeta: 'black spiky hair, widows peak', zoro: 'green short hair, male', saitama: 'bald head, round face', rengoku: 'long yellow hair with red tips, thick forked eyebrows, (smooth clean face, no makeup:1.3), white haori with flame pattern', killua: 'white spiky hair, boy, (smooth clean face:1.3)', gojo: 'white spiky hair, tall man', tanjiro: 'burgundy hair, scar on forehead, hanafuda earrings',
+  gojo: 'white hair, (pale skin:1.4), (fair skin:1.2), bright blue eyes', killua: 'fluffy white hair, (pale skin:1.4), (fair skin:1.2), blue eyes, boy',
+  sukuna: 'pink hair, black facial markings, extra eyes under eyes, (pale skin:1.3)', levi: '(short black hair:1.3), undercut, grey eyes', eren: 'brown hair, green eyes, male',
+  jinwoo: 'short black hair, (black hair:1.5), (dark hair:1.2), male, korean man', luffy: 'black hair, (light skin:1.4), straw hat, (bright face lighting:1.2)', goku: 'black spiky hair, (smooth clean face:1.2), (light skin:1.3), (natural skin color:1.2)', vegeta: 'black spiky hair, widows peak', zoro: 'green short hair, male', saitama: 'bald head, round face', rengoku: 'long yellow hair with red tips, thick forked eyebrows, (smooth clean face, no makeup:1.3), white haori with flame pattern', killua: 'white spiky hair, boy, (smooth clean face:1.3)', gojo: 'white spiky hair, tall man', tanjiro: 'burgundy hair, scar on forehead, hanafuda earrings',
 };
 
 /** Details the extra-detail pass sometimes adds that don't belong to the character.

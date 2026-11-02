@@ -7,25 +7,32 @@ import type { BattleRecord, PublicCharacter } from '../engine/types';
 import type { ComicDrawing } from '../engine/comic';
 import { characterTags } from '../engine/comic';
 import { kitFor } from '../engine/data/kits';
+import { LOOK, LOOK_AVOID } from '../engine/data/looks';
 import { hashString } from '../engine/rng';
 import { clipKeys, formPicKey, getClip, onClipsChanged } from '../store/media';
 import { drawer } from './comic/drawing';
 import { rooms, shareImage } from '../online/room';
 
 /** The drawing key for a form portrait: the same for every fight, so it is drawn only once. */
-export const formDrawKey = (charId: string, stage: number) => `form:${charId}:${stage}:v1`;
+export const formDrawKey = (charId: string, stage: number) => `form:${charId}:${stage}:v4`;
 
 /** What the drawing app paints for a form: the character in that form, upper body, facing us. */
 export function formDrawing(c: PublicCharacter, stage: number): ComicDrawing | null {
   const form = kitFor(c.id, c.name)?.forms[stage - 1];
   if (!form) return null;
+  // Who it is comes first and strongest; the form only changes how they look.
+  const key = c.id.startsWith('legend:') ? c.id.slice(7) : '';
+  // The series tag pulls toward the series' hero ("naruto (series)" draws Naruto), so built-ins drop it
+  // and rely on their own name tag and look.
+  const who = LOOK[key] ? characterTags(c, c.name).split(', ').filter((_s, i, all) => i < 2 || i < all.length - 1).join(', ') : characterTags(c, c.name);
   const prompt = [
-    `(${characterTags(c, c.name)}, ${form.look}:1.2)`, `(${form.name.toLowerCase().replace(/[^a-z0-9 ]/g, '')}:0.8)`,
+    `(${who}${LOOK[key] ? `, ${LOOK[key]}` : ''}:1.3)`, `(${form.look}:1.1)`, `(${form.name.toLowerCase().replace(/[^a-z0-9 ]/g, '')}:0.7)`,
     'solo, upper body, looking at viewer, battle stance, glowing aura, dramatic lighting, anime coloring, bold lineart, cel shading, dark background',
     'safe', 'masterpiece, high score, great score, absurdres',
   ].join(', ');
-  const ref = !c.id.startsWith('legend:') && c.source !== 'original' ? c.imageUrl : undefined;
-  return { key: formDrawKey(c.id, stage), prompt, seed: hashString(`${c.id}:form:${stage}`) >>> 0, width: 832, height: 1216, ref };
+  // The official portrait keeps the face and build theirs (a light touch, so the form's changes still show).
+  const ref = c.source !== 'original' ? c.imageUrl : undefined;
+  return { key: formDrawKey(c.id, stage), prompt, seed: hashString(`${c.id}:form:${stage}`) >>> 0, width: 832, height: 1216, ref, avoid: LOOK_AVOID[key] };
 }
 
 // Your own pictures, as object URLs, loaded once per session.

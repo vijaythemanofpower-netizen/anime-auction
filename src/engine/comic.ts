@@ -35,6 +35,8 @@ export interface ComicDrawing {
   height: number;
   /** The character's portrait, used as a look reference when the drawing app can. */
   ref?: string;
+  /** Look-alikes to keep out of this drawing (added to the negative prompt). */
+  avoid?: string;
 }
 
 export interface ComicScript { battleId: string; panels: ComicPanel[] }
@@ -69,7 +71,7 @@ const LEGEND_TAGS: Record<string, string> = {
   gon: 'gon freecss, hunter x hunter', killua: 'killua zoldyck, hunter x hunter', hisoka: 'hisoka morow, hunter x hunter',
   edward: 'edward elric, fullmetal alchemist', roy: 'roy mustang, fullmetal alchemist', saitama: 'saitama (one-punch man), one-punch man',
   natsu: 'natsu dragneel, fairy tail', denji: 'denji (chainsaw man), chainsaw man', minato: 'namikaze minato, naruto (series)', madara: 'uchiha madara, naruto (series)',
-  pain: 'pain (naruto), naruto (series)', gaara: 'gaara (naruto), naruto (series)', lee: 'rock lee, naruto (series)', law: 'trafalgar law, one piece',
+  pain: 'pain, tendou, akatsuki leader, akatsuki outfit, rinnegan', gaara: 'gaara (naruto), naruto (series)', lee: 'rock lee, naruto (series)', law: 'trafalgar law, one piece',
   whitebeard: 'edward newgate, one piece', shanks: 'shanks (one piece), one piece', gohan: 'son gohan, dragon ball z', piccolo: 'piccolo, dragon ball z',
   broly: 'broly (dragon ball super), dragon ball', kenpachi: 'zaraki kenpachi, bleach', toshiro: 'hitsugaya toushirou, bleach', rukia: 'kuchiki rukia, bleach',
   yuta: 'okkotsu yuuta, jujutsu kaisen', todo: 'toudou aoi (jujutsu kaisen), jujutsu kaisen', nanami: 'nanami kento, jujutsu kaisen', nobara: 'kugisaki nobara, jujutsu kaisen',
@@ -78,7 +80,7 @@ const LEGEND_TAGS: Record<string, string> = {
   jinwoo: 'sung jin-woo, ore dake level up na ken', jotaro: 'kujo jotaro, jojo no kimyou na bouken', dio: 'dio brando, jojo no kimyou na bouken', mob: 'kageyama shigeo, mob psycho 100',
   kaneki: 'kaneki ken, tokyo ghoul', asta: 'asta (black clover), black clover', yuno: 'yuno (black clover), black clover', power: 'power (chainsaw man), chainsaw man',
   yor: 'yor briar, spy x family', gilgamesh: 'gilgamesh (fate), fate/zero', saber: 'artoria pendragon (fate), saber (fate), fate/zero', kirito: 'kirito, sword art online',
-  frieren: 'frieren, sousou no frieren', escanor: 'escanor, nanatsu no taizai', rimuru: 'rimuru tempest, tensei shitara slime datta ken',
+  frieren: 'frieren, sousou no frieren', escanor: 'escanor, nanatsu no taizai', rimuru: 'rimuru tempest, tensei shitara slime datta ken', meliodas: 'meliodas, nanatsu no taizai', guts: 'guts (berserk), berserk', gintoki: 'sakata gintoki, gintama', tatsumaki: 'tatsumaki, one-punch man',
 };
 
 const SERIES_TAGS: Record<string, string> = {

@@ -108,6 +108,30 @@ export const LEGEND_MOVESETS: Record<string, Ability[]> = {
     mv('aizen', 'kyoka', 'Kyoka Suigetsu', 'debuff', 'enemy', 22, 4, 0.5, 'genjutsu', '#a78bfa', 'His blade dissolves into mist; the target is now attacking a reflection of their ally.', 'Complete hypnosis.', { el: 'MAGIC', st: st('weaken', 0.9, 3, 0.25) }),
     mv('aizen', 'hogyoku', 'Hogyoku Transcendence', 'ultimate', 'all_enemies', 42, 7, 1.65, 'explosion', '#c084fc', 'The Hogyoku in his chest pulses; his body breaks apart into a winged, transcendent form that crushes the field.', 'Fusion with the Hogyoku.', { el: 'DARK', tr: 'hp_below_50' }),
   ],
+  meliodas: [
+    mv('meliodas', 'hellblaze', 'Hellblaze', 'attack', 'enemy', 16, 2, 1.7, 'fire', '#1f1f1f', 'Black flames that cannot be put out roll off his blade.', 'Demonic black fire.', { el: 'DARK', st: st('burn', 0.4, 2, 0.04) }),
+    mv('meliodas', 'slash', 'Dragon-Hilt Slash', 'attack', 'enemy', 12, 1, 1.5, 'slash', '#a3a3a3', 'A short, broken sword moves faster than the eye can follow.', 'A quick slash.', { el: 'WARRIOR' }),
+    mv('meliodas', 'counter', 'Full Counter', 'shield', 'self', 14, 3, 0.4, 'shield', '#111827', 'He stands still and waits. Any attack that comes in goes back out twice as hard.', 'Reflects magic back, doubled.', { el: 'DARK' }),
+    mv('meliodas', 'revenge', 'Revenge Counter', 'ultimate', 'enemy', 44, 7, 3.0, 'explosion', '#0f172a', 'Every hit he took this fight comes back at once.', 'All the damage, returned.', { el: 'DARK', tr: 'hp_below_50', pierce: true }),
+  ],
+  guts: [
+    mv('guts', 'dragonslayer', 'Dragonslayer', 'attack', 'enemy', 16, 2, 1.8, 'slash', '#9ca3af', 'A slab of iron the size of a door comes down on the target.', 'It was too big to be called a sword.', { el: 'WARRIOR', st: st('bleed', 0.35, 2, 0.04) }),
+    mv('guts', 'cannon', 'Cannon Arm', 'attack', 'enemy', 18, 3, 1.75, 'projectile', '#f97316', 'His iron left hand flips open and fires a cannonball point-blank.', 'A hidden cannon.', { el: 'FIRE', st: st('stun', 0.2, 1, 0) }),
+    mv('guts', 'struggle', 'Struggler', 'buff', 'self', 14, 4, 0, 'aura', '#7f1d1d', 'Bleeding everywhere, he grits his teeth and keeps coming.', 'Refuses to fall: focus for 3 actions.', { el: 'WARRIOR', st: st('focus', 1, 3, 0.35) }),
+    mv('guts', 'rampage', 'Berserker Rampage', 'ultimate', 'enemy', 44, 7, 3.0, 'barrage', '#dc2626', 'The armor locks on, the wolf helm closes and he stops feeling pain.', 'The Berserker Armor takes over.', { el: 'DARK', tr: 'hp_below_50' }),
+  ],
+  gintoki: [
+    mv('gintoki', 'toya', 'Lake Toya Strike', 'attack', 'enemy', 12, 1, 1.55, 'slash', '#d6d3d1', 'A wooden sword bought from a TV shopping channel hits like steel.', 'A wooden sword, swung hard.', { el: 'WARRIOR' }),
+    mv('gintoki', 'improv', 'Dirty Trick', 'attack', 'enemy', 14, 2, 1.5, 'punch', '#fbbf24', 'He throws a strawberry milk carton in their face and kicks them while they blink.', 'Samurai do not fight fair.', { el: 'WARRIOR', st: st('weaken', 0.3, 2, 0.1) }),
+    mv('gintoki', 'sugar', 'Sugar Rush', 'buff', 'self', 14, 4, 0, 'aura', '#f9a8d4', 'He downs a parfait mid-fight and his eyes finally focus.', 'Sweets kick in: haste for 3 actions.', { st: st('haste', 1, 3, 0.4) }),
+    mv('gintoki', 'shiroyasha', 'White Demon', 'ultimate', 'enemy', 44, 7, 3.0, 'slash', '#f5f5f4', 'The lazy look is gone. For a moment the arena sees the Shiroyasha of the war.', 'The legend returns.', { el: 'WARRIOR', tr: 'hp_below_50', pierce: true }),
+  ],
+  tatsumaki: [
+    mv('tatsumaki', 'crush', 'Psychic Crush', 'attack', 'enemy', 16, 2, 1.7, 'wave', '#22c55e', 'She flicks a finger and the air around the target folds in on itself.', 'Telekinetic pressure.', { el: 'MAGIC' }),
+    mv('tatsumaki', 'debris', 'Debris Storm', 'attack', 'all_enemies', 20, 3, 1.3, 'projectile', '#4ade80', 'Half the arena floor rips up and rains down on everyone.', 'Throws the arena at them.', { el: 'WIND' }),
+    mv('tatsumaki', 'barrier', 'Psychic Barrier', 'shield', 'self', 14, 3, 0.4, 'shield', '#86efac', 'A green shell of force snaps around her; she looks bored.', 'Nothing gets through.', { el: 'MAGIC' }),
+    mv('tatsumaki', 'tornado', 'Tornado of Terror', 'ultimate', 'all_enemies', 44, 7, 1.8, 'wave', '#16a34a', 'She lifts off the ground, and so does everything else.', 'The number two S-Class hero, at full power.', { el: 'WIND', tr: 'hp_below_50' }),
+  ],
   gojo: [
     mv('gojo', 'blue', 'Lapse: Blue', 'attack', 'enemy', 16, 2, 1.55, 'projectile', '#3b82f6', 'A point of blue appears and everything around the target is sucked into it.', 'Attraction that crushes the target inward.', { el: 'MAGIC', pierce: true }),
     mv('gojo', 'red', 'Reversal: Red', 'attack', 'enemy', 20, 3, 1.85, 'explosion', '#ef4444', 'A red point flares at his fingertip and blasts the target away like a cannon.', 'Repulsion that hurls the target.', { el: 'MAGIC' }),

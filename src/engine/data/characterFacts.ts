@@ -43,6 +43,10 @@ const TRIVIA: Record<string, string> = {
   meruem: 'Meruem\'s name means "the light that illuminates everything" in the Chimera Ants\' story.',
   escanor: 'Escanor is based on a knight of Arthurian legend whose strength grew with the sun.',
   rimuru: 'Rimuru began as a web novel in 2013 and became one of the best-selling isekai light novels.',
+  meliodas: 'Meliodas is named after a king of Lyonesse in Arthurian legend, the father of Tristan.',
+  guts: 'Berserk ran for over 30 years and inspired games like Dark Souls.',
+  gintoki: 'Gintama is famous for breaking the fourth wall and parodying other anime.',
+  tatsumaki: 'One-Punch Man began as a webcomic by ONE before Yusuke Murata redrew it.',
   gilgamesh: 'Gilgamesh is based on the hero of the Epic of Gilgamesh, one of the oldest stories ever written.',
   saber: 'Saber\'s true identity, King Arthur, was one of Fate/stay night\'s biggest early reveals.',
 };

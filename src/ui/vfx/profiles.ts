@@ -78,7 +78,7 @@ const STYLE: Record<string, AuraStyle> = {
   law: 'void', shanks: 'ki', whitebeard: 'ki', broly: 'ki', gohan: 'ki', piccolo: 'ki', yuji: 'ki', megumi: 'shadow', yuta: 'void',
   todo: 'ki', nanami: 'blade', nobara: 'ki', shinobu: 'blade', inosuke: 'blade', shigaraki: 'shadow', kurapika: 'blade', edward: 'electric',
   deku: 'electric', allmight: 'ki', denji: 'blade', power: 'shadow', kaneki: 'shadow', asta: 'shadow', yor: 'blade', mob: 'void',
-  jotaro: 'ki', dio: 'shadow', frieren: 'void', rimuru: 'water',
+  jotaro: 'ki', dio: 'shadow', frieren: 'void', rimuru: 'water', meliodas: 'shadow', guts: 'shadow', gintoki: 'blade', tatsumaki: 'void',
 };
 
 /** The profile for a world key or character id; others get one built from their accent colour. */

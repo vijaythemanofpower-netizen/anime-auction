@@ -223,7 +223,7 @@ export function workflow(d: ComicDrawing, model: string, speedLora: string, ref:
   const g: Record<string, unknown> = {
     ckpt: { class_type: 'CheckpointLoaderSimple', inputs: { ckpt_name: model } },
     pos: { class_type: 'CLIPTextEncode', inputs: { text, clip: [base, 1] } },
-    neg: { class_type: 'CLIPTextEncode', inputs: { text: NEGATIVE, clip: [base, 1] } },
+    neg: { class_type: 'CLIPTextEncode', inputs: { text: d.avoid ? `${NEGATIVE}, ${d.avoid}` : NEGATIVE, clip: [base, 1] } },
     latent: { class_type: 'EmptyLatentImage', inputs: { width: d.width, height: d.height, batch_size: 1 } },
     sample: {
       class_type: 'KSampler',
