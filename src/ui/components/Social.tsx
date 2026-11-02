@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState, type CSSProperties } from 'react';
 import { createPortal } from 'react-dom';
 import { useAuth } from '../../online/auth';
-import { acceptFriend, addFriend, dismissInvite, inviteFriend, removeFriend, searchPlayers, useFriends, type Invite } from '../../online/friends';
+import { acceptFriend, addFriend, dismissInvite, enableNotifications, inviteFriend, notifyState, removeFriend, searchPlayers, useFriends, type Friend, type Invite } from '../../online/friends';
 import { joinRoom, useRoom } from '../../online/room';
 import { useCareer, type Career } from '../../store/career';
 import { store } from '../../store/store';
@@ -86,6 +86,20 @@ export function CareerDashboard() {
   );
 }
 
+/** A friend's name with a dot: green when they're online right now. */
+function FriendName({ f }: { f: Friend }) {
+  return <span className="row" style={{ gap: 6 }}><i className={`online-dot${f.online ? ' on' : ''}`} aria-hidden="true" />{f.name}<span className="faint" style={{ fontSize: 12 }}>{f.online ? 'online' : 'offline'}</span></span>;
+}
+
+/** Turn on desktop notifications for invites and friend requests while the game is in another tab. */
+function NotifySwitch() {
+  const [s, setS] = useState(notifyState());
+  if (s === 'unsupported') return null;
+  if (s === 'on') return <span className="faint" style={{ fontSize: 13 }}>🔔 Notifications on: invites reach you even when the game is in another tab.</span>;
+  if (s === 'blocked') return <span className="faint" style={{ fontSize: 13 }}>🔕 Notifications are blocked for this site in your browser settings.</span>;
+  return <button className="btn sm ghost" onClick={() => { void enableNotifications().then(() => setS(notifyState())); }}>🔔 Notify me about invites</button>;
+}
+
 export function FriendsPanel() {
   const a = useAuth();
   const f = useFriends();
@@ -110,12 +124,12 @@ export function FriendsPanel() {
         </div>
       )}
       <div className="panel col" style={{ gap: 6 }}>
-        <strong>Friends ({friends.length})</strong>
+        <div className="row" style={{ justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}><strong>Friends ({friends.length}, {friends.filter((x) => x.online).length} online)</strong><NotifySwitch /></div>
         {friends.length ? friends.map((x) => (
           <div key={x.id} className="row" style={{ justifyContent: 'space-between', gap: 8, flexWrap: 'wrap' }}>
-            <span>{x.name}</span>
+            <FriendName f={x} />
             <span className="row" style={{ gap: 6 }}>
-              {room?.connected && !room.started && <button className="btn sm primary" onClick={() => run(() => inviteFriend(x.id, room.code), `Invite sent to ${x.name}.`)}>Invite to room {room.code}</button>}
+              {room?.connected && !room.started && <button className="btn sm primary" title={x.online ? 'They get it right away' : 'They get it when they come back online'} onClick={() => run(() => inviteFriend(x.id, room.code), x.online ? `Invite sent to ${x.name}.` : `${x.name} is offline: they'll see your invite when they come back.`)}>Invite to room {room.code}</button>}
               <button className="btn sm ghost" onClick={() => run(() => removeFriend(x.id))}>Remove</button>
             </span>
           </div>
@@ -145,11 +159,13 @@ export function InviteFriends() {
   return (
     <div className="col" style={{ gap: 6 }}>
       <strong>Invite friends</strong>
+      {f.error && <span className="faint">{f.error}</span>}
       {err && <span className="faint">{err}</span>}
+      {friends.length ? <span className="faint" style={{ fontSize: 13 }}>Online friends get a pop-up now; offline friends find the invite waiting when they come back.</span> : null}
       {friends.length ? friends.map((x) => (
         <div key={x.id} className="row" style={{ justifyContent: 'space-between' }}>
-          <span>{x.name}</span>
-          <button className="btn sm" disabled={sent.includes(x.id)} onClick={() => { setErr(''); inviteFriend(x.id, room.code).then(() => setSent((s) => [...s, x.id])).catch((e: Error) => setErr(e.message)); }}>{sent.includes(x.id) ? 'Invited ✓' : 'Invite'}</button>
+          <FriendName f={x} />
+          <button className="btn sm" disabled={sent.includes(x.id)} onClick={() => { setErr(''); inviteFriend(x.id, room.code).then(() => setSent((s) => [...s, x.id])).catch((e: Error) => setErr(e.message)); }}>{sent.includes(x.id) ? (x.online ? 'Invited ✓' : 'Invite waiting ✓') : 'Invite'}</button>
         </div>
       )) : <span className="faint">No friends to invite yet. <button className="btn sm ghost" onClick={() => openProfile('friends')}>Add friends</button></span>}
     </div>
@@ -171,16 +187,28 @@ function InviteToasts() {
   const f = useFriends();
   const room = useRoom();
   const [err, setErr] = useState('');
-  if (!f.invites.length) return null;
+  const [seenReq, setSeenReq] = useState<string[]>([]);
+  const requests = f.friends.filter((x) => x.status === 'incoming' && !seenReq.includes(x.id));
+  if (!f.invites.length && !requests.length) return null;
   const join = (inv: Invite) => {
     setErr('');
-    joinRoom(inv.room).then(() => { void dismissInvite(inv); store.go('online'); }).catch((e: Error) => setErr(e.message));
+    joinRoom(inv.room).then(() => { void dismissInvite(inv); store.go('online'); }).catch((e: Error) => setErr(/not found|no room|closed/i.test(e.message) ? `Room ${inv.room} has closed. Ask ${inv.fromName} for a new invite.` : e.message));
   };
+  const ago = (at: number) => { const m = Math.round((Date.now() - at) / 60_000); return m < 60 ? `${m} min ago` : `${Math.round(m / 60)} h ago`; };
   return (
     <div className="invite-toasts" role="status" aria-live="polite">
+      {requests.slice(0, 2).map((x) => (
+        <div key={`req-${x.id}`} className="invite-toast">
+          <span>👋 <b>{x.name}</b> wants to be friends</span>
+          <span className="row" style={{ gap: 6 }}>
+            <button className="btn sm primary" onClick={() => { void acceptFriend(x.id).catch((e: Error) => setErr(e.message)); }}>Accept</button>
+            <button className="btn sm ghost" onClick={() => setSeenReq((s) => [...s, x.id])}>Later</button>
+          </span>
+        </div>
+      ))}
       {f.invites.slice(-3).map((inv) => (
         <div key={inv.id} className="invite-toast">
-          <span>🎮 <b>{inv.fromName}</b> invited you to room <b>{inv.room}</b></span>
+          <span>🎮 <b>{inv.fromName}</b> invited you to room <b>{inv.room}</b>{inv.missed ? <span className="faint"> · while you were away, {ago(inv.at)}</span> : null}</span>
           <span className="row" style={{ gap: 6 }}>
             <button className="btn sm primary" disabled={room?.code === inv.room} onClick={() => join(inv)}>{room?.code === inv.room ? 'Joined' : 'Join'}</button>
             <button className="btn sm ghost" onClick={() => void dismissInvite(inv)}>Dismiss</button>

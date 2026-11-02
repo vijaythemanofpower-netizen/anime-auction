@@ -52,7 +52,10 @@ drop policy if exists "clear your invites" on public.invites;
 create policy "clear your invites" on public.invites for delete to authenticated using (auth.uid() in (from_id, to_id));
 grant select, insert, delete on public.invites to authenticated;
 
--- Invites arrive instantly through Realtime.
+-- Invites and friend requests arrive instantly through Realtime.
 do $$ begin
   alter publication supabase_realtime add table public.invites;
+exception when duplicate_object then null; end $$;
+do $$ begin
+  alter publication supabase_realtime add table public.friendships;
 exception when duplicate_object then null; end $$;
