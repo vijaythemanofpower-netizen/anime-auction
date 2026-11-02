@@ -219,3 +219,6 @@ html[data-world] .scroll-speedlines { display: none; }
 .hpanel.gpu .story-fx, .hpanel.gpu .hpanel-sweep { display: none; }
 .vfx-canvas.vfx-fx { z-index: 2; }
 .page-banner .vfx-canvas.vfx-fx { z-index: auto; }
+
+/* Fights follow the story script, not health bars: the fighting-game bar overlay stays hidden. */
+.fg-hud { display: none !important; }
