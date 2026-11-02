@@ -153,7 +153,12 @@ class Store {
   }
   receiveBattle(record: BattleRecord) {
     const patch: Partial<AppState> = { battles: { ...this.state.battles, [record.battleId]: record } };
-    if (this.state.exhibition?.battleId === record.battleId) patch.exhibition = record;
+    // Tournament battles switch guests to the battle screen through the synced
+    // game phase. Raids and team battles are exhibitions, so they do not change
+    // that phase; mirror the host's exhibition when its record arrives.
+    if (this.state.exhibition?.battleId === record.battleId || (this.isGuest() && (record.kind === 'raid' || record.kind === 'team'))) {
+      patch.exhibition = record;
+    }
     this.set(patch);
   }
   receiveHidden(profiles: Record<string, HiddenProfile>) { this.guestHidden = profiles; this.set({}); }

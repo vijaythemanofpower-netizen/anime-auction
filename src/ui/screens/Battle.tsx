@@ -243,10 +243,8 @@ export function BattleView({ record, exhibition }: { record: BattleRecord; exhib
       const r = result.fighters.find((x) => x.charId === f.charId)!;
       fs.set(f.charId, { snap: f, hp: r.maxHp, maxHp: r.maxHp, st: r.maxStamina, maxSt: r.maxStamina, down: false, awakened: false, position: f.position, form: r.form ?? 1, guard: 100, injuries: [], knockdowns: 0, floored: false, staggered: false, body: NO_DAMAGE() });
     }
-    let momentum = 0;
     for (let i = 0; i < Math.min(idx, events.length); i++) {
       const e = events[i];
-      if (e.momentum) momentum = e.momentum[0];
       if (e.actor && e.staminaDelta) { const a = fs.get(e.actor); if (a) a.st = Math.max(0, Math.min(a.maxSt, a.st + e.staminaDelta)); }
       if (e.target && e.hpAfter !== undefined) { const t = fs.get(e.target); if (t) t.hp = e.hpAfter; }
       if (e.target && (e.damage ?? 0) > 0 && e.type !== 'heal') { const t = fs.get(e.target); if (t?.body) t.body[regionOf(e)] += e.damage!; }
@@ -265,7 +263,7 @@ export function BattleView({ record, exhibition }: { record: BattleRecord; exhib
       if (e.type === 'replacement' && e.actor) { fs.get(e.actor)!.position = 'front'; if (e.action === 'tag' && e.target) fs.get(e.target)!.position = 'back'; }
     }
     if (idx >= events.length) for (const r of result.fighters) { const f = fs.get(r.charId)!; f.hp = r.hp; f.st = r.stamina; f.down = r.defeated; f.floored = false; f.howDown = r.howDown; }
-    return { fs, momentum };
+    return { fs };
   }, [idx, events, input, result]);
 
   const cur = events[Math.max(0, Math.min(idx, events.length) - 1)];
@@ -298,7 +296,7 @@ export function BattleView({ record, exhibition }: { record: BattleRecord; exhib
       </div>
       {comic
         ? <ComicStage record={record} script={script} cur={idx > 0 ? cur : null} done={done} characters={g.characters} waiting={waitingArt && !prepping} reduced={reduced} aiDrawings={aiDrawings} remoteArt={remoteArt} manga={comicStyle === 'manga'} prep={prepping ? prep : undefined} onStartNow={() => setStartEarly(true)} />
-        : <ArenaStage record={record} cur={idx > 0 ? cur : null} done={done} fighters={state.fs} momentum={state.momentum} players={g.players} characters={g.characters} speed={speed} />}
+        : <ArenaStage record={record} cur={idx > 0 ? cur : null} done={done} fighters={state.fs} players={g.players} characters={g.characters} speed={speed} />}
       {remoteCorner && cornerPlayer && (
         <div className="panel row" style={{ justifyContent: 'space-between', borderColor: 'var(--warn)' }}>
           <span><span className="spinner" style={{ display: 'inline-block', width: 14, height: 14, verticalAlign: 'middle', marginRight: 8 }} />Waiting for <strong>{cornerPlayer.name}</strong>&apos;s corner call…</span>

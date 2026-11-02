@@ -89,23 +89,17 @@ function damageLine(damage: BodyDamage | undefined, hp: number | undefined, maxH
 }
 const tone = (p: number) => (p >= 70 ? 'crit' : p >= 40 ? 'low' : p >= 15 ? 'mid' : 'good');
 
-/** Compact status under a fighter card in the arena. */
-export function FighterStatus({ injuries, guard, staminaPct, down, damage, hp, maxHp, target }: { injuries: BattleInjury[]; guard: number; staminaPct: number; down?: boolean; damage?: BodyDamage; hp?: number; maxHp?: number; target?: string }) {
-  const g = guardWord(guard), st = staminaWord(staminaPct);
-  const d = damageLine(damage, hp, maxHp);
+/** Injury cues under a fighter card; numeric health and resource meters stay hidden. */
+export function FighterStatus({ injuries, down, damage, target }: { injuries: BattleInjury[]; guard: number; staminaPct: number; down?: boolean; damage?: BodyDamage; hp?: number; maxHp?: number; target?: string }) {
   return (
     <div className="fstatus">
       <BodyChart injuries={injuries} size={62} down={down} damage={damage} target={target} />
       <div className="fs-words">
-        {d && <div><span className="fs-k">Damage</span> <span className={`fs-v ${tone(d.total)}`}>{d.total}%</span>{d.worst && <span className="fs-worst">{d.worst}</span>}</div>}
-        <div><span className="fs-k">Guard</span> <span className={`fs-v ${g.tone}`}>{g.label}</span></div>
-        <div><span className="fs-k">Stamina</span> <span className={`fs-v ${st.tone}`}>{st.label}</span></div>
         <div className="fs-inj">{injuries.length ? injuries.map((i) => <span key={i.part} className={`inj sev${i.severity}`}>{i.label}</span>) : <span className="faint">Unhurt</span>}</div>
       </div>
     </div>
   );
 }
-
 /** The full report shown in the corner: every injury and what it does. */
 export function InjuryReport({ name, condition, injuries, guard, staminaPct, knockdowns, damage, hp, maxHp, target }: {
   name: string; condition: string; injuries: BattleInjury[]; guard: number; staminaPct: number; knockdowns: number; damage?: BodyDamage; hp?: number; maxHp?: number; target?: string;

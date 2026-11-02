@@ -4,6 +4,7 @@ import type { GameState, Player } from '../../engine/types';
 import * as A from '../../engine/auction';
 import * as G from '../../engine/game';
 import { store, useApp } from '../../store/store';
+import { chooseAuctionMusic, music } from '../music';
 import type { PublicCharacter } from '../../engine/types';
 import { CharArt } from '../components/Portrait';
 import { WORLDS } from '../home/worlds';
@@ -53,10 +54,16 @@ function useAuctionDriver(g: GameState) {
 export function AuctionPhase() {
   const g = useApp((s) => s.game)!;
   const viewer = useApp((s) => s.viewer);
+  const musicOn = useApp((s) => s.settings.music);
   const now = useNow();
   const [profile, setProfile] = useState(false);
   const [advisorFor, setAdvisorFor] = useState<string | null>(null);
   useAuctionDriver(g);
+  useEffect(() => {
+    if (!musicOn) { music.stop(400); return; }
+    void music.play(chooseAuctionMusic(g.id));
+    return () => music.stop(900);
+  }, [musicOn, g.id]);
   const a = g.auction!;
   const lot = a.lot;
   if (!lot) return <div className="panel empty"><div className="spinner" /><p>Preparing next lot…</p></div>;

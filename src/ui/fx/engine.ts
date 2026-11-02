@@ -60,6 +60,7 @@ export class FxDirector {
   readonly weather = new WeatherSystem();
   /** Fighters in a transformed / awakened state keep a living aura. */
   private auras: Array<{ at: Pt; color: string; power: number }> = [];
+  private auraPulse = 0;
   private auraCarry = 0;
   /** Particle budget for this device (1 = full). */
   quality = 1;
@@ -139,14 +140,22 @@ export class FxDirector {
     const dt = Math.min(50, realDt) * this.timeScale;
     this.clock += dt;
     this.weather.update(dt);
+    // Transformed or awakened fighters burn with a lasting aura: big soft plumes rising
+    // around the whole body, bright sparks, and a pulse ring in the form's colour.
     if (this.auras.length) {
-      this.auraCarry += dt * 0.06 * this.quality;
+      this.auraCarry += dt * 0.22 * this.quality;
+      this.auraPulse += dt;
       while (this.auraCarry >= 1) {
         this.auraCarry -= 1;
         for (const a of this.auras) {
           if (Math.random() > a.power) continue;
-          this.spark({ x: a.at.x + rand(-55, 55), y: a.at.y + rand(10, 90) }, Math.random() < 0.7 ? a.color : '#ffffff', { vy: -rand(2, 4.5), vx: rand(-0.6, 0.6), life: rand(500, 900), size: rand(10, 20), grav: -0.03, drag: 0.98 });
+          this.spark({ x: a.at.x + rand(-70, 70), y: a.at.y + rand(0, 110) }, a.color, { vy: -rand(2.5, 5), vx: rand(-0.5, 0.5), life: rand(700, 1100), size: rand(26, 44), endSize: 4, alpha: 0.5, grav: -0.04, drag: 0.98 });
+          if (Math.random() < 0.5) this.spark({ x: a.at.x + rand(-50, 50), y: a.at.y + rand(20, 90) }, '#ffffff', { vy: -rand(3, 6), vx: rand(-0.8, 0.8), life: rand(400, 700), size: rand(6, 12), grav: -0.03, drag: 0.98, hard: true });
         }
+      }
+      if (this.auraPulse > 1600) {
+        this.auraPulse = 0;
+        for (const a of this.auras) if (a.power > 0.5) this.ring({ x: a.at.x, y: a.at.y + 60 }, a.color, { radius: 110 + a.power * 60, width: 4, dur: 650 });
       }
     }
     if (this.tasks.length) {

@@ -48,6 +48,12 @@ export function chooseMusic(record: BattleRecord, characters: Record<string, Pub
   return { kind: 'builtin', track: fits[rng.int(0, fits.length - 1)] };
 }
 
+/** A steady, high-energy instrumental bed for the auction floor. */
+export function chooseAuctionMusic(gameId: string): MusicChoice {
+  const fits = TRACKS.filter((t) => t.moods.includes('epic') || t.moods.includes('hype'));
+  const rng = new Rng(hashString(`${gameId}:auction-music`));
+  return { kind: 'builtin', track: fits[rng.int(0, fits.length - 1)] };
+}
 const VOLUME = 0.32;
 
 /** One looping music player shared by the battle screen. */

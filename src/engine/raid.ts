@@ -51,7 +51,11 @@ export const RAID_MAX_TEAM = 8;
 /** How hard a boss is for a team of this size (tuned so raids are often lost). */
 export function bossScaling(teamSize: number) {
   // Smaller parties have fewer ways to recover, so the boss scales more gently for them.
-  return teamSize <= 4 ? { hpScale: 0.95 * teamSize, power: 0.8 + 0.05 * teamSize } : { hpScale: 0.95 * teamSize + 0.4, power: 0.98 + 0.105 * teamSize };
+  // Raids only: bosses are a notch tougher than the base tuning (owner asked for harder raids);
+  // these numbers never touch normal fights.
+  const HARD_HP = 1.06, HARD_POWER = 1.0;
+  const base = teamSize <= 4 ? { hpScale: 0.95 * teamSize, power: 0.8 + 0.05 * teamSize } : { hpScale: 0.95 * teamSize + 0.4, power: 0.98 + 0.105 * teamSize };
+  return { hpScale: base.hpScale * HARD_HP, power: base.power * HARD_POWER };
 }
 
 /** Several bosses share the work: each gets a share of the health and of the damage, with a

@@ -90,6 +90,8 @@ export function narrate(input: BattleInput, result: BattleResult, ctx: Narration
 
   const allSnaps = [...fighters.values()];
   let bigHits = 0;
+  let pressureSide: 0 | 1 | null = null;
+  let pressureRun = 0;
 
   for (const e of result.events) {
     switch (e.type) {
@@ -124,9 +126,20 @@ export function narrate(input: BattleInput, result: BattleResult, ctx: Narration
         const impact = String(e.context?.impact ?? 'solid');
         const verb = verbFor(impact);
         const big = impact === 'heavy' || impact === 'devastating' || e.crit;
+        const me = e.actor ? fighters.get(e.actor) : undefined;
+        const attackingSide = me?.side;
+        if ((e.damage ?? 0) > 0 && attackingSide !== undefined) {
+          pressureRun = pressureSide === attackingSide ? pressureRun + 1 : 1;
+          pressureSide = attackingSide;
+          if (pressureRun === 3 || pressureRun === 5) {
+            const defendingSide = attackingSide === 0 ? 1 : 0;
+            const defenders = input.sides[defendingSide].fighters.filter((f) => !result.fighters.find((r) => r.charId === f.charId)?.defeated);
+            const focus = defenders.find((f) => f.charId === e.target)?.name ?? defenders[0]?.name;
+            say(e, vary([`Three clean connections in a row: ${focus ?? 'the other side'} can't find room to breathe!`, `${nm(e.actor)} keeps the pressure on; the defence is being tested!`, `The attacks keep coming, and ${focus ?? 'the defence'} has no time to reset!`]), 'hype');
+          }
+        }
         const move = e.ability ? `${getAbility(e.ability).name} ` : '';
         // Plain attacks are described in the fighter's own style and element.
-        const me = e.actor ? fighters.get(e.actor) : undefined;
         const look = me ? strikeLook(rng, me.archetype, me.tags, usedLooks) : '';
         if (e.crit) { say(e, move ? `${pick(CRIT)} ${nm(e.actor)}'s ${move}${verb} ${nm(e.target)}!` : (/ (with|into|on|of)$/.test(verb) ? `${pick(CRIT)} With ${look || 'a huge strike'}, ${nm(e.actor)} ${verb} ${nm(e.target)}!` : `${pick(CRIT)} ${nm(e.actor)} ${verb} ${nm(e.target)} with ${look || 'a huge strike'}!`), 'hype'); bigHits++; }
         else if (e.response === 'clash') say(e, `${nm(e.actor)} pushes through the clash and ${verb} ${nm(e.target)}!`, 'hype');

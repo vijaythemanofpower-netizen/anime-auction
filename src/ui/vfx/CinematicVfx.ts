@@ -128,6 +128,8 @@ export class CinematicVfx {
   private focus = new Point();
   private boltLife = 0;
   quality: Quality;
+  /** Set once destroyed: late async work (art loading, mounting) must stop quietly. */
+  private dead = false;
   /** Lifetime frame stats, for the performance probe. */
   stats = { frames: 0, slow: 0 };
 
@@ -155,6 +157,7 @@ export class CinematicVfx {
    *  canvas after `artAfter` (or first), the effects canvas after `fxAfter` (or last). */
   async mount(host: HTMLElement, artAfter?: Element | null, fxAfter?: Element | null) {
     await this.ready;
+    if (this.dead) return;
     const art = this.app.canvas, fx = this.fxApp.canvas;
     if (artAfter) artAfter.after(art); else if (art.parentElement !== host) host.prepend(art);
     if (fxAfter) fxAfter.after(fx); else if (fx.parentElement !== host) host.appendChild(fx);
@@ -162,7 +165,7 @@ export class CinematicVfx {
   }
 
   resize(w: number, h: number) {
-    if (!w || !h) return;
+    if (!w || !h || this.dead || !this.app.renderer) return;
     this.w = w; this.h = h;
     this.app.renderer.resize(w, h);
     this.fxApp.renderer.resize(w, h);
@@ -172,14 +175,15 @@ export class CinematicVfx {
   /** Switches to a character: their art (optional: banners keep the page's own image) and profile. */
   async show(profile: VfxProfile, artUrl?: string, mirror = false) {
     await this.ready;
+    if (this.dead) return;
     this.prof = profile;
     this.mirror = mirror;
     this.back.clear(); this.glow.clear(); this.front.clear(); this.ribbons.removeChildren(); this.bolts.clear();
     this.acc = {};
     if (artUrl && artUrl !== this.artKey) {
       this.artKey = artUrl;
-      const texture = await Assets.load<Texture>(artUrl);
-      if (this.artKey !== artUrl) return;
+      const texture = await Assets.load<Texture>(artUrl).catch(() => null);
+      if (this.dead || !texture || this.artKey !== artUrl) return;
       // Release the previous character's art from the GPU: long sessions must not grow.
       const prev = this.art;
       if (prev) { prev.destroy(); const old = this.loaded; this.loaded = artUrl; if (old && old !== artUrl) void Assets.unload(old).catch(() => undefined); } else this.loaded = artUrl;
@@ -403,6 +407,7 @@ export class CinematicVfx {
   get fxCanvas(): HTMLCanvasElement | null { return this.fxApp.renderer ? this.fxApp.canvas : null; }
 
   destroy() {
+    this.dead = true;
     this.ready.then(() => { this.app.destroy(true, { children: true, texture: true }); this.fxApp.destroy(true, { children: true }); }).catch(() => undefined);
   }
 }
