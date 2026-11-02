@@ -206,3 +206,29 @@ describe('banter, jump-ins and twists', () => {
     }
   });
 });
+
+describe('target the healer', () => {
+  it('is offered only when the other side has a healer, and turns the whole side on them', () => {
+    let used = 0, offeredWithout = 0;
+    for (let seed = 1; seed <= 30; seed++) {
+      // Side 1 has Shinobu (a medic); side 0 has none.
+      const base = battle('tag', seed, ['zoro', 'sanji'], ['tanjiro', 'shinobu']);
+      const r0 = simulateBattle(base);
+      for (const c of r0.events.filter((e) => e.type === 'corner')) {
+        const opts = String(c.context?.options).split(',');
+        if (c.context?.side === 1 && opts.includes('hunt')) offeredWithout++;
+      }
+      const corner = r0.events.find((e) => e.type === 'corner' && e.context?.side === 0 && String(e.context?.options).split(',').includes('hunt'));
+      if (!corner) continue;
+      const r1 = simulateBattle({ ...base, calls: [{ side: 0, corner: Number(corner.context?.corner), kind: 'hunt' }] });
+      const call = r1.events[corner.seq];
+      expect(call.type).toBe('call');
+      expect(call.context?.call).toBe('hunt');
+      expect(call.target).toBe('legend:shinobu');
+      expect(validateNarration(narrate(base, r1, ctx), base, r1)).toEqual([]);
+      used++;
+    }
+    expect(used).toBeGreaterThan(3);
+    expect(offeredWithout).toBe(0);
+  });
+});

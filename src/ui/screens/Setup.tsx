@@ -23,6 +23,8 @@ export function Setup() {
   const [openingBid, setOpeningBid] = useState(100);
   const [timer, setTimer] = useState(15);
   const [scoutTokens, setScoutTokens] = useState(3);
+  const [sets, setSets] = useState(true);
+  const [mystery, setMystery] = useState(true);
   const [soloRounds, setSoloRounds] = useState(1);
   const [tagRound, setTagRound] = useState(true);
   const [persistent, setPersistent] = useState(true);
@@ -35,7 +37,7 @@ export function Setup() {
 
   const setup: G.GameSetup = {
     name, players, rosterSize, privacyScreens: privacy,
-    auction: { ...G.DEFAULT_AUCTION, mode, openingBid, timerSeconds: timer, scoutTokens },
+    auction: { ...G.DEFAULT_AUCTION, mode, openingBid, timerSeconds: timer, scoutTokens, sets, mystery },
     tournament: { soloRounds, tagRound, persistentConditions: persistent, specialEvents: events },
     focus,
   };
@@ -158,6 +160,8 @@ export function Setup() {
               <div className="field"><label htmlFor="tm">Timer (s)</label><select id="tm" className="input" value={timer} onChange={(e) => setTimer(Number(e.target.value))}>{[10, 15, 20, 30, 45].map((v) => <option key={v} value={v}>{v}</option>)}</select></div>
               <div className="field"><label htmlFor="st">Scout tokens</label><select id="st" className="input" value={scoutTokens} onChange={(e) => setScoutTokens(Number(e.target.value))}>{[0, 2, 3, 5].map((v) => <option key={v} value={v}>{v}</option>)}</select></div>
             </div>
+            <label className="toggle"><input type="checkbox" checked={sets} onChange={(e) => setSets(e.target.checked)} /> Auction in sets (Vanguard, Berserkers, Healers, Blades, Casters, Tacticians)</label>
+            <label className="toggle"><input type="checkbox" checked={mystery} onChange={(e) => setMystery(e.target.checked)} /> Mystery lot near the end (elite or a dud, for players with money and a free seat)</label>
           </div>
           <div className="panel col">
             <h3>Tournament</h3>

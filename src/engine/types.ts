@@ -3,7 +3,7 @@
 // read hidden game data by accident.
 
 export const SCHEMA_VERSION = 1;
-export const ENGINE_VERSION = '2.11.0';
+export const ENGINE_VERSION = '2.12.0';
 export const STARTING_COINS = 10_000;
 
 export type Archetype =
@@ -183,7 +183,14 @@ export interface AuctionConfig {
   timerSeconds: number;
   antiSnipeSeconds: number;
   scoutTokens: number;
+  /** Present the pool set by set (Vanguard, Berserkers, Blades, Casters, Tacticians, Healers). Older saves lack it. */
+  sets?: boolean;
+  /** Near the end, one hidden character goes up: either elite or a dud, for players with money and a free slot. */
+  mystery?: boolean;
 }
+
+/** Where a lot sits in the auction's sets ("Set 2 · Berserkers · 3 of 5"); returning lots are a second-chance round. */
+export interface LotSet { role: string; index: number; total: number; pos: number; size: number; second?: boolean; open?: boolean }
 
 export interface Bid {
   playerId: string;
@@ -203,6 +210,12 @@ export interface Lot {
   activePlayerId: string | null;
   deadline: number;
   attempt: number;
+  /** Which set this lot belongs to (auctions with sets). */
+  set?: LotSet;
+  /** The mystery lot: the character stays hidden until it is sold (or nobody takes the risk). */
+  mystery?: boolean;
+  /** This lot's own opening bid (the mystery lot opens higher than the rest). */
+  opening?: number;
 }
 
 export interface Transaction {
@@ -239,6 +252,13 @@ export interface AuctionState {
   rngState: number;
   complete: boolean;
   notice: string | null;
+  /** Auctions with sets: each pool character's set, the sets in play order, and how many lots each set has / has shown. */
+  setOf?: Record<string, string>;
+  setOrder?: string[];
+  setSize?: Record<string, number>;
+  setSeen?: Record<string, number>;
+  /** The mystery lot: who it secretly is, whether they are elite or a dud, and where it stands. */
+  mystery?: { charId: string; tier: 'elite' | 'dud'; state: 'waiting' | 'open' | 'done'; winner?: string };
 }
 
 // ---------------------------------------------------------------- Prep / Battle
@@ -327,7 +347,7 @@ export interface BattleSideInput {
 
 export type JumpInRule = 'never' | 'ask' | 'auto';
 
-export type CallKind = 'all_out' | 'defend' | 'ultimate' | 'callback' | 'reinforce' | 'taunt' | 'focus' | 'transform' | 'secret' | 'none';
+export type CallKind = 'all_out' | 'defend' | 'ultimate' | 'callback' | 'reinforce' | 'taunt' | 'focus' | 'hunt' | 'transform' | 'secret' | 'none';
 /** The call for a side's nth corner moment (0-based). */
 export interface CoachCall { side: 0 | 1; corner: number; kind: CallKind; reserveId?: string }
 export const CALLS_PER_BATTLE = 5;

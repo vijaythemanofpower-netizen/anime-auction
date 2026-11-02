@@ -15,6 +15,7 @@ import { EAGERNESS, reactionTo } from '../data/banter';
 import { truePower } from '../hidden';
 import { writeTaunt, type TauntContext, type TauntKind } from '../data/flavor';
 import { ARCHETYPES, TEMPERAMENTS } from '../data/archetypes';
+import { healerKind } from '../data/roles';
 import { ABILITIES, BASIC_ATTACK, getAbility } from '../data/abilities';
 import { elementMultiplier, getEnvironment, getSynergy, type Environment } from '../data/world';
 import { type CombatFighter, INJURY_LIMIT, createFighter, hasStatus, hpPct, injuryLoad, injuryPenalty } from './fighter';
@@ -41,7 +42,7 @@ interface StrikeOpts { noCounter?: boolean; accBonus?: number; label?: string; i
 /** What the corner shouts for each call. */
 const CALL_SHOUT: Record<Exclude<CallKind, 'none'>, string> = {
   all_out: 'GO ALL OUT!', defend: 'GUARD UP! WEATHER IT!', ultimate: 'USE IT NOW!', callback: 'FALL BACK!', reinforce: 'SEND IN BACKUP!',
-  taunt: 'GET IN THEIR HEAD!', focus: 'EVERYONE ON THE WEAK ONE!', transform: 'TRANSFORM NOW!', secret: 'NO MORE HOLDING BACK!',
+  taunt: 'GET IN THEIR HEAD!', focus: 'EVERYONE ON THE WEAK ONE!', hunt: 'TAKE OUT THEIR HEALER!', transform: 'TRANSFORM NOW!', secret: 'NO MORE HOLDING BACK!',
 };
 interface Order { kind: 'all_out' | 'defend'; left: number }
 
@@ -690,17 +691,19 @@ export class BattleSim {
   }
 
   /**
-   * Healers (Support fighters, or anyone with a healing technique) look after the team:
-   * once per fight they can pull a knocked-out teammate back to their feet, and every few
-   * turns they mend the most hurt teammate (a solid chunk, never a full refill).
-   * Uses the plot dice so ordinary fights keep their other rolls.
+   * Healers look after the team. Medics (Support fighters, anyone with a move that heals
+   * teammates, canon healers like Orihime, Tsunade or Chopper) mend the most hurt teammate
+   * every few turns and treat their worst wound (a broken arm becomes a bruise, a bruise
+   * heals). Revivers (only characters who can do it in their own story) can also, once per
+   * fight, pull a knocked-out teammate back to their feet. Fighters who only heal themselves
+   * (regeneration) don't count. Uses the plot dice so ordinary fights keep their other rolls.
    */
   private healerTurn(f: CombatFighter): boolean {
-    const healer = f.snap.archetype === 'Support' || f.snap.abilities.some((id) => ABILITIES[id]?.kind === 'heal');
-    if (!healer || f.defeated || hasStatus(f, 'stun')) return false;
+    const kind = healerKind({ charId: f.snap.charId, name: f.snap.name, archetype: f.snap.archetype, abilities: f.snap.abilities });
+    if (!kind || f.defeated || hasStatus(f, 'stun')) return false;
     const skill = 1 + f.eff.technique / 300;
     const down = this.fighters.filter((x) => x.side === f.side && x.defeated && x !== f);
-    if (!f.reviveUsed && down.length && this.plotRng.chance(0.6)) {
+    if (kind === 'reviver' && !f.reviveUsed && down.length && this.plotRng.chance(0.6)) {
       const ally = down.sort((a, b) => b.maxHp - a.maxHp)[0];
       f.reviveUsed = true;
       ally.defeated = false;
@@ -717,12 +720,27 @@ export class BattleSim {
       return true;
     }
     if (f.mendCd > 0) return false;
-    const hurt = this.alive(f.side).filter((x) => x !== f && hpPct(x) < 0.45).sort((a, b) => hpPct(a) - hpPct(b))[0];
+    // The teammate who needs it most: badly hurt, or carrying a serious wound.
+    const need = (x: CombatFighter) => (1 - hpPct(x)) + injuryLoad(x) * 0.12;
+    const hurt = this.alive(f.side).filter((x) => x !== f && (hpPct(x) < 0.45 || x.injuries.length > 0)).sort((a, b) => need(b) - need(a))[0];
     if (!hurt || !this.plotRng.chance(0.55)) return false;
     const before = hurt.hp;
     hurt.hp = Math.min(hurt.maxHp, hurt.hp + Math.round(hurt.maxHp * 0.16 * skill * this.sideFx[f.side].healMult));
     f.mendCd = 3;
-    this.emit('heal', `${this.name(f)} patches up ${this.name(hurt)}.`, { actor: f.id, target: hurt.id, heal: hurt.hp - before, hpBefore: before, hpAfter: hurt.hp, context: { mend: true } });
+    // Treat the worst wound: a serious one becomes minor, a minor one heals completely.
+    const worst = hurt.injuries.slice().sort((a, b) => b.severity - a.severity)[0];
+    let cure: { cure_part: string; cure_severity: number; cure_label: string; cure_was: string } | undefined;
+    if (worst) {
+      const i = hurt.injuries.indexOf(worst);
+      if (worst.severity === 2) hurt.injuries[i] = { part: worst.part, severity: 1, label: INJURY_LABELS[worst.part][0] };
+      else hurt.injuries.splice(i, 1);
+      const now = hurt.injuries.find((x) => x.part === worst.part);
+      cure = { cure_part: worst.part, cure_severity: now?.severity ?? 0, cure_label: now?.label ?? '', cure_was: worst.label };
+    }
+    const text = cure
+      ? `${this.name(f)} treats ${this.name(hurt)}'s ${cure.cure_was.toLowerCase()}${cure.cure_severity ? ` (now ${cure.cure_label.toLowerCase()})` : ': healed'}.`
+      : `${this.name(f)} patches up ${this.name(hurt)}.`;
+    this.emit('heal', text, { actor: f.id, target: hurt.id, heal: hurt.hp - before, hpBefore: before, hpAfter: hurt.hp, context: { mend: true, ...(cure ?? {}) } });
     return true;
   }
 
@@ -755,6 +773,12 @@ export class BattleSim {
     }
   }
 
+  /** The other side's healer still standing, revivers first (for the "target the healer" call). */
+  private enemyHealer(side: 0 | 1): CombatFighter | undefined {
+    const kind = (f: CombatFighter) => healerKind({ charId: f.snap.charId, name: f.snap.name, archetype: f.snap.archetype, abilities: f.snap.abilities });
+    return this.alive(side === 0 ? 1 : 0).filter((f) => kind(f)).sort((a, b) => Number(kind(b) === 'reviver') - Number(kind(a) === 'reviver') || hpPct(a) - hpPct(b))[0];
+  }
+
   /** The calls that make sense for this fighter right now. */
   callOptions(side: 0 | 1, focus: CombatFighter): CallKind[] {
     const out: CallKind[] = ['all_out', 'defend'];
@@ -763,6 +787,7 @@ export class BattleSim {
     if (this.reservesLeft(side).length) out.push('reinforce');
     out.push('taunt');
     if (this.alive(side === 0 ? 1 : 0).length > 1) out.push('focus');
+    if (this.enemyHealer(side)) out.push('hunt');
     if (focus.kit?.forms[focus.stage]) out.push('transform');
     if (focus.kit && !focus.secretUsed && !focus.secretOpen) out.push('secret');
     out.push('none');
@@ -784,6 +809,7 @@ export class BattleSim {
       focus: foeHurt ? 1.6 : 0.5,
       transform: hurt ? 1.8 : 0.7,
       secret: hurt || foeHurt ? 1.3 : 0.3,
+      hunt: 1.4,
     };
     if (reason === 'check') w.none = 2.5;
     const opts = options.filter((o) => w[o]);
@@ -840,6 +866,17 @@ export class BattleSim {
         if (!weak) return;
         for (const f of this.alive(side)) f.forcedTarget = { id: weak.id, turns: 3 };
         this.emit('call', `${CALL_SHOUT[kind]} Everyone turns on ${this.name(weak)}.`, { actor: focus.id, target: weak.id, context: ctx });
+        return;
+      }
+      case 'hunt': {
+        // Everyone goes after the other side's healer (a reviver first); under that
+        // pressure the healer can't patch anyone up for a while.
+        const healer = this.enemyHealer(side);
+        if (!healer) return;
+        for (const f of this.alive(side)) f.forcedTarget = { id: healer.id, turns: 4 };
+        healer.mendCd = Math.max(healer.mendCd, 4);
+        this.emit('call', `${CALL_SHOUT[kind]} Everyone goes after ${this.name(healer)}, the one keeping the other side standing.`, { actor: focus.id, target: healer.id, context: ctx });
+        this.shiftMomentum(side, 5, 'the hunt');
         return;
       }
       case 'transform':

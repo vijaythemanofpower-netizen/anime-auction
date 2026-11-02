@@ -417,9 +417,9 @@ if (import.meta.env.DEV && typeof window !== 'undefined') {
     store,
     /** Sells every lot at the opening bid to a rotating buyer, like the tests do. */
     finishAuction() {
-      return store.act((g) => {
+      return store.act((g, v) => {
         let t = Date.now();
-        if (g.phase === 'pool') { const r = G.startAuction(g, t); if (!r.ok) return r; }
+        if (g.phase === 'pool') { const r = G.startAuction(g, t, v); if (!r.ok) return r; }
         for (let guard = 0; g.phase === 'auction' && guard < 2000; guard++) {
           const lot = g.auction!.lot!;
           if (lot.status === 'open') {

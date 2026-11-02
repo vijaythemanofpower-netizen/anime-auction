@@ -1,7 +1,7 @@
 import { RaidCard } from '../components/Raid';
 import { PreFightPoll, Predictions } from '../components/Predictions';
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
-import type { BattleEvent, BattleInput, BattleRecord, GameState } from '../../engine/types';
+import type { BattleEvent, BattleInjury, BattleInput, BattleRecord, GameState } from '../../engine/types';
 import * as G from '../../engine/game';
 import { getSynergy } from '../../engine/data/world';
 import { getAbility } from '../../engine/data/abilities';
@@ -259,6 +259,13 @@ export function BattleView({ record, exhibition }: { record: BattleRecord; exhib
       if (e.type === 'get_up' && act) act.floored = false;
       if (e.type === 'defeat' && tgt) { tgt.down = true; tgt.floored = false; tgt.howDown = String(e.context?.how ?? ''); }
       if (e.type === 'heal' && e.context?.revive && tgt) { tgt.down = false; tgt.floored = false; tgt.howDown = undefined; }
+      // A healer treated a wound: a serious one becomes minor, a minor one disappears.
+      if (e.type === 'heal' && e.context?.cure_part && tgt) {
+        const part = String(e.context.cure_part);
+        const sev = Number(e.context.cure_severity ?? 0);
+        tgt.injuries = tgt.injuries.filter((x) => x.part !== part);
+        if (sev > 0) tgt.injuries = [...tgt.injuries, { part: part as BattleInjury['part'], severity: sev as 1 | 2, label: String(e.context.cure_label) }];
+      }
       if (e.type === 'call' && e.context?.call === 'callback' && act && e.hpAfter !== undefined) act.hp = e.hpAfter;
       if (e.type === 'replacement' && e.actor) { fs.get(e.actor)!.position = 'front'; if (e.action === 'tag' && e.target) fs.get(e.target)!.position = 'back'; }
     }

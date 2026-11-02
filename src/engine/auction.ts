@@ -2,8 +2,12 @@
 // the store clones state before calling them. Every state-changing entry
 // point validates phase, player, and amounts, and returns an error string
 // instead of throwing for invalid user input.
-import type { AuctionConfig, AuctionState, GameState, Lot, Player } from './types';
+import type { AuctionConfig, AuctionState, GameState, Lot, LotSet, Player } from './types';
 import { Rng } from './rng';
+import { ROLES, ROLE_ORDER, type RoleId } from './data/roles';
+
+/** The mystery lot opens at this many times the normal opening bid: only players with money to spare can gamble. */
+export const MYSTERY_OPENING = 3;
 
 export type Result = { ok: true } | { ok: false; error: string };
 const fail = (error: string): Result => ({ ok: false, error });
@@ -38,7 +42,7 @@ export function leader(lot: Lot): { playerId: string; amount: number } | null {
 
 export function minNextBid(lot: Lot, cfg: AuctionConfig): number {
   const l = leader(lot);
-  return l ? l.amount + bidIncrement(l.amount) : cfg.openingBid;
+  return l ? l.amount + bidIncrement(l.amount) : lot.opening ?? cfg.openingBid;
 }
 
 export function canBid(g: GameState, p: Player): boolean {
@@ -61,11 +65,51 @@ export function totalSlotsRemaining(g: GameState): number {
   return g.players.reduce((n, p) => n + slotsRemaining(p, g.config.rosterSize), 0);
 }
 
-export function createAuction(cfg: AuctionConfig, pool: string[], seed: number): AuctionState {
+export interface AuctionExtras {
+  /** Each pool character's set (auctions with sets). */
+  roleOf?: Record<string, RoleId>;
+  /** The character secretly put up as the mystery lot, and whether they are elite or a dud. */
+  mystery?: { charId: string; tier: 'elite' | 'dud' };
+  /** Most lots in one set; the rest of the pool goes to an open round at the end. */
+  setCap?: number;
+}
+
+export function createAuction(cfg: AuctionConfig, pool: string[], seed: number, extras: AuctionExtras = {}): AuctionState {
   const rng = new Rng(seed);
+  let queue = rng.shuffle(pool);
+  const mystery = cfg.mystery && extras.mystery && pool.includes(extras.mystery.charId) ? extras.mystery : undefined;
+  if (mystery) queue = queue.filter((id) => id !== mystery.charId);
+  let sets: Pick<AuctionState, 'setOf' | 'setOrder' | 'setSize' | 'setSeen'> = {};
+  if (cfg.sets && extras.roleOf) {
+    // Set by set. The order of the sets changes every game (seats run out before the
+    // last set is done, so no role should always come last), but the healers, who are
+    // rare, never come last. Lots inside a set stay shuffled.
+    const roleOf = extras.roleOf;
+    const order = rng.shuffle(ROLE_ORDER.filter((r) => queue.some((id) => roleOf[id] === r)));
+    if (order.length > 1 && order[order.length - 1] === 'healer') {
+      const k = rng.int(0, order.length - 2);
+      [order[k], order[order.length - 1]] = [order[order.length - 1], order[k]];
+    }
+    // Each set is short (a few lots, enough for every player to have a shot); whatever is
+    // left over from a big pool goes to an open round after the last set.
+    const cap = Math.max(1, extras.setCap ?? Infinity);
+    const inSet = order.flatMap((r) => queue.filter((id) => roleOf[id] === r).slice(0, cap));
+    const rest = queue.filter((id) => !inSet.includes(id));
+    queue = inSet.concat(rest);
+    const setOf: Record<string, string> = Object.fromEntries(inSet.map((id) => [id, roleOf[id]]));
+    for (const id of rest) setOf[id] = 'open';
+    sets = {
+      setOf,
+      setOrder: order,
+      setSize: { ...Object.fromEntries(order.map((r) => [r, inSet.filter((id) => roleOf[id] === r).length])), ...(rest.length ? { open: rest.length } : {}) },
+      setSeen: {},
+    };
+  }
   return {
     config: cfg,
-    queue: rng.shuffle(pool),
+    queue,
+    ...sets,
+    ...(mystery ? { mystery: { ...mystery, state: 'waiting' as const } } : {}),
     lot: null,
     lotCounter: 0,
     bidSeq: 0,
@@ -109,6 +153,21 @@ export function openNextLot(g: GameState, now: number): Result {
     log(a, now, 'All rosters are complete. The auction is over!');
     return OK;
   }
+  // The mystery lot comes near the end: in the last round (about one open seat per
+  // player), once every set has been shown, or when the remaining lots only just cover
+  // the open seats.
+  const m = a.mystery;
+  const seats = totalSlotsRemaining(g);
+  if (m?.state === 'waiting' && (seats <= g.players.length || !a.queue.some((id) => !a.attempts[id]) || a.queue.length <= seats)) {
+    const opening = a.config.openingBid * MYSTERY_OPENING;
+    const able = g.players.filter((p) => maxBidFor(p, g.config.rosterSize, a.config.openingBid) >= opening);
+    if (able.length) return openLot(g, m.charId, now, { mystery: true, opening });
+    // Nobody can afford the gamble: it becomes an ordinary lot instead.
+    m.state = 'done';
+    a.queue.push(m.charId);
+    log(a, now, `The mystery lot is cancelled: nobody has the money and a free seat for the gamble. ${g.characters[m.charId]?.name ?? 'The character'} joins the regular lots.`);
+  }
+
   if (a.queue.length === 0) {
     // Should be unreachable because the pool is validated and unsold lots are
     // only withdrawn while there is surplus. Fail safe: finish the auction.
@@ -120,13 +179,34 @@ export function openNextLot(g: GameState, now: number): Result {
 
   const rng = new Rng(a.rngState);
   // Director: mostly in queue order, occasionally pulls a later lot forward to
-  // vary pacing. Never reorders when lots are scarce.
+  // vary pacing. Never reorders when lots are scarce, or across sets.
   let idx = 0;
-  if (a.queue.length > totalSlotsRemaining(g) + 1 && rng.chance(0.2)) idx = rng.int(1, Math.min(3, a.queue.length - 1));
+  if (!a.setOf && a.queue.length > totalSlotsRemaining(g) + 1 && rng.chance(0.2)) idx = rng.int(1, Math.min(3, a.queue.length - 1));
   a.rngState = rng.state;
   const [charId] = a.queue.splice(idx, 1);
-  const prevAttempt = a.attempts[charId] ?? 0;
+  return openLot(g, charId, now, {});
+}
 
+/** Puts one character on the block. */
+function openLot(g: GameState, charId: string, now: number, o: { mystery?: boolean; opening?: number }): Result {
+  const a = g.auction!;
+  const prevAttempt = a.attempts[charId] ?? 0;
+  let set: LotSet | undefined;
+  const role = a.setOf?.[charId];
+  if (role && !o.mystery && a.setOrder) {
+    if (prevAttempt > 0) set = { role, index: 0, total: a.setOrder.length, pos: 0, size: 0, second: true };
+    else {
+      a.setSeen ??= {};
+      const pos = (a.setSeen[role] = (a.setSeen[role] ?? 0) + 1);
+      if (role === 'open') {
+        set = { role, index: 0, total: a.setOrder.length, pos, size: a.setSize?.open ?? pos, open: true };
+        if (pos === 1) log(a, now, `OPEN ROUND: the rest of the pool, any role (${set.size} lot${set.size === 1 ? '' : 's'}).`);
+      } else {
+        set = { role, index: a.setOrder.indexOf(role) + 1, total: a.setOrder.length, pos, size: a.setSize?.[role] ?? pos };
+        if (pos === 1) log(a, now, `SET ${set.index} of ${set.total}: ${ROLES[role as RoleId]?.name.toUpperCase() ?? role} (${set.size} lot${set.size === 1 ? '' : 's'}). ${ROLES[role as RoleId]?.blurb ?? ''}`);
+      }
+    }
+  }
   a.lotCounter += 1;
   const lot: Lot = {
     lotNumber: a.lotCounter,
@@ -137,12 +217,17 @@ export function openNextLot(g: GameState, now: number): Result {
     activePlayerId: null,
     deadline: now + a.config.timerSeconds * 1000,
     attempt: prevAttempt + 1,
+    ...(set ? { set } : {}),
+    ...(o.mystery ? { mystery: true, opening: o.opening } : {}),
   };
   a.lot = lot;
+  if (o.mystery && a.mystery) a.mystery.state = 'open';
   // Players who cannot participate are auto-passed.
   for (const p of g.players) if (!canBid(g, p)) lot.passed.push(p.id);
   if (a.config.mode === 'turns') lot.activePlayerId = nextActive(g, null);
-  log(a, now, `Lot #${lot.lotNumber}: ${g.characters[charId]?.name ?? charId} enters the stage.`);
+  log(a, now, o.mystery
+    ? `Lot #${lot.lotNumber}: THE MYSTERY LOT! Someone hidden from the pool: elite, or a total dud. Opening bid ${o.opening}.`
+    : `Lot #${lot.lotNumber}: ${g.characters[charId]?.name ?? charId} enters the stage.`);
   if (contenders(g).length === 0) settleLot(g, now);
   return OK;
 }
@@ -247,6 +332,24 @@ export function settleLot(g: GameState, now: number): Result {
   const name = g.characters[lot.charId]?.name ?? lot.charId;
   a.attempts[lot.charId] = lot.attempt;
 
+  if (lot.mystery && a.mystery) {
+    a.mystery.state = 'done';
+    const verdict = a.mystery.tier === 'elite' ? 'An ELITE pick. What a steal!' : 'Oh no. A total dud.';
+    if (win) {
+      const p = g.players.find((x) => x.id === win.playerId)!;
+      assign(g, p, lot.charId, win.amount, 'purchase', now);
+      lot.status = 'sold';
+      a.mystery.winner = p.id;
+      log(a, now, `MYSTERY REVEALED! ${p.name} paid ${win.amount} for... ${name}! ${verdict}`);
+    } else {
+      // Nobody gambled: the character is revealed and goes back in as an ordinary lot.
+      lot.status = 'unsold';
+      a.queue.push(lot.charId);
+      log(a, now, `Nobody took the gamble. The mystery was ${name}. ${a.mystery.tier === 'elite' ? 'You all missed an elite!' : 'Good call: a dud.'} ${name} returns as a regular lot.`);
+    }
+    return OK;
+  }
+
   if (win) {
     const p = g.players.find((x) => x.id === win.playerId)!;
     assign(g, p, lot.charId, win.amount, 'purchase', now);
@@ -256,7 +359,8 @@ export function settleLot(g: GameState, now: number): Result {
   }
 
   // Recovery policy when nobody bids.
-  const lotsLeftIncludingThis = a.queue.length + 1;
+  // The waiting mystery character still counts as a lot that can fill a seat.
+  const lotsLeftIncludingThis = a.queue.length + 1 + (a.mystery?.state === 'waiting' ? 1 : 0);
   const needed = totalSlotsRemaining(g);
   if (lotsLeftIncludingThis <= needed) {
     // Scarce: assign at the opening price to the player with the most open

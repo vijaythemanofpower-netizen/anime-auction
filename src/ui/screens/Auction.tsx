@@ -10,6 +10,7 @@ import { CharArt } from '../components/Portrait';
 import { WORLDS } from '../home/worlds';
 import { sceneSrcSet, sceneUrl } from '../home/HomeStory';
 import { Coins, Emblem, Modal, PlayerChip, PrivacyGate, PublicProfile, SourceBadge, TagChip } from '../components/common';
+import { ROLES, roleOf, type RoleId } from '../../engine/data/roles';
 
 function useNow(interval = 200) {
   const [now, setNow] = useState(Date.now());
@@ -78,40 +79,51 @@ export function AuctionPhase() {
   const humans = g.players.filter((p) => store.isLocalPlayer(p));
   const guest = store.isGuest();
   const active = lot.activePlayerId ? g.players.find((p) => p.id === lot.activePlayerId) : null;
+  // The mystery lot hides who it is until the hammer falls.
+  const hidden = !!lot.mystery && lot.status === 'open';
+  const opening = lot.opening ?? a.config.openingBid;
 
   return (
     <div className="col" style={{ gap: 18 }}>
       <div className="section-head">
         <div>
-          <div className="eyebrow">Lot #{lot.lotNumber} · {a.queue.length} remaining in queue · {A.totalSlotsRemaining(g)} open roster slots{lot.attempt > 1 ? ' · second chance' : ''}</div>
+          <div className="eyebrow">Lot #{lot.lotNumber} · {a.queue.length} remaining in queue · {A.totalSlotsRemaining(g)} open roster slots{lot.attempt > 1 && !lot.mystery ? ' · second chance' : ''}</div>
           <h2>The Auction Floor</h2>
         </div>
         <div className="faint">{a.config.mode === 'live' ? 'Live bidding — late bids extend the clock.' : 'Turn-based bidding — pass the device to the active bidder.'}</div>
       </div>
       {a.notice && <div className="panel" style={{ borderColor: 'var(--warn)' }}>⚖ Director: {a.notice}</div>}
+      <SetBanner g={g} />
 
       <div className="lot-stage">
         {/* A new lot arrives like an anime title card: number, name and series cut across the stage. */}
         <div className="lot-intro" key={`intro-${lot.lotNumber}-${lot.attempt}`} aria-hidden="true">
           <span className="li-no">LOT {String(lot.lotNumber).padStart(2, '0')}</span>
-          <span className="li-name">{c.name}</span>
-          <span className="li-series">{c.series}</span>
+          <span className="li-name">{hidden ? '???' : c.name}</span>
+          <span className="li-series">{hidden ? 'Mystery lot' : c.series}</span>
         </div>
         <div className="col">
           <div className={`lot-art${sold ? '' : ' reveal-anim'}`} key={lot.lotNumber}>
-            <LotArt c={c} />
+            {hidden ? <MysteryArt /> : <LotArt c={c} />}
             {sold && (
               <div className="sold-stamp">
                 <span>{lot.status === 'sold' ? 'SOLD' : lot.status === 'assigned' ? 'ASSIGNED' : 'NO SALE'}</span>
               </div>
             )}
           </div>
-          <div className="panel tight col" style={{ gap: 6 }}>
-            <div className="row" style={{ justifyContent: 'space-between' }}><h3 style={{ margin: 0 }}>{c.name}</h3><SourceBadge c={c} /></div>
-            <div className="faint">{c.archetype} · {c.series} · {c.weapon}</div>
-            <div className="row" style={{ gap: 4 }}>{c.tags.map((t) => <TagChip key={t} t={t} />)}</div>
-            <button className="btn sm" onClick={() => setProfile(true)}>Full public profile</button>
-          </div>
+          {hidden ? (
+            <div className="panel tight col" style={{ gap: 6 }}>
+              <h3 style={{ margin: 0 }}>Who is it?</h3>
+              <div className="faint">Drawn in secret from the very top or the very bottom of the pool. Scouts can't see it. Revealed when the hammer falls.</div>
+            </div>
+          ) : (
+            <div className="panel tight col" style={{ gap: 6 }}>
+              <div className="row" style={{ justifyContent: 'space-between' }}><h3 style={{ margin: 0 }}>{c.name}</h3><SourceBadge c={c} /></div>
+              <div className="faint">{c.archetype} · {c.series} · {c.weapon}{a.setOf ? ` · ${ROLES[roleOf(c)].icon} ${ROLES[roleOf(c)].name}` : ''}</div>
+              <div className="row" style={{ gap: 4 }}>{c.tags.map((t) => <TagChip key={t} t={t} />)}</div>
+              <button className="btn sm" onClick={() => setProfile(true)}>Full public profile</button>
+            </div>
+          )}
         </div>
 
         <div className="col" style={{ gap: 16 }}>
@@ -119,7 +131,7 @@ export function AuctionPhase() {
             <div className="row" style={{ justifyContent: 'space-between', alignItems: 'flex-end' }}>
               <div>
                 <div className="label">{lead ? 'Current bid' : 'Opening bid'}</div>
-                <div className="bid-big" aria-live="polite" key={lead?.amount ?? 'open'}>{(lead?.amount ?? a.config.openingBid).toLocaleString()}</div>
+                <div className="bid-big" aria-live="polite" key={lead?.amount ?? 'open'}>{(lead?.amount ?? opening).toLocaleString()}</div>
                 <div className="muted">{leadP ? <>Leading: <PlayerChip p={leadP} /></> : 'No bids yet'}</div>
               </div>
               <div style={{ textAlign: 'right' }}>
@@ -131,7 +143,8 @@ export function AuctionPhase() {
             <div className={`timer${urgent ? ' urgent' : ''}`}><span style={{ width: `${sold ? 0 : Math.min(100, (remaining / totalMs) * 100)}%` }} /></div>
             {sold && (
               <div className="row" style={{ justifyContent: 'space-between' }}>
-                <strong>{lot.status === 'sold' && leadP ? `${c.name} goes to ${leadP.name} for ${lead!.amount.toLocaleString()}!` : lot.status === 'assigned' ? `${c.name} assigned by the Director.` : `No bids. ${c.name} ${a.queue.includes(c.id) ? 'will return later' : 'is withdrawn'}.`}</strong>
+                <strong>{lot.mystery ? (lot.status === 'sold' && leadP ? `The mystery was ${c.name}! ${leadP.name} paid ${lead!.amount.toLocaleString()}: ${a.mystery?.tier === 'elite' ? 'an elite steal!' : 'a total dud!'}` : `Nobody gambled. The mystery was ${c.name} (${a.mystery?.tier === 'elite' ? 'elite!' : 'a dud'}), back as a regular lot.`)
+                  : lot.status === 'sold' && leadP ? `${c.name} goes to ${leadP.name} for ${lead!.amount.toLocaleString()}!` : lot.status === 'assigned' ? `${c.name} assigned by the Director.` : `No bids. ${c.name} ${a.queue.includes(c.id) ? 'will return later' : 'is withdrawn'}.`}</strong>
                 {guest ? <span className="faint">Next lot coming up…</span>
                   : <button className="btn primary" onClick={() => store.act((d) => G.advanceLot(d, Date.now()))}>{a.complete || A.totalSlotsRemaining(g) === 0 ? 'Finish auction' : 'Next lot →'}</button>}
               </div>
@@ -184,7 +197,7 @@ export function AuctionPhase() {
         </div>
       </div>
 
-      {profile && <Modal title={c.name} onClose={() => setProfile(false)}><PublicProfile c={c} /></Modal>}
+      {profile && !hidden && <Modal title={c.name} onClose={() => setProfile(false)}><PublicProfile c={c} /></Modal>}
       {advisorFor && (
         <Modal title="Scout Advisor" onClose={() => setAdvisorFor(null)}>
           <PrivacyGate player={g.players.find((p) => p.id === advisorFor)!} enabled={g.config.privacyScreens && humans.length > 1} viewer={viewer} reason="Scout reports are private to each player.">
@@ -236,6 +249,7 @@ function BidderCard({ g, p, onAdvice, big }: { g: GameState; p: Player; onAdvice
         <Coins n={p.coins} />
       </div>
       <div className="faint">Roster {p.roster.length}/{g.config.rosterSize} · max bid {max.toLocaleString()}{full ? ' · FULL' : ''}{leading ? ' · LEADING' : passed ? ' · passed' : ''}</div>
+      {a.setOf && p.roster.length > 0 && <TeamMakeup g={g} p={p} />}
       {!store.isLocalPlayer(p) ? (
         <div className="faint">{passed ? 'Out on this lot.' : leading ? 'Holding the lead.' : p.kind === 'npc' ? 'Watching the bidding…' : 'Bidding from their own device…'}</div>
       ) : lot.status === 'open' && !passed && !full ? (
@@ -276,12 +290,12 @@ function ScoutPanel({ g, playerId }: { g: GameState; playerId: string }) {
         <span className="faint">Confidence: {advice.confidence}</span>
       </div>
       <div className={`scout-label ${cls}`}>{advice.label === 'TAKE' ? '✓ RECOMMENDED' : advice.label === 'LEAVE' ? '✕ NOT RECOMMENDED' : '~ MAYBE'}</div>
-      {advice.label !== 'TAKE' && <div className="faint" style={{ fontSize: 13 }}>This is about <b>your</b> budget, price and team fit right now, not how strong {lot.charId && g.characters[lot.charId] ? g.characters[lot.charId].name : 'this fighter'} is. A strong fighter can still be a bad buy at this price.</div>}
+      {advice.label !== 'TAKE' && <div className="faint" style={{ fontSize: 13 }}>This is about <b>your</b> budget, price and team fit right now, not how strong {lot.mystery && lot.status === 'open' ? 'the mystery fighter' : lot.charId && g.characters[lot.charId] ? g.characters[lot.charId].name : 'this fighter'} is. A strong fighter can still be a bad buy at this price.</div>}
       <ul>{advice.reasons.map((r) => <li key={r}>{r}</li>)}</ul>
       <div className="faint">Estimated fair price: ~{advice.fairPrice.toLocaleString()} · You need ≥ {e.minNeeded.toLocaleString()} for your remaining {e.slots} slot(s).</div>
       <div className="faint">The advisor uses only public information and your own scouting. It cannot see hidden stats or the future.</div>
       {obs.length > 0 && <div className="col" style={{ gap: 4 }}>{obs.map((o, i) => <div key={i} style={{ fontSize: 13 }}>🔍 {o.text}</div>)}</div>}
-      <button className="btn sm" disabled={p.scoutTokens <= 0 || obs.length >= 2 || lot.status !== 'open'}
+      <button className="btn sm" disabled={p.scoutTokens <= 0 || obs.length >= 2 || lot.status !== 'open' || !!lot.mystery}
         onClick={() => store.move(playerId, { t: 'scout' })}>Send scouts ({p.scoutTokens} left)</button>
     </div>
   );
@@ -303,7 +317,7 @@ function EconomyTable({ g }: { g: GameState }) {
                 <td>{e.spent.toLocaleString()}</td>
                 <td><Coins n={e.remaining} /></td>
                 <td>{e.average ? e.average.toLocaleString() : '—'}</td>
-                <td>{p.roster.map((id) => g.characters[id].name.split(' ')[0]).join(', ') || '—'} ({e.acquired}/{g.config.rosterSize})</td>
+                <td>{p.roster.map((id) => g.characters[id].name.split(' ')[0]).join(', ') || '—'} ({e.acquired}/{g.config.rosterSize}){g.auction?.setOf && p.roster.length > 0 && <TeamMakeup g={g} p={p} />}</td>
                 <td>{e.minNeeded.toLocaleString()}</td>
               </tr>
             );
@@ -319,4 +333,48 @@ function LotArt({ c }: { c: PublicCharacter }) {
   const world = c.id.startsWith('legend:') ? WORLDS.find((w) => w.key === c.id.slice(7)) : undefined;
   if (!world) return <CharArt c={c} />;
   return <img className="lot-hd" src={sceneUrl(world, 1, 1280)} srcSet={sceneSrcSet(world, 1)} sizes="(max-width: 860px) 90vw, 30vw" alt={`Artwork of ${c.name}`} decoding="async" />;
+}
+
+/** Where the auction is: which set is on the block (Vanguard, Berserkers, Healers...), or the mystery lot. */
+function SetBanner({ g }: { g: GameState }) {
+  const lot = g.auction?.lot;
+  if (!lot) return null;
+  if (lot.mystery) {
+    const opening = lot.opening ?? g.auction!.config.openingBid;
+    return (
+      <div className="set-banner mystery" role="status">
+        <span className="sb-kicker">🎁 Mystery lot</span>
+        <b>Elite or a total dud?</b>
+        <span className="faint">Only players with a free seat and at least {opening.toLocaleString()} to spare can gamble. Revealed when the hammer falls.</span>
+      </div>
+    );
+  }
+  const s = lot.set;
+  if (!s) return null;
+  if (s.open) return <div className="set-banner" role="status"><span className="sb-kicker">Open round</span><b>Any role</b><span className="faint">Lot {s.pos} of {s.size}: the rest of the pool, after every set has had its turn.</span></div>;
+  const role = ROLES[s.role as RoleId];
+  if (s.second) return <div className="set-banner" role="status"><span className="sb-kicker">Second chance</span><b>{role?.icon} {role?.name}</b><span className="faint">Lots nobody bought the first time.</span></div>;
+  return (
+    <div className="set-banner" role="status">
+      <span className="sb-kicker">Set {s.index} of {s.total}</span>
+      <b>{role?.icon} {role?.name}</b>
+      <span className="faint">Lot {s.pos} of {s.size}. {role?.blurb}</span>
+    </div>
+  );
+}
+
+/** A team's shape so far: how many of each role (e.g. 🛡1 🔥2 💚1). */
+function TeamMakeup({ g, p }: { g: GameState; p: Player }) {
+  const count = new Map<RoleId, number>();
+  for (const id of p.roster) { const c = g.characters[id]; if (c) count.set(roleOf(c), (count.get(roleOf(c)) ?? 0) + 1); }
+  return (
+    <span className="team-makeup" aria-label={[...count].map(([r, n]) => `${n} ${ROLES[r].name}`).join(', ')}>
+      {[...count].map(([r, n]) => <span key={r} title={ROLES[r].name}>{ROLES[r].icon}{n}</span>)}
+    </span>
+  );
+}
+
+/** The mystery lot's picture: a silhouette and a question mark, nothing to give it away. */
+function MysteryArt() {
+  return <div className="mystery-art" role="img" aria-label="Hidden character"><span>?</span></div>;
 }

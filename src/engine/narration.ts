@@ -260,6 +260,11 @@ export function narrate(input: BattleInput, result: BattleResult, ctx: Narration
       }
       case 'heal':
         if (e.context?.revive) break; // announced by its twist
+        if (e.context?.mend && e.actor && e.context?.cure_was) {
+          const was = String(e.context.cure_was).toLowerCase();
+          say(e, Number(e.context.cure_severity ?? 0) > 0 ? `${nm(e.actor)} treats ${nm(e.target)}'s ${was}. It's not gone, but it's better!` : vary([`${nm(e.actor)} heals ${nm(e.target)}'s ${was} completely!`, `The ${was} is gone! ${nm(e.actor)} has ${nm(e.target)} good as new!`]), 'tense');
+          break;
+        }
         if (e.context?.mend && e.actor) { say(e, `${nm(e.actor)} patches up ${nm(e.target)}! Back in it!`, 'tense'); break; }
         if ((e.heal ?? 0) > 0) say(e, vary([`${nm(e.target)} finds a second wind.`, `${nm(e.target)} steadies and recovers.`, `Some colour back in ${nm(e.target)}'s face.`, `${nm(e.target)} regroups.`]), 'calm');
         break;

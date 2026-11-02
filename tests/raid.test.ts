@@ -24,21 +24,24 @@ describe('raid boss', () => {
 });
 
 describe('healers', () => {
-  it('mend hurt teammates and sometimes bring one back, never past full health', async () => {
+  it('mend hurt teammates and treat wounds; only revivers bring one back; never past full health', async () => {
     const { simulateBattle } = await import('../src/engine/combat/engine');
     const { buildRaidInput, legendVillains } = await import('../src/engine/raid');
     const { g, vault } = makeGame(4, 3, 'live', 99) as never as { g: import('../src/engine/types').GameState; vault: import('../src/engine/hidden').Vault };
     runAuction(g);
-    let mends = 0, revives = 0;
+    let mends = 0, revives = 0, cures = 0;
     for (let k = 0; k < 20; k++) {
       const input = buildRaidInput(g, vault, legendVillains()[k % 11], 300 + k);
-      // Make two of the party healers to exercise the mechanic.
+      // One medic (a Support type: heals and treats wounds, cannot revive) and one canon reviver.
       input.sides[0].fighters[1].archetype = 'Support';
-      input.sides[0].fighters[4].archetype = 'Support';
+      const reviver = input.sides[0].fighters[4];
+      reviver.archetype = 'Support';
+      reviver.name = 'Orihime Inoue';
       const r = simulateBattle(input);
       for (const e of r.events) {
         if (e.type === 'heal' && e.context?.mend) { mends++; expect(e.actor).not.toBe(e.target); }
-        if (e.type === 'heal' && e.context?.revive) revives++;
+        if (e.type === 'heal' && e.context?.revive) { revives++; expect(e.actor).toBe(reviver.charId); }
+        if (e.type === 'heal' && e.context?.cure_part) cures++;
         if (e.type === 'heal' && e.hpAfter !== undefined) {
           const max = r.fighters.find((f) => f.charId === e.target)!.maxHp;
           expect(e.hpAfter).toBeLessThanOrEqual(max);
@@ -47,6 +50,7 @@ describe('healers', () => {
     }
     expect(mends).toBeGreaterThan(5);
     expect(revives).toBeGreaterThan(0);
+    expect(cures).toBeGreaterThan(0);
   });
 });
 

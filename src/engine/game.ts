@@ -9,7 +9,8 @@ import { ENGINE_VERSION, SCHEMA_VERSION, STARTING_COINS } from './types';
 import { Rng, deriveSeed, freshSeed, hashString, uid } from './rng';
 import { Vault, scoutHint, truePower } from './hidden';
 import * as A from './auction';
-import { scoutAdvice, type ScoutAdvice } from './scout';
+import { publicAppeal, scoutAdvice, type ScoutAdvice } from './scout';
+import { roleOf } from './data/roles';
 import { npcDecide } from './npc';
 import { simulateBattle } from './combat/engine';
 import { narrate } from './narration';
@@ -38,7 +39,7 @@ export interface GameSetup {
   focus?: 'tournament' | 'raid';
 }
 
-export const DEFAULT_AUCTION: AuctionConfig = { mode: 'live', openingBid: 100, timerSeconds: 15, antiSnipeSeconds: 6, scoutTokens: 3 };
+export const DEFAULT_AUCTION: AuctionConfig = { mode: 'live', openingBid: 100, timerSeconds: 15, antiSnipeSeconds: 6, scoutTokens: 3, sets: true, mystery: true };
 export const DEFAULT_TOURNAMENT: TournamentConfig = { soloRounds: 1, tagRound: true, persistentConditions: true, specialEvents: true };
 
 export function validateSetup(s: GameSetup): string[] {
@@ -127,12 +128,50 @@ export function autoFillPool(g: GameState, vault: Vault, catalog: PublicCharacte
 
 // --------------------------------------------------------------- Auction
 
-export function startAuction(g: GameState, now: number): R {
+export function startAuction(g: GameState, now: number, vault?: Vault): R {
   if (g.phase !== 'pool') return fail('Not in pool setup.');
   if (g.pool.length < poolRequirement(g)) return fail(`The pool needs at least ${poolRequirement(g)} characters (${g.players.length} players × ${g.config.rosterSize}).`);
   g.phase = 'auction';
-  g.auction = A.createAuction(g.config.auction, g.pool, deriveSeed('auction', g.secret));
+  g.auction = A.createAuction(g.config.auction, g.pool, deriveSeed('auction', g.secret), auctionExtras(g, vault));
   return A.openNextLot(g, now);
+}
+
+/**
+ * Sets and the mystery lot. Sets come from public information; the mystery character is
+ * picked in secret from the strongest or the weakest fifth of the pool (by hidden True
+ * Power when the hidden stats are at hand, otherwise by public appeal).
+ */
+function auctionExtras(g: GameState, vault?: Vault): A.AuctionExtras {
+  const cfg = g.config.auction;
+  const pool = g.pool.filter((id) => g.characters[id]);
+  const extras: A.AuctionExtras = {};
+  if (cfg.sets) {
+    extras.roleOf = Object.fromEntries(pool.map((id) => [id, roleOf(g.characters[id])]));
+    // Short sets: enough lots for each player to have a shot, the rest go to an open round.
+    extras.setCap = Math.max(3, g.players.length + 1);
+  }
+  if (cfg.mystery && pool.length >= 5) {
+    const rng = new Rng(deriveSeed('mystery', g.secret));
+    const power = (id: string) => (vault?.has(id) ? truePower(vault.get(id).stats) : publicAppeal(g.characters[id]));
+    const ranked = pool.slice().sort((x, y) => power(y) - power(x) || x.localeCompare(y));
+    const band = Math.max(1, Math.round(ranked.length / 5));
+    const tier = rng.chance(0.5) ? 'elite' as const : 'dud' as const;
+    const choices = tier === 'elite' ? ranked.slice(0, band) : ranked.slice(-band);
+    extras.mystery = { charId: rng.pick(choices), tier };
+  }
+  return extras;
+}
+
+/** What anyone can say about the mystery lot: nothing, except that it is a gamble. */
+function mysteryAdvice(g: GameState, playerId: string): ScoutAdvice {
+  const a = g.auction!;
+  const opening = a.lot?.opening ?? a.config.openingBid * A.MYSTERY_OPENING;
+  const rng = new Rng(deriveSeed('mystery-npc', g.secret, playerId));
+  return {
+    label: 'MIGHT TAKE', confidence: 'Low', score: 50,
+    fairPrice: Math.round(opening * rng.range(0.9, 1.6)),
+    reasons: ['Nobody knows who this is. It was drawn in secret from the very top or the very bottom of the pool.', 'Only worth it if you have money to spare and a seat to fill.'],
+  };
 }
 
 export function advanceLot(g: GameState, now: number): R {
@@ -157,6 +196,7 @@ export function useScoutToken(g: GameState, vault: Vault, playerId: string): R {
   const p = g.players.find((x) => x.id === playerId);
   if (!p) return fail('Unknown player.');
   if (p.scoutTokens <= 0) return fail('No scout tokens left.');
+  if (lot.mystery) return fail('Your scouts cannot see behind the curtain. That is the point of the mystery lot.');
   const already = g.auction!.observations.filter((o) => o.playerId === playerId && o.charId === lot.charId).length;
   if (already >= 2) return fail('Your scouts have nothing more to report on this fighter.');
   p.scoutTokens -= 1;
@@ -169,6 +209,7 @@ export function scoutFor(g: GameState, playerId: string): ScoutAdvice | null {
   const a = g.auction;
   const lot = a?.lot;
   if (!a || !lot) return null;
+  if (lot.mystery) return mysteryAdvice(g, playerId);
   const p = g.players.find((x) => x.id === playerId)!;
   const cfg = a.config;
   const others = g.players.filter((x) => x.id !== playerId);
@@ -197,7 +238,7 @@ export function npcAct(g: GameState, playerId: string, now: number): boolean {
   if (a.config.mode === 'turns' && lot.activePlayerId !== playerId) return false;
   const advice = scoutFor(g, playerId)!;
   const rng = new Rng(deriveSeed('npc', g.secret, lot.lotNumber, a.bidSeq, playerId));
-  const mustBuy = a.queue.length + 1 <= A.totalSlotsRemaining(g) + 1;
+  const mustBuy = !lot.mystery && a.queue.length + 1 <= A.totalSlotsRemaining(g) + 1;
   const d = npcDecide(playerId, advice, A.minNextBid(lot, a.config), A.maxBidFor(p, g.config.rosterSize, a.config.openingBid), A.leader(lot)?.playerId === playerId, mustBuy, rng);
   if (d.kind === 'bid') return A.placeBid(g, playerId, d.amount, now).ok;
   if (d.kind === 'pass') return A.passLot(g, playerId, now).ok;

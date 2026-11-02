@@ -145,7 +145,7 @@ function HostPool({ g }: { g: GameState }) {
           {settings.useOnlineProvider && <button className="btn sm" disabled={filling} onClick={fillAllAnime} title="Fill with random popular characters from any anime">{filling ? 'Loading…' : 'Auto-fill: any anime'}</button>}
           <button className="btn sm danger" disabled={!g.pool.length} onClick={() => { if (confirm('Remove every character from the pool?')) store.act((d) => { for (const id of [...d.pool]) G.removeFromPool(d, id); return { ok: true }; }); }}>Clear</button>
         </div>
-        <button className="btn primary lg" disabled={!ok} onClick={() => store.act((d) => G.startAuction(d, Date.now()))}>Start auction</button>
+        <button className="btn primary lg" disabled={!ok} onClick={() => store.act((d, v) => G.startAuction(d, Date.now(), v))}>Start auction</button>
         {!ok && <div className="faint">Add {need - g.pool.length} more to start.</div>}
       </aside>
     </div>
