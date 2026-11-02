@@ -37,5 +37,5 @@ describe('arena fit', () => {
     console.log('arena fit win rate', { suited, plain });
     expect(suited).toBeGreaterThan(plain);
     expect(suited).toBeLessThan(1);
-  });
+  }, 60_000); // 800 simulated fights: slow machines need more than the 5 s default
 });
