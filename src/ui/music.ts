@@ -7,7 +7,7 @@ import { Rng, hashString } from '../engine/rng';
 import { getClip, musicKey, seriesMusicKey } from '../store/media';
 
 export interface Track { file: string; name: string; moods: Mood[] }
-type Mood = 'metal' | 'epic' | 'dark' | 'hype' | 'heroic';
+type Mood = 'metal' | 'epic' | 'dark' | 'hype' | 'heroic' | 'auction';
 
 export const TRACKS: Track[] = [
   { file: 'metal_rush.mp3', name: 'Metal Rush', moods: ['metal'] },
@@ -20,7 +20,25 @@ export const TRACKS: Track[] = [
   { file: 'tension.mp3', name: 'Tension', moods: ['dark', 'heroic'] },
   { file: 'hyper_drive.mp3', name: 'Hyper Drive', moods: ['hype'] },
   { file: 'fast_fight.mp3', name: 'Fast Fight', moods: ['hype', 'metal'] },
+  { file: 'anime_determination.mp3', name: 'Determination', moods: ['heroic', 'epic', 'hype'] },
+  { file: 'anime_play_now.mp3', name: 'Play Now', moods: ['hype', 'heroic'] },
+  { file: 'fierce_battle.mp3', name: 'Fierce Battle', moods: ['epic', 'hype'] },
+  { file: 'final_stand.ogg', name: 'Final Stand', moods: ['epic', 'dark'] },
+  { file: 'charge.ogg', name: 'Charge!', moods: ['epic', 'heroic'] },
+  { file: 'die_hard.ogg', name: 'Die Hard Battle', moods: ['hype', 'metal'] },
+  { file: 'metal_boss6.mp3', name: 'Boss Battle Metal', moods: ['metal', 'dark'] },
+  // Bidding music: light, groovy loops that talk can sit on top of.
+  { file: 'auction_funky_menu.mp3', name: 'Funky Floor', moods: ['auction'] },
+  { file: 'auction_funky_house.mp3', name: 'Funky House', moods: ['auction'] },
+  { file: 'auction_item_shop.mp3', name: 'Item Shop', moods: ['auction'] },
+  { file: 'auction_lasso_lady.ogg', name: 'Lasso Lady', moods: ['auction'] },
 ];
+
+/** Browsers without Ogg Vorbis (older Safari) get a same-mood MP3 instead. */
+function playable(track: Track): Track {
+  if (!track.file.endsWith('.ogg') || typeof Audio === 'undefined' || new Audio().canPlayType('audio/ogg; codecs="vorbis"')) return track;
+  return TRACKS.find((t) => t.file.endsWith('.mp3') && t.moods[0] === track.moods[0]) ?? TRACKS[0];
+}
 
 const TEMPER_MOOD: Record<Temperament, Mood> = {
   'hot-blooded': 'metal', aggressive: 'metal', reckless: 'metal', arrogant: 'dark', calculating: 'dark',
@@ -48,9 +66,9 @@ export function chooseMusic(record: BattleRecord, characters: Record<string, Pub
   return { kind: 'builtin', track: fits[rng.int(0, fits.length - 1)] };
 }
 
-/** A steady, high-energy instrumental bed for the auction floor. */
+/** A groovy, upbeat bed for the auction floor (not battle music). */
 export function chooseAuctionMusic(gameId: string): MusicChoice {
-  const fits = TRACKS.filter((t) => t.moods.includes('epic') || t.moods.includes('hype'));
+  const fits = TRACKS.filter((t) => t.moods.includes('auction'));
   const rng = new Rng(hashString(`${gameId}:auction-music`));
   return { kind: 'builtin', track: fits[rng.int(0, fits.length - 1)] };
 }
@@ -65,6 +83,7 @@ class MusicPlayer {
   label = '';
 
   async play(choice: MusicChoice): Promise<void> {
+    if (choice.kind === 'builtin') choice = { kind: 'builtin', track: playable(choice.track) };
     const id = choice.kind === 'own' ? choice.key : choice.track.file;
     if (this.current === id && this.el) { void this.el.play().catch(() => {}); return; }
     this.stop(0);

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { simulateBattle } from '../src/engine/combat/engine';
 import { LEGEND_CHARACTERS } from '../src/engine/data/legends';
 import { generateHidden } from '../src/engine/hidden';
-import { chooseMusic, TRACKS } from '../src/ui/music';
+import { chooseAuctionMusic, chooseMusic, TRACKS } from '../src/ui/music';
 import { musicKey, seriesMusicKey } from '../src/store/media';
 import { ENGINE_VERSION, type BattleInput, type BattleRecord, type PublicCharacter } from '../src/engine/types';
 
@@ -19,6 +19,12 @@ function record(seed: number, a: string, b: string, rivalry = false): BattleReco
 }
 
 describe('battle music', () => {
+  it('chooses a deterministic auction-floor track from the bidding loops', () => {
+    const first = chooseAuctionMusic('auction-one');
+    expect(first.kind).toBe('builtin');
+    expect(chooseAuctionMusic('auction-one')).toEqual(first);
+    if (first.kind === 'builtin') expect(first.track.moods).toContain('auction');
+  });
   it("plays a fighter's own music first, then their series' music", () => {
     const r = record(1, 'naruto', 'sasuke');
     expect(chooseMusic(r, chars, new Set([musicKey('legend:sasuke')]))).toMatchObject({ kind: 'own', key: musicKey('legend:sasuke') });

@@ -93,7 +93,7 @@ insert into public.admins (user_id) select id from auth.users where email = 'you
 What changes on a website:
 
 - **Comic drawings** come from the drawing app on the visitor's own computer, so visitors without it see comic-styled portraits. On a website the drawing app is **off by default**: looking for it makes browsers ask for permission to reach the visitor's local network. A visitor who runs ComfyUI themselves can turn it on in Settings, starting ComfyUI with `--enable-cors-header https://your-site`.
-- **Music:** energetic CC0 tracks play during the auction and a mood-matched track accompanies each fight. Songs a player adds stay in their own browser and are never uploaded.
+- **Music:** groovy CC0 bidding loops play during the auction (online and against computer players) and a mood-matched track, including anime-style themes, accompanies each fight (credits in public/bgm/CREDITS.txt). Browsers without Ogg playback get an MP3 of the same mood. Songs a player adds stay in their own browser and are never uploaded.
 - **Natural voices** download a free voice model from Hugging Face on first use.
 - **AI move writer:** each player uses their own Anthropic API key, stored only in their browser.
 - **Characters:** names, artwork (loaded from AniList's CDN) and move names belong to their anime's creators. Publishing a fan game is at your own risk; keep it non-commercial, and take down anything a rights holder asks you to.
