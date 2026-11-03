@@ -34,7 +34,7 @@ export const LOOK: Record<string, string> = {
   whitebeard: 'edward newgate, white crescent mustache, captain coat, bisento',
   yuno: 'black hair, golden eyes, golden dawn robe, tall',
   zoro: 'green hair, three swords, green haramaki',
-  naruto: 'spiky blond hair, blue eyes, whisker markings on cheeks, orange and black jumpsuit, leaf village headband',
+  naruto: 'spiky blond hair, blue eyes, whisker markings on cheeks, orange and black jumpsuit, konoha forehead protector',
   itachi: 'long black hair in low ponytail, red sharingan eyes, tear trough lines under eyes, akatsuki cloak with red clouds',
   kakashi: 'spiky silver hair, face mask covering mouth, headband over left eye, green flak vest',
   luffy: 'short black hair, straw hat, scar under left eye, red open vest, blue shorts',

@@ -10,6 +10,8 @@ export default defineConfig({
   build: { rollupOptions: { input: { main: 'index.html', admin: 'admin.html' } } },
   server: {
     port: 5173, strictPort: false,
+    // The fighter tool writes thousands of raw frames while it works; watching them stalls the dev server.
+    watch: { ignored: ['**/.fighter-cache/**', '**/tools/.tmp/**', '**/handoff-logs/**'] },
     // The drawing app (ComfyUI), reached at /comfy so it can allow only the website's address.
     proxy: { '/comfy': { target: 'http://127.0.0.1:8188', changeOrigin: true, rewrite: (p) => p.replace(/^\/comfy/, '') } },
   },

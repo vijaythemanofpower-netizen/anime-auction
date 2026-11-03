@@ -1,6 +1,8 @@
 // Visual battle stage. Everything shown is driven by the verified event at
 // the current playback position: effects never invent hits or damage.
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react';
+import { FightStage } from '../battlefield/FightStage';
+import { preloadClips, stageReady, useFighterClips } from '../battlefield/fighterClips';
 import { profileFor } from '../vfx/profiles';
 import type { BattleEvent, BattleInjury, BattleRecord, FighterSnapshot, Player, PublicCharacter, VfxKind } from '../../engine/types';
 import { ABILITIES, getAbility, vfxOf } from '../../engine/data/abilities';
@@ -102,6 +104,10 @@ export function ArenaStage({ record, cur, done, fighters, players, characters, s
       if (url && !PRELOADED.has(url)) { const img = new Image(); img.referrerPolicy = 'no-referrer'; img.src = url; PRELOADED.set(url, img); }
     }
   }, [record.battleId]); // eslint-disable-line react-hooks/exhaustive-deps
+  // Animated fighters on the stage once everyone in this fight has clips; the card view otherwise.
+  const allClips = useFighterClips();
+  const stageMode = !!allClips && input.sides.every((s) => s.fighters.every((f) => stageReady(allClips[f.charId])));
+  useEffect(() => { if (allClips) for (const s of input.sides) for (const f of s.fighters) preloadClips(allClips[f.charId]); }, [allClips, record.battleId]); // eslint-disable-line react-hooks/exhaustive-deps
   const seqNow = done ? Number.MAX_SAFE_INTEGER : cur?.seq ?? 0;
   const frame = cur ? (done ? script.frames[script.frames.length - 1] : frameAt(script, cur.seq)) : script.frames[0];
   // GPU effects replace the simpler CSS effects once the canvas is ready.
@@ -280,7 +286,10 @@ export function ArenaStage({ record, cur, done, fighters, players, characters, s
       <PropsLayer script={script} seq={seqNow} layer="back" hitNow={live ? frame?.propHits ?? [] : []} wind={frame?.weather.wind ?? 0} />
       <GroundMarks script={script} seq={seqNow} pos={pos} w={w} h={h} ground={ground} />
       <MoveLight frame={live ? frame : undefined} seq={cur?.seq ?? 0} at={lightAt} />
-      <div className="stage" ref={stageRef}>{renderSide(0)}{renderSide(1)}</div>
+      {stageMode && allClips
+        ? <FightStage input={input} fighters={fighters} live={live} done={done} clips={allClips} melee={melee || isClash} speed={speed} reduced={!!reduced}
+            register={(id, el) => { if (el) standRefs.current.set(id, el); else standRefs.current.delete(id); }} />
+        : <div className="stage" ref={stageRef}>{renderSide(0)}{renderSide(1)}</div>}
       <PropsLayer script={script} seq={seqNow} layer="front" hitNow={live ? frame?.propHits ?? [] : []} wind={frame?.weather.wind ?? 0} />
       <FxLayer ctx={fxCtx} field={field} seq={live?.seq ?? 0} onReady={setGpu} />
 
@@ -365,6 +374,24 @@ export function ArenaStage({ record, cur, done, fighters, players, characters, s
         </div>
       )}
     </div>
+    {stageMode && (
+      <div className="stage-cards">
+        {([0, 1] as const).map((side) => (
+          <div key={side} className={`sc-side ${side ? 'right' : 'left'}`} style={{ ['--side' as string]: pcolor(side) } as CSSProperties}>
+            {input.sides[side].fighters.map((s) => fighters.get(s.charId)).filter((f): f is LiveFighter => !!f).map((f) => {
+              const cond = conditionOf(f);
+              return (
+                <div key={f.snap.charId} className={`sc-card${f.down ? ' down' : ''}`}>
+                  <div className="sc-head"><b>{f.snap.name}</b><span className={`cond ${cond.tone}`}>{input.mode !== 'solo' ? `${f.position === 'front' ? 'FRONT' : 'BACK'} · ` : ''}{f.down ? (f.howDown === 'stoppage' ? 'Stopped' : 'Knocked out') : cond.label}</span></div>
+                  {(f.formName || hasForms(f.snap)) && <div className={`form-label${f.formName ? ' on' : ''}`} style={{ ['--form' as string]: f.formColor ?? '#f5c451' } as CSSProperties}>{f.formName ?? 'Base form'}</div>}
+                  <FighterStatus injuries={f.injuries} guard={f.guard} staminaPct={f.st / f.maxSt} down={f.down || f.floored} damage={f.body ? damagePercents(f.body, f.hp, f.maxHp) : undefined} hp={f.hp} maxHp={f.maxHp} target={f.snap.charId} />
+                </div>
+              );
+            })}
+          </div>
+        ))}
+      </div>
+    )}
     <PlayByPlay events={result.events} upto={cur && !done ? cur.seq : -1} names={(id) => fighters.get(id)?.snap.name ?? id} />
     </>
   );

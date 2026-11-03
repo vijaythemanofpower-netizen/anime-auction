@@ -15,7 +15,7 @@ import { registerCharacterMoves } from '../engine/data/abilities';
 import { buildHallEntries } from '../engine/hall';
 import { Persistence, type SaveSummary, type Settings, DEFAULT_SETTINGS } from './persistence';
 
-export type Screen = 'home' | 'explorer' | 'setup' | 'game' | 'hall' | 'howto' | 'settings' | 'saves' | 'online';
+export type Screen = 'home' | 'explorer' | 'setup' | 'game' | 'hall' | 'howto' | 'settings' | 'saves' | 'online' | 'versus';
 
 export interface AppState {
   screen: Screen;

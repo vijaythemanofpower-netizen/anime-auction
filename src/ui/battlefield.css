@@ -124,3 +124,53 @@
 .stand.down .rig, .rig.still { translate: none; rotate: none; }
 .stand .pf .rig-sprite-pose { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 50% 20%; animation: pose-in 0.12s ease-out; }
 @keyframes pose-in { from { opacity: 0.4; filter: brightness(1.6); } }
+
+/* ---- Fight stage: animated cut-out fighters on the arena floor (FightStage.tsx) ---- */
+.fstage { position: absolute; inset: 0; z-index: 3; pointer-events: none; }
+.sf { position: absolute; width: 0; height: 0; will-change: transform; }
+.sf-flip { position: absolute; left: 0; top: 0; transform-origin: 0 0; }
+.sf-sprite { position: absolute; background-repeat: no-repeat; image-rendering: auto; filter: drop-shadow(0 0 1px rgba(0,0,0,.6)); }
+.sf.formed .sf-sprite { filter: drop-shadow(0 0 6px var(--form)) drop-shadow(0 0 16px color-mix(in srgb, var(--form) 55%, transparent)); }
+.sf.down .sf-sprite { filter: grayscale(.6) brightness(.7); }
+.sf-shadow { position: absolute; left: 0; top: -6px; height: 14px; transform: translateX(-50%); border-radius: 50%; background: radial-gradient(closest-side, rgba(0,0,0,.55), transparent); }
+.sf-body { position: absolute; }
+.fs-dust { position: absolute; top: var(--ground); width: 90px; height: 34px; margin: -30px 0 0 -45px; border-radius: 50%; pointer-events: none;
+  background: radial-gradient(closest-side, rgba(214,200,170,.75), rgba(160,140,110,.3) 60%, transparent); animation: fs-dust .8s ease-out forwards; z-index: 25; }
+.fs-dust.big { width: 170px; height: 60px; margin: -50px 0 0 -85px; }
+@keyframes fs-dust { from { transform: scale(.3); opacity: .9; } to { transform: scale(1.6) translateY(-12px); opacity: 0; } }
+.stage-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 10px; }
+.sc-side { display: flex; flex-wrap: wrap; gap: 8px; border-top: 3px solid var(--side); padding-top: 8px; }
+.sc-side.right { justify-content: flex-end; }
+.sc-card { flex: 1 1 160px; max-width: 280px; padding: 8px 10px; border-radius: var(--radius); background: var(--surface); border: 1px solid var(--line); }
+.sc-card.down { opacity: .6; }
+.sc-head { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; font-size: 13px; }
+.sc-head b { font-family: var(--font-display); font-weight: 400; font-size: 16px; letter-spacing: .02em; }
+@media (max-width: 700px) { .stage-cards { grid-template-columns: 1fr; } .sc-side.right { justify-content: flex-start; } }
+@media (prefers-reduced-motion: reduce) { .fs-dust { display: none; } }
+.fs-floor { position: absolute; inset: 0; overflow: visible; }
+.fs-crack path { fill: none; stroke: rgba(10,6,4,.85); stroke-width: 2.2; stroke-linejoin: bevel; }
+.fs-crack ellipse { fill: rgba(0,0,0,.28); }
+.fs-crack.fresh path { stroke-dasharray: 160; stroke-dashoffset: 160; animation: fs-crack .35s ease-out forwards; }
+@keyframes fs-crack { to { stroke-dashoffset: 0; } }
+.fs-skid { stroke: rgba(30,20,12,.45); stroke-width: 3; stroke-linecap: round; fill: none; }
+.fs-rock { position: absolute; top: var(--ground); width: 7px; height: 6px; margin: -6px 0 0 -3px; background: #4a3b2e; border-radius: 2px; z-index: 26; animation: fs-rock 1s cubic-bezier(.2,.6,.4,1) forwards; }
+@keyframes fs-rock { 50% { transform: translate(calc(var(--rx) * .6), var(--ry)) rotate(160deg); } to { transform: translate(var(--rx), 4px) rotate(320deg); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .fs-rock { display: none; } .fs-crack.fresh path { animation: none; stroke-dashoffset: 0; } }
+
+/* ---- 2D Arena (screens/Versus.tsx) ---- */
+.vs-idle { background-repeat: no-repeat; animation-name: vs-idle; animation-iteration-count: infinite; flex: none; }
+@keyframes vs-idle { to { background-position: calc(var(--n) * var(--w) * -1) 0; } }
+@media (prefers-reduced-motion: reduce) { .vs-idle { animation: none; } }
+.vs-sides { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.vs-side { display: flex; flex-direction: column; gap: 8px; text-align: left; padding: 12px; border-radius: var(--radius); background: var(--surface-2); border: 2px solid var(--line-strong); color: var(--text); cursor: pointer; min-height: 140px; }
+.vs-side.active { border-color: var(--sc); box-shadow: 4px 4px 0 var(--ink); }
+.vs-picks { display: flex; gap: 8px; flex-wrap: wrap; align-items: flex-end; }
+.vs-slot { display: flex; flex-direction: column; align-items: center; gap: 4px; min-width: 70px; min-height: 100px; justify-content: flex-end; }
+.vs-slot small { font-size: 11px; max-width: 90px; text-align: center; }
+.vs-roster { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 10px; }
+.vs-tile { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 8px 6px; border-radius: var(--radius); background: var(--surface-2); border: 2px solid var(--line); color: var(--text); cursor: pointer; min-height: 170px; justify-content: flex-end; }
+.vs-tile:hover { border-color: var(--line-strong); }
+.vs-tile.picked { border-color: var(--sc); background: color-mix(in srgb, var(--sc) 14%, var(--surface-2)); }
+.vs-tile b { font-size: 13px; line-height: 1.15; text-align: center; }
+.vs-tile .faint { font-size: 11px; text-align: center; line-height: 1.2; }
+@media (max-width: 600px) { .vs-sides { grid-template-columns: 1fr; } .vs-roster { grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); } .vs-tile { min-height: 150px; } }

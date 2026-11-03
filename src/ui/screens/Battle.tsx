@@ -1,7 +1,7 @@
 import { RaidCard } from '../components/Raid';
 import { ErrorBoundary } from '../components/ErrorBoundary';
 import { PreFightPoll, Predictions } from '../components/Predictions';
-import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
+import { createContext, useContext, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import type { BattleEvent, BattleInjury, BattleInput, BattleRecord, GameState } from '../../engine/types';
 import * as G from '../../engine/game';
 import { getSynergy } from '../../engine/data/world';
@@ -59,17 +59,24 @@ function teamSideName(g: GameState, input: BattleInput, id: string): string {
   return owners.map((o) => g.players.find((p) => p.id === o)?.name ?? o).join(' & ') || id;
 }
 
+/** The 2D Arena (and any other stand-alone fight) supplies its own game and close action, so a fight
+ *  can be watched without touching the saved game. */
+export const BattleOverride = createContext<{ game: GameState; onClose: () => void } | null>(null);
+
 export function BattleView(props: { record: BattleRecord; exhibition?: boolean }) {
+  const ov = useContext(BattleOverride);
   const fallback = <div className="panel" role="alert">
     <strong>This battle view hit a display error.</strong>
     <p>The shared battle record is still safe. Close this exhibition and reopen it, or reload the room to try again.</p>
-    {props.exhibition && <button className="btn" onClick={() => store.closeExhibition()}>Close battle</button>}
+    {props.exhibition && <button className="btn" onClick={() => (ov ? ov.onClose() : store.closeExhibition())}>Close battle</button>}
   </div>;
   return <ErrorBoundary resetKey={props.record.battleId} fallback={fallback}><BattleViewContent {...props} /></ErrorBoundary>;
 }
 
 function BattleViewContent({ record, exhibition }: { record: BattleRecord; exhibition?: boolean }) {
-  const g = useApp((s) => s.game)!;
+  const appGame = useApp((s) => s.game);
+  const ov = useContext(BattleOverride);
+  const g = (ov?.game ?? appGame)!;
   const baseSpeed = useApp((s) => s.settings.narrationSpeed);
   const sound = useApp((s) => s.settings.sound);
   const voice = useApp((s) => s.settings.voice);
@@ -292,8 +299,8 @@ function BattleViewContent({ record, exhibition }: { record: BattleRecord; exhib
     <div className="col" style={{ gap: 16 }}>
       {exhibition && (
         <div className="panel row" style={{ justifyContent: 'space-between', borderColor: 'var(--cyan)' }}>
-          <span><strong>{record.kind === 'raid' ? `⚔ Raid: ${input.sides[1].fighters[0].name}` : record.kind === 'team' ? '🤝 Team battle' : record.kind === 'replay' ? 'Exact replay' : 'Fresh rematch (exhibition)'}</strong> <span className="faint">· does not affect the tournament</span></span>
-          <button className="btn sm" onClick={() => store.closeExhibition()}>Close</button>
+          <span><strong>{record.kind === 'raid' ? `⚔ Raid: ${input.sides[1].fighters[0].name}` : record.kind === 'team' ? '🤝 Team battle' : record.kind === 'replay' ? 'Exact replay' : record.kind === 'versus' ? '🥊 2D Arena fight' : 'Fresh rematch (exhibition)'}</strong> <span className="faint">{record.kind === 'versus' ? '· just for fun, nothing is saved' : '· does not affect the tournament'}</span></span>
+          <button className="btn sm" onClick={() => (ov ? ov.onClose() : store.closeExhibition())}>Close</button>
         </div>
       )}
       <div className="row" style={{ justifyContent: 'space-between', gap: 8 }}>
@@ -396,7 +403,9 @@ function BattleViewContent({ record, exhibition }: { record: BattleRecord; exhib
 }
 
 function Verdict({ record, exhibition }: { record: BattleRecord; exhibition?: boolean }) {
-  const g = useApp((s) => s.game)!;
+  const appGame = useApp((s) => s.game);
+  const ov = useContext(BattleOverride);
+  const g = (ov?.game ?? appGame)!;
   const { input, result } = record;
   const w = result.winnerSide;
   const l = (1 - w) as 0 | 1;
@@ -428,7 +437,7 @@ function Verdict({ record, exhibition }: { record: BattleRecord; exhibition?: bo
           <div className="muted">{explanation}</div>
         </div>
         {showResults && <button className="btn gold lg" onClick={() => store.act((d) => G.continueAfterResults(d))}>Continue →</button>}
-        {exhibition && <button className="btn" onClick={() => store.closeExhibition()}>Back</button>}
+        {exhibition && <button className="btn" onClick={() => (ov ? ov.onClose() : store.closeExhibition())}>Back</button>}
       </div>
       <div className="grid grid-3" style={{ gap: 10 }}>
         <Stat label="Winner" value={`${pn(input.sides[w].playerId)} (${winners.map((f) => fname(f.charId)).join(', ')})`} />

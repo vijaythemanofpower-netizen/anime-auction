@@ -1,0 +1,366 @@
+{
+ "legend:goku": {
+  "states": {
+   "base": {
+    "hit": {
+     "url": "fighters/goku/base/hit.webp",
+     "frames": 17,
+     "fps": 12,
+     "loop": false,
+     "frameW": 200,
+     "frameH": 300,
+     "ax": 0.907,
+     "ay": 0.999
+    },
+    "idle": {
+     "url": "fighters/goku/base/idle.webp",
+     "frames": 17,
+     "fps": 12,
+     "loop": true,
+     "frameW": 166,
+     "frameH": 300,
+     "ax": 0.896,
+     "ay": 0.999
+    },
+    "knockdown": {
+     "url": "fighters/goku/base/knockdown.webp",
+     "frames": 17,
+     "fps": 12,
+     "loop": false,
+     "frameW": 208,
+     "frameH": 300,
+     "ax": 0.91,
+     "ay": 0.999
+    },
+    "run": {
+     "url": "fighters/goku/base/run.webp",
+     "frames": 17,
+     "fps": 12,
+     "loop": true,
+     "frameW": 188,
+     "frameH": 300,
+     "ax": 0.5,
+     "ay": 0.999
+    },
+    "special": {
+     "url": "fighters/goku/base/special.webp",
+     "frames": 17,
+     "fps": 12,
+     "loop": false,
+     "frameW": 270,
+     "frameH": 300,
+     "ax": 0.825,
+     "ay": 0.999
+    },
+    "strike": {
+     "url": "fighters/goku/base/strike.webp",
+     "frames": 17,
+     "fps": 12,
+     "loop": false,
+     "frameW": 202,
+     "frameH": 300,
+     "ax": 0.909,
+     "ay": 0.999
+    }
+   }
+  }
+ },
+ "legend:itachi": {
+  "states": {
+   "base": {
+    "hit": {
+     "id": "legend:itachi",
+     "url": "fighters/itachi/base/hit.webp",
+     "frames": 17,
+     "fps": 12,
+     "loop": false,
+     "frameW": 206,
+     "frameH": 300,
+     "ax": 0.554,
+     "ay": 0.979
+    },
+    "idle": {
+     "id": "legend:itachi",
+     "url": "fighters/itachi/base/idle.webp",
+     "frames": 17,
+     "fps": 12,
+     "loop": true,
+     "frameW": 207,
+     "frameH": 300,
+     "ax": 0.555,
+     "ay": 0.979
+    },
+    "knockdown": {
+     "id": "legend:itachi",
+     "url": "fighters/itachi/base/knockdown.webp",
+     "frames": 17,
+     "fps": 12,
+     "loop": false,
+     "frameW": 207,
+     "frameH": 300,
+     "ax": 0.556,
+     "ay": 0.979
+    },
+    "run": {
+     "id": "legend:itachi",
+     "url": "fighters/itachi/base/run.webp",
+     "frames": 17,
+     "fps": 12,
+     "loop": true,
+     "frameW": 206,
+     "frameH": 300,
+     "ax": 0.5,
+     "ay": 0.979
+    },
+    "special": {
+     "id": "legend:itachi",
+     "url": "fighters/itachi/base/special.webp",
+     "frames": 17,
+     "fps": 12,
+     "loop": false,
+     "frameW": 241,
+     "frameH": 300,
+     "ax": 0.618,
+     "ay": 0.979
+    },
+    "strike": {
+     "id": "legend:itachi",
+     "url": "fighters/itachi/base/strike.webp",
+     "frames": 17,
+     "fps": 12,
+     "loop": false,
+     "frameW": 207,
+     "frameH": 300,
+     "ax": 0.554,
+     "ay": 0.979
+    }
+   }
+  }
+ },
+ "legend:kakashi": {
+  "states": {
+   "base": {
+    "idle": {
+     "id": "legend:kakashi",
+     "url": "fighters/kakashi/base/idle.webp",
+     "frames": 17,
+     "fps": 12,
+     "loop": true,
+     "frameW": 166,
+     "frameH": 300,
+     "ax": 0.433,
+     "ay": 0.978
+    },
+    "run": {
+     "id": "legend:kakashi",
+     "url": "fighters/kakashi/base/run.webp",
+     "frames": 17,
+     "fps": 12,
+     "loop": true,
+     "frameW": 162,
+     "frameH": 300,
+     "ax": 0.5,
+     "ay": 0.979
+    }
+   }
+  }
+ },
+ "legend:luffy": {
+  "states": {
+   "base": {
+    "hit": {
+     "url": "fighters/luffy/base/hit.webp",
+     "frames": 17,
+     "fps": 12,
+     "loop": false,
+     "frameW": 199,
+     "frameH": 300,
+     "ax": 0.497,
+     "ay": 0.973
+    },
+    "idle": {
+     "url": "fighters/luffy/base/idle.webp",
+     "frames": 17,
+     "fps": 12,
+     "loop": true,
+     "frameW": 204,
+     "frameH": 300,
+     "ax": 0.533,
+     "ay": 0.973
+    },
+    "knockdown": {
+     "url": "fighters/luffy/base/knockdown.webp",
+     "frames": 17,
+     "fps": 12,
+     "loop": false,
+     "frameW": 300,
+     "frameH": 300,
+     "ax": 0.484,
+     "ay": 0.973
+    },
+    "run": {
+     "url": "fighters/luffy/base/run.webp",
+     "frames": 17,
+     "fps": 12,
+     "loop": true,
+     "frameW": 220,
+     "frameH": 300,
+     "ax": 0.5,
+     "ay": 0.973
+    },
+    "special": {
+     "url": "fighters/luffy/base/special.webp",
+     "frames": 17,
+     "fps": 12,
+     "loop": false,
+     "frameW": 259,
+     "frameH": 300,
+     "ax": 0.488,
+     "ay": 0.973
+    },
+    "strike": {
+     "url": "fighters/luffy/base/strike.webp",
+     "frames": 17,
+     "fps": 12,
+     "loop": false,
+     "frameW": 240,
+     "frameH": 300,
+     "ax": 0.475,
+     "ay": 0.973
+    }
+   }
+  }
+ },
+ "legend:naruto": {
+  "states": {
+   "base": {
+    "hit": {
+     "url": "fighters/naruto/base/hit.webp",
+     "frames": 17,
+     "fps": 12,
+     "loop": false,
+     "frameW": 195,
+     "frameH": 300,
+     "ax": 0.346,
+     "ay": 0.999
+    },
+    "idle": {
+     "url": "fighters/naruto/base/idle.webp",
+     "frames": 17,
+     "fps": 12,
+     "loop": true,
+     "frameW": 189,
+     "frameH": 300,
+     "ax": 0.325,
+     "ay": 0.999
+    },
+    "knockdown": {
+     "url": "fighters/naruto/base/knockdown.webp",
+     "frames": 17,
+     "fps": 12,
+     "loop": false,
+     "frameW": 300,
+     "frameH": 300,
+     "ax": 0.35,
+     "ay": 0.999
+    },
+    "run": {
+     "url": "fighters/naruto/base/run.webp",
+     "frames": 17,
+     "fps": 12,
+     "loop": true,
+     "frameW": 231,
+     "frameH": 300,
+     "ax": 0.5,
+     "ay": 0.999
+    },
+    "special": {
+     "url": "fighters/naruto/base/special.webp",
+     "frames": 17,
+     "fps": 12,
+     "loop": false,
+     "frameW": 300,
+     "frameH": 300,
+     "ax": 0.351,
+     "ay": 0.999
+    },
+    "strike": {
+     "url": "fighters/naruto/base/strike.webp",
+     "frames": 17,
+     "fps": 12,
+     "loop": false,
+     "frameW": 259,
+     "frameH": 300,
+     "ax": 0.25,
+     "ay": 0.999
+    }
+   }
+  }
+ },
+ "legend:sasuke": {
+  "states": {
+   "base": {
+    "hit": {
+     "url": "fighters/sasuke/base/hit.webp",
+     "frames": 17,
+     "fps": 12,
+     "loop": false,
+     "frameW": 180,
+     "frameH": 300,
+     "ax": 0.602,
+     "ay": 0.997
+    },
+    "idle": {
+     "url": "fighters/sasuke/base/idle.webp",
+     "frames": 17,
+     "fps": 12,
+     "loop": true,
+     "frameW": 151,
+     "frameH": 300,
+     "ax": 0.51,
+     "ay": 0.997
+    },
+    "knockdown": {
+     "url": "fighters/sasuke/base/knockdown.webp",
+     "frames": 17,
+     "fps": 12,
+     "loop": false,
+     "frameW": 207,
+     "frameH": 300,
+     "ax": 0.524,
+     "ay": 0.997
+    },
+    "run": {
+     "url": "fighters/sasuke/base/run.webp",
+     "frames": 17,
+     "fps": 12,
+     "loop": true,
+     "frameW": 185,
+     "frameH": 300,
+     "ax": 0.5,
+     "ay": 0.997
+    },
+    "special": {
+     "url": "fighters/sasuke/base/special.webp",
+     "frames": 17,
+     "fps": 12,
+     "loop": false,
+     "frameW": 254,
+     "frameH": 300,
+     "ax": 0.381,
+     "ay": 0.996
+    },
+    "strike": {
+     "url": "fighters/sasuke/base/strike.webp",
+     "frames": 17,
+     "fps": 12,
+     "loop": false,
+     "frameW": 171,
+     "frameH": 300,
+     "ax": 0.582,
+     "ay": 0.997
+    }
+   }
+  }
+ }
+}

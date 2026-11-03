@@ -12,19 +12,19 @@ import { sceneSrcSet, sceneUrl } from '../home/HomeStory';
 
 const KANA: Record<Screen, string> = {
   home: 'アニメオークション', explorer: 'キャラクター', setup: 'ゲーム作成', game: 'バトル', hall: '殿堂',
-  howto: '遊び方', settings: '設定', saves: 'セーブ', online: 'オンライン',
+  howto: '遊び方', settings: '設定', saves: 'セーブ', online: 'オンライン', versus: '2Dアリーナ',
 };
 
 const LABEL: Record<Screen, string> = {
   home: 'HOME', explorer: 'CHARACTER DATABASE', setup: 'NEW GAME', game: 'GAME', hall: 'HALL OF LEGENDS',
-  howto: 'HOW TO PLAY', settings: 'SETTINGS', saves: 'SAVED GAMES', online: 'ONLINE ROOMS',
+  howto: 'HOW TO PLAY', settings: 'SETTINGS', saves: 'SAVED GAMES', online: 'ONLINE ROOMS', versus: '2D ARENA',
 };
 
 /** Which characters suit each screen (by world key). */
 const CAST: Record<string, string[]> = {
   explorer: ['gojo', 'killua', 'sasuke'], setup: ['luffy', 'zoro', 'naruto'], auction: ['goku', 'vegeta', 'saitama'],
   battle: ['sukuna', 'levi', 'eren', 'rengoku'], champion: ['rengoku', 'goku'], hall: ['rengoku', 'ichigo', 'vegeta'],
-  howto: ['naruto', 'tanjiro'], settings: ['saitama', 'levi'], saves: ['zoro', 'jinwoo'], online: ['tanjiro', 'jinwoo', 'killua'],
+  howto: ['naruto', 'tanjiro'], settings: ['saitama', 'levi'], saves: ['zoro', 'jinwoo'], online: ['tanjiro', 'jinwoo', 'killua'], versus: ['goku', 'naruto', 'sasuke', 'luffy'],
 };
 
 function castFor(screen: Screen, phase?: string): string {

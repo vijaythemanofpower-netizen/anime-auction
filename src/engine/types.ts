@@ -437,7 +437,7 @@ export interface BattleRecord {
   input: BattleInput;
   result: BattleResult;
   matchId: string | null;
-  kind: 'tournament' | 'replay' | 'rematch' | 'raid' | 'team';
+  kind: 'tournament' | 'replay' | 'rematch' | 'raid' | 'team' | 'versus';
   narration: NarrationLine[];
   createdAt: number;
   postEffects: PostBattleEffect[];
