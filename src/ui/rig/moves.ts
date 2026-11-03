@@ -3,7 +3,7 @@ import type { JointName } from './skeleton';
 export type AnimName = 'idle'|'walk'|'run'|'dash'|'jab'|'cross'|'uppercut'|'kick'|'lowKick'|'flyingKick'|'combo'|'slash'|'slashUp'|'palmStrike'|'chargeUp'|'castForward'|'throw'|'block'|'dodge'|'jump'|'hit'|'hitHeavy'|'knockdown'|'getUp'|'transform'|'teleport'|'appear'|'taunt'|'victory'|'defeated';
 export type Approach = 'walk' | 'run' | 'dash' | 'teleport' | 'jump' | 'stay';
 export type Range = 'melee' | 'mid' | 'far';
-export interface MoveEffect { kind: 'none'|'impact'|'slashArc'|'palmOrb'|'chargeHand'|'beam'|'projectile'|'area'|'aura'|'clones'|'summon'; color: string; from: JointName; size: number }
+export interface MoveEffect { kind: 'none'|'impact'|'slashArc'|'palmOrb'|'chargeHand'|'beam'|'projectile'|'area'|'aura'|'clones'|'summon'|'stretchArm'|'speedLines'|'afterimage'; color: string; from: JointName; size: number }
 export interface MovePlan { approach: Approach; range: Range; windup?: AnimName; anim: AnimName; followUp?: AnimName; effect: MoveEffect; shake: number; label?: string }
 
 type Signature = Omit<Partial<MovePlan>, 'effect'> & { effect?: Partial<MoveEffect> };
@@ -20,7 +20,7 @@ const SIGNATURES: Array<[string, Signature]> = [
   ['fireball jutsu',S('stay','mid','castForward','projectile')], ['amaterasu',S('stay','far','castForward','area','eyeF',{effect:{color:'#111827',size:2},shake:.7})], ["indra's arrow",S('stay','far','castForward','beam','wristF',{windup:'chargeUp',effect:{size:2.5},shake:.9})],
   ['phoenix flower',S('stay','mid','throw','projectile')], ['crow genjutsu',S('stay','mid','castForward','clones','eyeF')], ['tsukuyomi',S('stay','far','castForward','area','eyeF')], ['totsuka blade',S('dash','melee','slash','summon','wristF',{effect:{size:1.8},shake:.8})],
   ['raikiri',S('dash','melee','palmStrike','chargeHand','wristF',{windup:'chargeUp',effect:{color:'#bae6fd'},shake:.7})], ['ninja hounds',S('stay','mid','castForward','summon')], ['kamui',S('stay','far','castForward','area','wristF',{windup:'chargeUp',shake:.8})],
-  ['gum-gum pistol',S('stay','far','cross','impact','wristF',{effect:{size:1.7},shake:.55})], ['gum-gum gatling',S('stay','mid','combo','impact','wristF',{shake:.7})], ['king kong gun',S('run','melee','palmStrike','impact','wristF',{windup:'chargeUp',effect:{size:2.8},shake:1})],
+  ['gum-gum pistol',S('stay','far','cross','stretchArm','wristF',{effect:{size:1.7},shake:.55})], ['gum-gum gatling',S('stay','mid','combo','stretchArm','wristF',{shake:.7})], ['king kong gun',S('run','melee','palmStrike','stretchArm','wristF',{windup:'chargeUp',effect:{size:2.8},shake:1})],
   ['oni giri',S('dash','melee','slashUp','slashArc','wristF',{shake:.7})], ['36 pound phoenix',S('stay','far','slash','projectile','wristF',{effect:{size:1.7},shake:.5})], ['nine swords',S('dash','melee','combo','slashArc','wristF',{effect:{size:2},shake:.9})], ['king of hell',S('dash','melee','slash','slashArc','wristF',{windup:'chargeUp',effect:{size:2.4},shake:1})],
   ['diable jambe',S('dash','melee','flyingKick','impact','ankleF',{effect:{color:'#f97316',size:1.5},shake:.7})], ['concasse',S('jump','melee','flyingKick','impact','ankleF',{shake:.7})], ['ifrit jambe',S('dash','melee','flyingKick','area','ankleF',{windup:'chargeUp',effect:{color:'#2563eb',size:1.8},shake:.9})],
   ['fire fist',S('stay','far','palmStrike','projectile','wristF',{effect:{size:2},shake:.8})], ['flame emperor',S('stay','far','castForward','area','wristF',{windup:'chargeUp',effect:{size:2.7},shake:.9})],

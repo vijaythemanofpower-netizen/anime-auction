@@ -156,7 +156,7 @@ export function FightStage({ input, fighters, live, done, clips, melee, speed, r
       {[...homes.entries()].map(([id, home]) => {
         const f = fighters.get(id)!;
         return (
-      <StageFighter key={id} id={id} f={f} clips={clips[id]} rig={rigBase(rigs, id, f.stage ?? 0)} rigStage={rigStage} home={home} targetHome={live?.target ? homes.get(live.target) : undefined} ground={ground} tall={tall * home.scale}
+      <StageFighter key={id} id={id} f={f} clips={clips[id]} rig={rigBase(rigs, id, f.stage ?? 0)} rigStage={rigStage} home={home} targetHome={live?.target ? homes.get(live.target) : undefined} targetId={live?.target} ground={ground} tall={tall * home.scale}
             cmd={cmds.get(id) ?? { k: 'idle' }} seq={live?.seq ?? 0} win={win} speed={speed} reduced={reduced} done={done} register={register} />
         );
       })}
@@ -195,8 +195,8 @@ function playStrip(el: HTMLDivElement, clip: FighterClip, h: number, ms: number,
   players.set(el, requestAnimationFrame(tick));
 }
 
-function StageFighter({ id, f, clips, rig, rigStage, home, targetHome, ground, tall, cmd, seq, win, speed, reduced, done, register }: {
-  id: string; f: LiveFighter; clips: FighterClips | undefined; rig: string | undefined; home: { x: number; side: 0 | 1; z: number }; targetHome?: { x: number; side: 0 | 1; z: number }; ground: number; tall: number;
+function StageFighter({ id, f, clips, rig, rigStage, home, targetHome, targetId, ground, tall, cmd, seq, win, speed, reduced, done, register }: {
+  id: string; f: LiveFighter; clips: FighterClips | undefined; rig: string | undefined; home: { x: number; side: 0 | 1; z: number }; targetHome?: { x: number; side: 0 | 1; z: number }; targetId?: string; ground: number; tall: number;
   rigStage: React.RefObject<RigStageHandle | null>;
   cmd: Cmd; seq: number; win: number; speed: number; reduced: boolean; done: boolean; register: (id: string, el: HTMLDivElement | null) => void;
 }) {
@@ -267,22 +267,28 @@ function StageFighter({ id, f, clips, rig, rigStage, home, targetHome, ground, t
       else if (travel > 0 && targetX !== undefined) move([{ transform: 'translateX(0px)' }, { transform: `translateX(${distance}px)` }], travel);
       const hitAt = travel + (plan.windup ? Math.min(260, win * .2) : 0);
       if (plan.windup) { setRigAnim(plan.windup); later(travel + Math.min(260, win * .2), () => setRigAnim(plan.anim)); }
+      if (plan.windup && (plan.effect.kind === 'beam' || plan.effect.kind === 'chargeHand')) later(Math.max(0, hitAt - 260), () => {
+        const joint = rigStage.current?.joint(id, plan.effect.from);
+        rigStage.current?.moveEffect(plan.effect.kind === 'beam' ? 'palmOrb' : 'chargeHand', home.x + (joint?.x ?? 0), ground + (joint?.y ?? -tall * .55), home.x + (joint?.x ?? 0), ground + (joint?.y ?? -tall * .55), plan.effect.color, plan.effect.size, Math.max(320, hitAt + 240));
+      });
       later(hitAt, () => {
         setRigAnim(plan.anim);
         const stageEl = r.parentElement;
         const joint = rigStage.current?.joint(id, plan.effect.from);
         const startX = home.x + (joint?.x ?? 0), startY = ground + (joint?.y ?? -tall * .55);
         const color = plan.effect.color, size = plan.effect.size;
-        const add = (cls: string, left: number, top: number, width: number, height: number, duration = 520) => {
-          if (reduced || !stageEl) return;
-          const node = document.createElement('div'); node.className = `fs-move-fx ${cls}`; node.style.left = `${left}px`; node.style.top = `${top}px`; node.style.width = `${width}px`; node.style.height = `${height}px`; node.style.setProperty('--fx-color', color); node.style.setProperty('--fx-size', String(size)); stageEl.appendChild(node); later(duration, () => node.remove()); return node;
-        };
         const endX = targetHome?.x ?? startX + (home.side === 0 ? tall * 2 : -tall * 2);
-        if (plan.effect.kind === 'palmOrb' || plan.effect.kind === 'chargeHand') add('orb', startX, startY, 28 * size, 28 * size, Math.max(500, hitAt + 150));
-        else if (plan.effect.kind === 'beam') add('beam', Math.min(startX, endX), startY, Math.abs(endX - startX), Math.max(8, 12 * size));
-        else if (plan.effect.kind === 'projectile') { const shot = add('shot', startX, startY, 20 * size, 20 * size); if (shot) shot.animate([{ transform: 'translateX(0)' }, { transform: `translateX(${endX - startX}px)` }], { duration: 360, easing: 'ease-in' }); }
-        else if (plan.effect.kind === 'slashArc' || plan.effect.kind === 'impact') add('arc', endX, ground - tall * .55, 90 * size, 70 * size);
-        else if (plan.effect.kind !== 'none') add('burst', plan.effect.kind === 'aura' ? home.x : endX, ground - tall * .55, 100 * size, 100 * size);
+        const endY = targetHome ? ground - tall * .48 : startY;
+        const persistent = plan.effect.kind === 'area' || plan.effect.kind === 'aura' || plan.effect.kind === 'summon';
+        const effectMs = persistent ? Math.max(3200, win * 1.6) : plan.effect.kind === 'impact' ? 70 : 620;
+        if (!reduced && plan.effect.kind !== 'none') rigStage.current?.moveEffect(plan.effect.kind, startX, startY, endX, endY, color, size, effectMs, targetId);
+        if (!reduced && (approach === 'dash' || approach === 'run') && plan.range === 'melee') {
+          rigStage.current?.moveEffect('speedLines', startX, ground - tall * .45, startX, ground - tall * .45, color, Math.max(.7, size), 240);
+          rigStage.current?.moveEffect('afterimage', startX, ground, startX, ground, color, .8, 190);
+          rigStage.current?.moveEffect('slashArc', startX, startY - tall * .3, endX, endY - tall * .3, color, Math.max(.7, size * .7), 260);
+        }
+        if (!reduced && plan.shake >= .75) { rigStage.current?.moveEffect('impact', endX, endY, endX, endY, '#ffffff', Math.max(1, size), 72); if (targetId) rigStage.current?.flash(targetId, 34); }
+        if (plan.effect.kind === 'beam' && targetHome && targetId && cmd.hit) { const away = home.side === 0 ? 1 : -1; rigStage.current?.moveTo(targetId, targetHome.x + away * tall * .18, 260); }
         if (targetHome && cmd.hit) { /* target reaction is selected by the same move plan */ }
         if (plan.shake > 0 && stageEl && !reduced) stageEl.animate([{ transform: 'translateX(0)' }, { transform: `translateX(${plan.shake * 8}px)` }, { transform: `translateX(${-plan.shake * 8}px)` }, { transform: 'translateX(0)' }], { duration: 180 });
         if (plan.label && stageEl) { const label = document.createElement('div'); label.className = 'fs-move-label'; label.textContent = plan.label; stageEl.appendChild(label); later(900, () => label.remove()); }
