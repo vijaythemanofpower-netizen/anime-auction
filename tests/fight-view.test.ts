@@ -24,9 +24,14 @@ describe('game fight view', () => {
     expect(arenaUses2D(oldSave.fightView, true)).toBe(false);
   });
 
-  it('uses 2D only when selected and every fighter is drawable', () => {
-    expect(arenaUses2D('2d', true)).toBe(true);
-    expect(arenaUses2D('2d', false)).toBe(false);
+  it('uses cards for everyone while 2D is switched off, even when 2D was chosen', () => {
+    expect(arenaUses2D('2d', true)).toBe(false);
     expect(arenaUses2D('cards', true)).toBe(false);
+  });
+
+  it('once switched on, uses 2D only when selected and every fighter is drawable', () => {
+    expect(arenaUses2D('2d', true, true)).toBe(true);
+    expect(arenaUses2D('2d', false, true)).toBe(false);
+    expect(arenaUses2D('cards', true, true)).toBe(false);
   });
 });

@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { Versus } from './screens/Versus';
+import { TWO_D_READY } from './battlefield/view';
 import { naturalVoices } from './voices';
 import { store, useApp } from '../store/store';
 import { Logo } from './components/Portrait';
@@ -56,7 +57,7 @@ export function App() {
               {online ? `🌐 Room ${online.code}` : '🌐 Play online'}
             </button>
           )}
-          <button className={`btn sm ghost${screen === 'versus' ? ' active' : ''}`} onClick={() => store.go('versus')}>🥊 2D Arena</button>
+          {TWO_D_READY && <button className={`btn sm ghost${screen === 'versus' ? ' active' : ''}`} onClick={() => store.go('versus')}>🥊 2D Arena</button>}
           <button className={`btn sm ghost hide-phone${screen === 'explorer' ? ' active' : ''}`} onClick={() => store.go('explorer')}>Characters</button>
           <button className={`btn sm ghost hide-phone${screen === 'hall' ? ' active' : ''}`} onClick={() => store.go('hall')}>Hall</button>
           <button className={`btn sm ghost${screen === 'settings' ? ' active' : ''}`} onClick={() => store.go('settings')} aria-label="Settings">⚙</button>
@@ -75,7 +76,7 @@ export function App() {
             {screen === 'settings' && <SettingsScreen />}
             {screen === 'saves' && <Saves />}
             {screen === 'online' && <OnlineScreen />}
-            {screen === 'versus' && <Versus />}
+            {screen === 'versus' && TWO_D_READY && <Versus />}
           </>
         )}
       </main>

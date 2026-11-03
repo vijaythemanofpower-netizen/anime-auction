@@ -227,11 +227,34 @@
 /* Injury report: body chart and words instead of bars */
 .fstatus { display: flex; gap: 6px; align-items: flex-start; margin-top: 6px; padding: 5px 6px; border-radius: 10px; background: rgba(5,5,15,0.72); border: 1px solid rgba(255,255,255,0.08); }
 .fstatus .body-chart { flex-shrink: 0; }
-.fs-words { min-width: 0; font-size: 10.5px; line-height: 1.35; }
-.fs-damage { display: grid; gap: 2px; color: #e2e8f0; font-size: 8px; line-height: 1.25; }
-.fs-damage b { color: #fbbf24; font-size: 8px; letter-spacing: .08em; }
-.fs-damage span { display: flex; flex-wrap: wrap; gap: 1px 5px; }
-.fs-damage span::first-letter { color: #94a3b8; }
+.fs-panel { min-width: 0; flex: 1; display: grid; gap: 4px; }
+.fs-total { display: flex; align-items: baseline; gap: 6px; line-height: 1; }
+.fs-num { font-family: var(--font-display); font-weight: 400; font-size: 22px; letter-spacing: .01em; text-shadow: 2px 2px 0 #000; }
+.fs-num small { font-size: 12px; margin-left: 1px; }
+.fs-num.good { color: #86efac; } .fs-num.mid { color: #fde047; } .fs-num.low { color: #fb923c; } .fs-num.crit { color: #f87171; }
+.fs-cap { font-size: 9px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: #94a3b8; }
+.fstatus.is-down .fs-cap { color: #f87171; }
+.part-meters { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 2px 8px; }
+.pm { display: flex; align-items: center; gap: 4px; min-width: 0; font-size: 9.5px; font-weight: 700; color: #cbd5e1; }
+.pm-name { width: 30px; flex-shrink: 0; white-space: nowrap; }
+.pm-bar { display: flex; gap: 1.5px; flex: 1; min-width: 26px; max-width: 46px; }
+.pm-bar i { flex: 1; height: 6px; border-radius: 1px; background: rgba(255,255,255,0.1); box-shadow: inset 0 0 0 1px rgba(0,0,0,0.35); }
+.pm-bar i.on { box-shadow: inset 0 -2px 0 rgba(0,0,0,0.3); }
+.pm-mark { font-size: 9px; line-height: 1; color: #fcd34d; }
+.pm.sev2 .pm-mark { color: #f87171; }
+.pm.sev2 .pm-name { color: #fecaca; }
+.fs-inj .inj, .injury-report .inj { display: inline-flex; align-items: center; gap: 3px; }
+.body-chart .body-blood path { fill: #b91c1c; stroke: #450a0a; stroke-width: 0.3; animation: drip 1.6s ease-in infinite; }
+.body-chart .body-blood path:nth-child(2) { animation-delay: .5s; } .body-chart .body-blood path:nth-child(3) { animation-delay: 1s; }
+@keyframes drip { 0% { transform: translateY(0); opacity: 1; } 80% { opacity: 1; } 100% { transform: translateY(3px); opacity: 0.2; } }
+@media (prefers-reduced-motion: reduce) { .body-chart .body-blood path { animation: none; } }
+.injury-report .part-meters { gap: 4px 14px; margin: 4px 0 6px; }
+.injury-report .pm { font-size: 12px; }
+.injury-report .pm-name { width: 44px; }
+.injury-report .pm-bar { max-width: 80px; }
+.injury-report .pm-bar i { height: 8px; }
+.arena2.squad .fs-num { font-size: 18px; }
+@media (max-width: 480px) { .fstatus { gap: 4px; padding: 4px; } .part-meters { grid-template-columns: 1fr; } .pm-bar { max-width: none; } }
 .fs-k { color: #94a3b8; font-weight: 600; }
 .fs-v { font-weight: 800; }
 .fs-v.good { color: #86efac; } .fs-v.mid { color: #fde047; } .fs-v.low { color: #fb923c; } .fs-v.crit { color: #f87171; }
@@ -246,7 +269,7 @@
 .body-chart.down { transform: rotate(-70deg); transform-origin: 50% 70%; opacity: 0.8; }
 @keyframes bp-pulse { to { opacity: 0.55; } }
 .arena2.squad .fstatus { flex-direction: column; align-items: center; padding: 4px; }
-.arena2.squad .fs-words { font-size: 9.5px; text-align: center; }
+.arena2.squad .fs-panel { justify-items: center; }
 .arena2.squad .fs-inj { justify-content: center; }
 .injury-report { display: flex; gap: 14px; align-items: flex-start; }
 .ir-name { font-family: var(--font-display); font-weight: 800; font-size: 18px; }

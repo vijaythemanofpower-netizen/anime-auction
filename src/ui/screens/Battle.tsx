@@ -23,7 +23,7 @@ import { clipKeys, onClipsChanged } from '../../store/media';
 import { playback, sendPlayback, useRoom, voteSkip, votersNeeded } from '../../online/room';
 import { prepareFormPortraits } from '../formPortraits';
 import { NO_DAMAGE, regionOf } from '../bodyDamage';
-import type { FightView } from '../battlefield/view';
+import { TWO_D_READY, type FightView } from '../battlefield/view';
 
 
 function delayFor(e: BattleEvent, hasLine: boolean): number {
@@ -340,7 +340,7 @@ function BattleViewContent({ record, exhibition, force2d = false }: { record: Ba
         sideNames={sideNames} />
       <div className="row battle-controls" style={{ justifyContent: 'space-between' }}>
         <div className="row">
-          {!force2d && <Seg value={fightView} onChange={setFightView} label="Fight view" options={[{ v: 'cards', label: 'Cards' }, { v: '2d', label: '2D' }]} />}
+          {TWO_D_READY && !force2d && <Seg value={fightView} onChange={setFightView} label="Fight view" options={[{ v: 'cards', label: 'Cards' }, { v: '2d', label: '2D' }]} />}
           <button className="btn primary" onClick={() => setPlaying((p) => !p)} disabled={done || follow} title={follow ? 'The host controls the fight' : undefined} aria-label={playing ? 'Pause' : 'Resume'}>{playing ? '❚❚ Pause' : '▶ Resume'}</button>
           <button className="btn" disabled={follow && !done} title={follow && !done ? 'The host controls the fight; you can replay it once it ends.' : undefined} onClick={() => { if (room?.role === 'guest') setLocalReplay(true); skipped.current = false; setIdx(0); setPlaying(true); }}>↺ Replay</button>
           {synced && !done

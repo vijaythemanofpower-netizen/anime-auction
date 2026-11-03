@@ -7,6 +7,7 @@ import { getApiKey, rateAll, withAiMoves } from '../ai/moveWriter';
 import type { PublicCharacter } from '../../engine/types';
 import { store, useApp } from '../../store/store';
 import { Emblem, Seg } from '../components/common';
+import { TWO_D_READY } from '../battlefield/view';
 import type { AuctionMode, PlayerKind } from '../../engine/types';
 
 export const COLORS = ['#a78bfa', '#22d3ee', '#f472b6', '#f5c451', '#34d399', '#fb923c'];
@@ -166,7 +167,7 @@ export function Setup() {
           </div>
           <div className="panel col">
             <h3>Tournament</h3>
-            <div className="field"><span className="label">Fight view</span><Seg value={fightView} onChange={setFightView} label="Default fight view" options={[{ v: 'cards', label: 'Cards', title: 'Use the illustrated card arena by default' }, { v: '2d', label: '2D fighters', title: 'Use animated fighters when every fighter in a match is available' }]} /><span className="faint" style={{ fontSize: 12 }}>Each viewer can switch views during a fight.</span></div>
+            {TWO_D_READY && <div className="field"><span className="label">Fight view</span><Seg value={fightView} onChange={setFightView} label="Default fight view" options={[{ v: 'cards', label: 'Cards', title: 'Use the illustrated card arena by default' }, { v: '2d', label: '2D fighters', title: 'Use animated fighters when every fighter in a match is available' }]} /><span className="faint" style={{ fontSize: 12 }}>Each viewer can switch views during a fight.</span></div>}
             <div className="field"><span className="label">Solo duel rounds</span><Seg value={soloRounds} onChange={setSoloRounds} label="Solo rounds" options={[1, 2, 3].map((n) => ({ v: n, label: String(n) }))} /></div>
             <label className="toggle"><input type="checkbox" checked={tagRound} onChange={(e) => setTagRound(e.target.checked)} /> Include a tag-team round</label>
             <label className="toggle"><input type="checkbox" checked={persistent} onChange={(e) => setPersistent(e.target.checked)} /> Persistent fatigue &amp; injuries</label>

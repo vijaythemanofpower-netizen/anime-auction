@@ -76,7 +76,56 @@ export function BodyChart({ injuries, size = 54, down, damage, target = '' }: { 
           {sevAt(r) === 2 && <path d={FRACTURE[r]} fill="none" stroke="#fecaca" strokeWidth="0.45" transform="translate(0.4 0.3)" strokeLinejoin="bevel" />}
         </g>
       ))}
+      {REGIONS.filter((r) => sevAt(r) === 2 || pct(r) >= 50).map((r) => <Drips key={`d${r}`} r={r} heavy={sevAt(r) === 2 || pct(r) >= 75} />)}
     </svg>
+  );
+}
+
+/** Blood drops running from badly hurt areas (start points on each area). */
+const DRIP: Record<Region, [number, number]> = { head: [33, 15], torso: [34, 40], larm: [10, 50], rarm: [50, 50], lleg: [24, 92], rleg: [36, 92] };
+function Drips({ r, heavy }: { r: Region; heavy: boolean }) {
+  const [x, y] = DRIP[r];
+  const drop = (dx: number, dy: number, s: number) => `M${x + dx} ${y + dy}c${s * 0.9} ${s * 1.4} ${s * 1.3} ${s * 2.1} ${s * 1.3} ${s * 2.8}a${s * 1.3} ${s * 1.3} 0 0 1-${s * 2.6} 0c0-.7.4-1.4 ${s * 1.3}-${s * 2.8}z`;
+  return (
+    <g className="body-blood">
+      <path d={drop(0, 0, 1.5)} />
+      {heavy && <path d={drop(-2.6, 4, 1.1)} />}
+      {heavy && <path d={drop(2.2, 7.5, 0.9)} />}
+    </g>
+  );
+}
+
+const SHORT: Record<Region, string> = { head: 'Head', torso: 'Torso', larm: 'R arm', rarm: 'L arm', lleg: 'R leg', rleg: 'L leg' };
+
+/** One row per body area: a short name and a five-step meter in the damage colour. */
+export function PartMeters({ damage, injuries = [], target = '' }: { damage: BodyDamage; injuries?: BattleInjury[]; target?: string }) {
+  return (
+    <ul className="part-meters">
+      {REGIONS.map((r) => {
+        const p = damage[r];
+        const sev = Math.max(0, ...injuries.filter((i) => injuryRegion(target, i.part) === r).map((i) => i.severity));
+        const lit = p <= 0 ? 0 : Math.min(5, Math.ceil(p / 20));
+        return (
+          <li key={r} className={`pm ${tone(p)}${sev === 2 ? ' sev2' : sev ? ' sev1' : ''}`} aria-label={`${REGION_NAME[r]}: ${p}% damaged${sev === 2 ? ', serious injury' : sev ? ', injured' : ''}`}>
+            <span className="pm-name">{SHORT[r]}</span>
+            <span className="pm-bar" aria-hidden="true">{[0, 1, 2, 3, 4].map((k) => <i key={k} className={k < lit ? 'on' : ''} style={k < lit ? { background: tint(p) } : undefined} />)}</span>
+            {sev > 0 && <span className="pm-mark" aria-hidden="true">{sev === 2 ? '✚' : '•'}</span>}
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
+/** A small mark per injury: a crack for a serious one, a bruise dot for a minor one. */
+function InjuryChip({ i }: { i: BattleInjury }) {
+  return (
+    <span className={`inj sev${i.severity}`} title={INJURY_EFFECT[i.part][i.severity - 1]}>
+      <svg viewBox="0 0 10 10" width="9" height="9" aria-hidden="true">
+        {i.severity === 2 ? <path d="M2 1l3 3-2 1.5 4 4" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="bevel" /> : <circle cx="5" cy="5" r="3.2" fill="currentColor" />}
+      </svg>
+      {i.label}
+    </span>
   );
 }
 
@@ -92,15 +141,18 @@ const tone = (p: number) => (p >= 70 ? 'crit' : p >= 40 ? 'low' : p >= 15 ? 'mid
 /** Injury cues under a fighter card; numeric health and resource meters stay hidden. */
 export function FighterStatus({ injuries, down, damage, hp, maxHp, target }: { injuries: BattleInjury[]; guard: number; staminaPct: number; down?: boolean; damage?: BodyDamage; hp?: number; maxHp?: number; target?: string }) {
   const overall = damageLine(damage, hp, maxHp)?.total;
-  const parts = damage ? REGIONS.map((r) => `${REGION_NAME[r]} ${damage[r]}%`) : [];
   return (
-    <div className="fstatus">
-      <BodyChart injuries={injuries} size={62} down={down} damage={damage} target={target} />
-      <div className="fs-words">
-        {damage && <div className="fs-damage" aria-label={`Body damage: ${parts.join(', ')}`}>
-          <b>BODY DAMAGE{overall !== undefined ? ` · ${overall}% TOTAL` : ''}</b><span>{parts.join(' · ')}</span>
-        </div>}
-        <div className="fs-inj">{injuries.length ? injuries.map((i) => <span key={i.part} className={`inj sev${i.severity}`}>{i.label}</span>) : <span className="faint">Unhurt</span>}</div>
+    <div className={`fstatus${down ? ' is-down' : ''}`}>
+      <BodyChart injuries={injuries} size={88} down={down} damage={damage} target={target} />
+      <div className="fs-panel">
+        {overall !== undefined && (
+          <div className="fs-total">
+            <span className={`fs-num ${tone(overall)}`}>{overall}<small>%</small></span>
+            <span className="fs-cap">{down ? 'Down' : 'Body damage'}</span>
+          </div>
+        )}
+        {damage && <PartMeters damage={damage} injuries={injuries} target={target} />}
+        {injuries.length > 0 && <div className="fs-inj">{injuries.map((i) => <InjuryChip key={i.part} i={i} />)}</div>}
       </div>
     </div>
   );
@@ -118,7 +170,7 @@ export function InjuryReport({ name, condition, injuries, guard, staminaPct, kno
         <div className="ir-name">{name}</div>
         <div className="ir-cond">{condition}{knockdowns ? ` · knocked down ${knockdowns === 1 ? 'once' : `${knockdowns} times`}` : ''}</div>
         {d && damage && <div className="ir-row"><span className="fs-k">Damage</span> <span className={`fs-v ${tone(d.total)}`}>{d.total}% overall</span></div>}
-        {damage && <div className="ir-parts">{REGIONS.map((r) => <span key={r} className={`fs-v ${tone(damage[r])}`}>{REGION_NAME[r]} {damage[r]}%</span>)}</div>}
+        {damage && <PartMeters damage={damage} injuries={injuries} target={target} />}
         <div className="ir-row"><span className="fs-k">Guard</span> <span className={`fs-v ${g.tone}`}>{g.label}</span></div>
         <div className="ir-row"><span className="fs-k">Stamina</span> <span className={`fs-v ${st.tone}`}>{st.label}</span></div>
         {injuries.length ? (

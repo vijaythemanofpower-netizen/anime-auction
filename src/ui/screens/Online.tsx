@@ -9,6 +9,7 @@ import { MAX_PLAYERS, createRoom, joinRoom, leaveRoom, listCloudSaves, resumeClo
 import { matchOrder } from '../../engine/tournament';
 import { store, useApp } from '../../store/store';
 import { Seg } from '../components/common';
+import { TWO_D_READY } from '../battlefield/view';
 import { AddFriendButton, InviteFriends } from '../components/Social';
 
 /** A code from a shared link (…?room=KX7P2Q), used once. */
@@ -186,7 +187,7 @@ function Lobby() {
             <>
               <div className="field"><span className="label">Game mode</span><Seg value={s.focus ?? 'tournament'} onChange={(v) => updateLobby({ focus: v })} label="Game mode" options={[{ v: 'tournament', label: '🏆 Tournament' }, { v: 'raid', label: '⚔ Boss Raid' }]} />
                 <span className="faint" style={{ fontSize: 12 }}>{(s.focus ?? 'tournament') === 'raid' ? 'After the auction everyone picks fighters and teams up against real anime villains. The tournament is still there too.' : 'Players fight each other in a tournament. Raid Boss is also in the hub after the auction.'}</span></div>
-              <div className="field"><span className="label">Default fight view</span><Seg value={s.fightView ?? 'cards'} onChange={(v) => updateLobby({ fightView: v })} label="Default fight view" options={[{ v: 'cards', label: 'Cards' }, { v: '2d', label: '2D fighters' }]} /><span className="faint" style={{ fontSize: 12 }}>Each player can switch views during a fight.</span></div>
+              {TWO_D_READY && <div className="field"><span className="label">Default fight view</span><Seg value={s.fightView ?? 'cards'} onChange={(v) => updateLobby({ fightView: v })} label="Default fight view" options={[{ v: 'cards', label: 'Cards' }, { v: '2d', label: '2D fighters' }]} /><span className="faint" style={{ fontSize: 12 }}>Each player can switch views during a fight.</span></div>}
               <div className="field"><label htmlFor="lobby-name">Game name</label><input id="lobby-name" className="input" maxLength={40} value={s.name} onChange={(e) => updateLobby({ name: e.target.value })} /></div>
               <div className="field"><span className="label">Fighters each</span><Seg value={s.rosterSize} onChange={(v) => updateLobby({ rosterSize: v })} label="Roster size" options={[{ v: 3, label: '3' }, { v: 4, label: '4' }]} /></div>
               <div className="field"><span className="label">Computer players</span><Seg value={s.npcs} onChange={(v) => updateLobby({ npcs: v })} label="Computer players" options={[0, 1, 2, 3, 4].map((n) => ({ v: n, label: String(n) }))} /></div>
@@ -197,7 +198,7 @@ function Lobby() {
           ) : (
             <div className="col" style={{ gap: 4 }}>
               <div><strong>{s.name}</strong></div>
-              <div className="faint">Default fights: {s.fightView === '2d' ? '2D fighters' : 'Cards'}</div>
+              {TWO_D_READY && <div className="faint">Default fights: {s.fightView === '2d' ? '2D fighters' : 'Cards'}</div>}
               <div className="faint">{s.rosterSize} fighters each · {s.timerSeconds}s bid timer{s.npcs ? ` · ${s.npcs} computer player${s.npcs > 1 ? 's' : ''}` : ''}</div>
             </div>
           )}
