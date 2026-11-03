@@ -33,6 +33,15 @@ describe('boss climb, levels 1 to 5', () => {
     for (const b of top) expect(tiers[4].map((c) => c.id)).toContain(b.id);
   });
 
+  it('never repeats a villain at a level until the whole tier has been fought', () => {
+    const tier = bossTiers(pool, 7)[0];
+    const seen: string[] = [];
+    for (let run = 0; run < tier.length; run++) seen.push(levelBosses(pool, 7, 1, run * 31 + 5, seen)[0].id);
+    expect(new Set(seen).size).toBe(tier.length); // every weak villain once
+    const again = levelBosses(pool, 7, 1, 999, seen)[0].id;
+    expect(again).toBe(seen[0]); // then the least recently fought comes back first
+  });
+
   it('climbs one level per win and ends the run on a loss', () => {
     const { g, vault } = makeGame(4, 3, 'live', 4321) as never as { g: GameState; vault: Vault };
     runAuction(g);

@@ -3,7 +3,7 @@
 // them and see the results (engine/raid.ts).
 import { useMemo } from 'react';
 import type { GameState, RaidResult } from '../../engine/types';
-import { RAID_LEVELS, RAID_MAX_TEAM, legendVillains, levelBosses, nextRaidLevel, raidSlots } from '../../engine/raid';
+import { RAID_LEVELS, RAID_MAX_TEAM, foughtBosses, legendVillains, levelBosses, nextRaidLevel, raidSlots } from '../../engine/raid';
 import { VILLAINS } from '../../engine/data/villains';
 import { store, useApp } from '../../store/store';
 import { CharArt } from './Portrait';
@@ -18,7 +18,7 @@ export function RaidHub({ g }: { g: GameState }) {
   const runStart = leveled.map((r) => r.level).lastIndexOf(1);
   const run = runStart >= 0 ? leveled.slice(runStart) : [];
   const lastRun = run[run.length - 1];
-  const fight = (lv: number) => store.startRaid(levelBosses(bosses, g.secret, lv, Date.now()), lv);
+  const fight = (lv: number) => store.startRaid(levelBosses(bosses, g.secret, lv, Date.now(), foughtBosses(g)), lv);
   const raids = (g.raids ?? []).slice().reverse();
   const record = useApp((s) => s.battles);
   const wins = (g.raids ?? []).filter((r) => r.won).length;

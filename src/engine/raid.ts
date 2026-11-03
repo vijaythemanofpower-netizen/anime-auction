@@ -82,11 +82,24 @@ export function bossTiers(pool: PublicCharacter[], secret: number): PublicCharac
   return Array.from({ length: RAID_LEVELS }, (_, i) => ranked.slice(Math.floor((i * ranked.length) / RAID_LEVELS), Math.floor(((i + 1) * ranked.length) / RAID_LEVELS)));
 }
 
-/** The random boss (or bosses, at level 5) for a level of the climb. */
-export function levelBosses(pool: PublicCharacter[], secret: number, level: number, seed: number): PublicCharacter[] {
+/**
+ * The random boss (or bosses, at level 5) for a level of the climb. Villains already fought in this
+ * game (`seen`) are skipped until the whole tier has been fought, so every run meets new faces.
+ */
+export function levelBosses(pool: PublicCharacter[], secret: number, level: number, seed: number, seen: string[] = []): PublicCharacter[] {
   const tier = bossTiers(pool, secret)[Math.min(RAID_LEVELS, Math.max(1, level)) - 1];
+  const want = level >= RAID_LEVELS ? 2 : 1;
+  const fresh = tier.filter((c) => !seen.includes(c.id));
   const rng = new Rng(seed ^ (level * 0x9e37));
-  return rng.shuffle(tier).slice(0, level >= RAID_LEVELS ? 2 : 1);
+  const picks = rng.shuffle(fresh).slice(0, want);
+  // Tier used up: top up from the rest of it, least recently fought first.
+  const old = tier.filter((c) => !picks.includes(c)).sort((a, b) => seen.lastIndexOf(a.id) - seen.lastIndexOf(b.id));
+  return [...picks, ...old].slice(0, want);
+}
+
+/** Every villain this game's raids have fought, oldest first. */
+export function foughtBosses(g: GameState): string[] {
+  return (g.raids ?? []).flatMap((r) => r.bossIds ?? [r.bossId]);
 }
 
 /** Where the climb stands: the level to fight next, or null when the run is over (lost or cleared). */
