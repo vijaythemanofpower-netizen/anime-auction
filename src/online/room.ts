@@ -19,7 +19,7 @@ import type { ComicLength, ComicStyle } from '../engine/comic';
 export interface Member { userId: string; name: string; online: boolean }
 /** Whether the host is drawing comics for the room, and the comic settings everyone should use. */
 export interface ArtistInfo { active: boolean; length: ComicLength; style: ComicStyle }
-export interface LobbySettings { name: string; rosterSize: 3 | 4; npcs: number; timerSeconds: number; soloRounds: number; tagRound: boolean; focus?: 'tournament' | 'raid' }
+export interface LobbySettings { name: string; rosterSize: 3 | 4; npcs: number; timerSeconds: number; soloRounds: number; tagRound: boolean; focus?: 'tournament' | 'raid'; fightView?: 'cards' | '2d' }
 export interface RoomState {
   code: string;
   role: 'host' | 'guest';
@@ -361,6 +361,7 @@ export async function startOnlineGame(): Promise<void> {
   const setup: GameSetup = {
     name: s.name.trim() || 'Online Showdown',
     rosterSize: s.rosterSize,
+    fightView: s.fightView ?? 'cards',
     privacyScreens: false,
     auction: { ...DEFAULT_AUCTION, mode: 'live', timerSeconds: s.timerSeconds },
     tournament: { ...DEFAULT_TOURNAMENT, soloRounds: s.soloRounds, tagRound: s.tagRound },

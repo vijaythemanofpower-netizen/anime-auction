@@ -532,6 +532,8 @@ export type GamePhase =
 export interface GameConfig {
   name: string;
   rosterSize: 3 | 4;
+  /** Default battle presentation for this game. Missing in older saves means cards. */
+  fightView?: 'cards' | '2d';
   auction: AuctionConfig;
   tournament: TournamentConfig;
   privacyScreens: boolean;

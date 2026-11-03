@@ -93,7 +93,7 @@ export function Versus() {
   if (record && game) {
     return (
       <BattleOverride.Provider value={{ game, onClose: () => setRecord(null) }}>
-        <BattleView record={record} exhibition />
+        <BattleView record={record} exhibition force2d />
       </BattleOverride.Provider>
     );
   }

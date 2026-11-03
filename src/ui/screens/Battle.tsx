@@ -23,6 +23,7 @@ import { clipKeys, onClipsChanged } from '../../store/media';
 import { playback, sendPlayback, useRoom, voteSkip, votersNeeded } from '../../online/room';
 import { prepareFormPortraits } from '../formPortraits';
 import { NO_DAMAGE, regionOf } from '../bodyDamage';
+import type { FightView } from '../battlefield/view';
 
 
 function delayFor(e: BattleEvent, hasLine: boolean): number {
@@ -63,9 +64,9 @@ function teamSideName(g: GameState, input: BattleInput, id: string): string {
  *  can be watched without touching the saved game. */
 export const BattleOverride = createContext<{ game: GameState; onClose: () => void } | null>(null);
 
-export function BattleView(props: { record: BattleRecord; exhibition?: boolean }) {
+export function BattleView(props: { record: BattleRecord; exhibition?: boolean; force2d?: boolean }) {
   const ov = useContext(BattleOverride);
-  const fallback = <div className="panel" role="alert">
+  const fallback = <div className="panel" data-testid="error-boundary-fallback" role="alert">
     <strong>This battle view hit a display error.</strong>
     <p>The shared battle record is still safe. Close this exhibition and reopen it, or reload the room to try again.</p>
     {props.exhibition && <button className="btn" onClick={() => (ov ? ov.onClose() : store.closeExhibition())}>Close battle</button>}
@@ -73,7 +74,7 @@ export function BattleView(props: { record: BattleRecord; exhibition?: boolean }
   return <ErrorBoundary resetKey={props.record.battleId} fallback={fallback}><BattleViewContent {...props} /></ErrorBoundary>;
 }
 
-function BattleViewContent({ record, exhibition }: { record: BattleRecord; exhibition?: boolean }) {
+function BattleViewContent({ record, exhibition, force2d = false }: { record: BattleRecord; exhibition?: boolean; force2d?: boolean }) {
   const appGame = useApp((s) => s.game);
   const ov = useContext(BattleOverride);
   const g = (ov?.game ?? appGame)!;
@@ -99,6 +100,7 @@ function BattleViewContent({ record, exhibition }: { record: BattleRecord; exhib
   const [playing, setPlaying] = useState(true);
   const [speed, setSpeed] = useState(baseSpeed);
   const [showLog, setShowLog] = useState(false);
+  const [fightView, setFightView] = useState<FightView>(force2d ? '2d' : g.config?.fightView ?? 'cards');
   const completed = useRef(false);
   const feedRef = useRef<HTMLDivElement>(null);
   const done = idx >= events.length;
@@ -119,7 +121,7 @@ function BattleViewContent({ record, exhibition }: { record: BattleRecord; exhib
     return m;
   }, [narration]);
 
-  useEffect(() => { setIdx(0); setPlaying(true); completed.current = false; skipped.current = false; }, [record.battleId]);
+  useEffect(() => { setIdx(0); setPlaying(true); completed.current = false; skipped.current = false; setFightView(force2d ? '2d' : g.config?.fightView ?? 'cards'); }, [record.battleId, force2d, g.config?.fightView]);
   // Pictures for the forms reached in this fight: your own, or painted now by the drawing app.
   useEffect(() => { void prepareFormPortraits(record, g.characters, aiDrawings); }, [record.battleId, aiDrawings]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -320,8 +322,8 @@ function BattleViewContent({ record, exhibition }: { record: BattleRecord; exhib
       </div>
       {comic
         ? <ComicStage record={record} script={script} cur={idx > 0 ? cur : null} done={done} characters={g.characters} waiting={waitingArt && !prepping} reduced={reduced} aiDrawings={aiDrawings} remoteArt={remoteArt} manga={comicStyle === 'manga'} prep={prepping ? prep : undefined} onStartNow={() => setStartEarly(true)} />
-        : <ErrorBoundary resetKey={record.battleId} fallback={<div className="panel" role="alert">The arena couldn't draw this fight on this device. The fight itself is fine: the play-by-play and the result still work, and Skip jumps to the end.</div>}>
-            <ArenaStage record={record} cur={idx > 0 ? cur : null} done={done} fighters={state.fs} players={g.players} characters={g.characters} speed={speed} />
+        : <ErrorBoundary resetKey={record.battleId} fallback={<div className="panel" data-testid="error-boundary-fallback" role="alert">The arena couldn't draw this fight on this device. The fight itself is fine: the play-by-play and the result still work, and Skip jumps to the end.</div>}>
+            <ArenaStage record={record} cur={idx > 0 ? cur : null} done={done} fighters={state.fs} players={g.players} characters={g.characters} speed={speed} view={fightView} />
           </ErrorBoundary>}
       {remoteCorner && cornerPlayer && (
         <div className="panel row" style={{ justifyContent: 'space-between', borderColor: 'var(--warn)' }}>
@@ -338,6 +340,7 @@ function BattleViewContent({ record, exhibition }: { record: BattleRecord; exhib
         sideNames={sideNames} />
       <div className="row battle-controls" style={{ justifyContent: 'space-between' }}>
         <div className="row">
+          {!force2d && <Seg value={fightView} onChange={setFightView} label="Fight view" options={[{ v: 'cards', label: 'Cards' }, { v: '2d', label: '2D' }]} />}
           <button className="btn primary" onClick={() => setPlaying((p) => !p)} disabled={done || follow} title={follow ? 'The host controls the fight' : undefined} aria-label={playing ? 'Pause' : 'Resume'}>{playing ? '❚❚ Pause' : '▶ Resume'}</button>
           <button className="btn" disabled={follow && !done} title={follow && !done ? 'The host controls the fight; you can replay it once it ends.' : undefined} onClick={() => { if (room?.role === 'guest') setLocalReplay(true); skipped.current = false; setIdx(0); setPlaying(true); }}>↺ Replay</button>
           {synced && !done

@@ -63,7 +63,7 @@ export function App() {
           <AccountMenu />
         </nav>
       </header>
-      <main className={`main${screen === 'game' ? ' wide' : ''}${screen !== 'home' ? ` bannered${screen === 'game' ? ' busy' : ''}` : ''}`}>
+      <main data-testid="app-main" className={`main${screen === 'game' ? ' wide' : ''}${screen !== 'home' ? ` bannered${screen === 'game' ? ' busy' : ''}` : ''}`}>
         {!ready ? <div className="empty"><div className="spinner" /></div> : (
           <>
             {screen === 'home' && <Home />}

@@ -5,10 +5,11 @@
 import type { FxDirector, Pt, AuraSpec } from '../fx/engine';
 import type { Frame } from './director';
 import type { GroundKind } from './climate';
-
-const rand = (a: number, b: number) => a + Math.random() * (b - a);
+import { Rng, deriveSeed } from '../../engine/rng';
 
 export interface BridgeCtx {
+  seed: number;
+  seq: number;
   frame: Frame;
   ground: GroundKind;
   /** Where each fighter stands (centre) and where their feet are. */
@@ -28,6 +29,8 @@ const DEBRIS: Record<GroundKind, string[]> = {
 };
 
 export function playFrame(fx: FxDirector, c: BridgeCtx) {
+  const rng = new Rng(deriveSeed(c.seed, c.seq, 'battlefield-fx'));
+  const rand = (a: number, b: number) => rng.range(a, b);
   const { frame, pos } = c;
   const w = frame.weather;
   fx.weather.set({ kind: c.reduced ? 'clear' : w.kind, intensity: c.reduced ? 0 : w.intensity, wind: w.wind, wet: w.wet });

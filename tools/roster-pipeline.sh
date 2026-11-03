@@ -16,8 +16,8 @@ $(grep -E -i 'error|fail|expected|×|\.tsx?:[0-9]' handoff-logs/check.txt | head
   done
   check && return 0; say "STILL FAILING: $1"; return 1
 }
-say "waiting for the quality pass to finish"
-while ! grep -q "done" handoff-logs/quality.log 2>/dev/null; do sleep 60; done
+say "waiting for the online work to finish"
+while ! grep -q "done" handoff-logs/online.log 2>/dev/null; do sleep 60; done
 n=0
 while IFS= read -r batch; do
   [ -z "$batch" ] && continue; n=$((n+1))

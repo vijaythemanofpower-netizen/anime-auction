@@ -2,6 +2,7 @@
 // the current playback position: effects never invent hits or damage.
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { FightStage } from '../battlefield/FightStage';
+import { arenaUses2D, type FightView } from '../battlefield/view';
 import { preloadClips, stageReady, useFighterClips } from '../battlefield/fighterClips';
 import { rigReady, useRigIndex } from '../rig/rigIndex';
 import { profileFor } from '../vfx/profiles';
@@ -86,9 +87,9 @@ function placeIn(el: HTMLElement, root: HTMLElement): { x: number; y: number; w:
   return { x, y, w, h };
 }
 
-export function ArenaStage({ record, cur, done, fighters, players, characters, speed = 1 }: {
+export function ArenaStage({ record, cur, done, fighters, players, characters, speed = 1, view = 'cards' }: {
   record: BattleRecord; cur: BattleEvent | null; done: boolean; fighters: Map<string, LiveFighter>;
-  players: Player[]; characters: Record<string, PublicCharacter>; speed?: number;
+  players: Player[]; characters: Record<string, PublicCharacter>; speed?: number; view?: FightView;
 }) {
   const { input, result } = record;
   const env = getEnvironment(input.environmentId);
@@ -108,7 +109,7 @@ export function ArenaStage({ record, cur, done, fighters, players, characters, s
   // Animated fighters on the stage once everyone in this fight has clips; the card view otherwise.
   const allClips = useFighterClips();
   const rigs = useRigIndex();
-  const stageMode = input.sides.every((s) => s.fighters.every((f) => stageReady(allClips?.[f.charId]) || rigReady(rigs, f.charId)));
+  const stageMode = arenaUses2D(view, input.sides.every((s) => s.fighters.every((f) => stageReady(allClips?.[f.charId]) || rigReady(rigs, f.charId))));
   useEffect(() => { if (allClips) for (const s of input.sides) for (const f of s.fighters) preloadClips(allClips[f.charId]); }, [allClips, record.battleId]); // eslint-disable-line react-hooks/exhaustive-deps
   const seqNow = done ? Number.MAX_SAFE_INTEGER : cur?.seq ?? 0;
   const frame = cur ? (done ? script.frames[script.frames.length - 1] : frameAt(script, cur.seq)) : script.frames[0];
@@ -243,7 +244,7 @@ export function ArenaStage({ record, cur, done, fighters, players, characters, s
   const auras = [...fighters.values()].filter((f) => !f.down && (f.stage || f.awakened) && pos[f.snap.charId])
     .map((f) => { const pr = profileFor(f.snap.charId, f.formColor || '#f5c451'); return { at: { x: pos[f.snap.charId].x, y: pos[f.snap.charId].y }, color: f.formColor || pr.primary, color2: pr.secondary, style: pr.aura === 'none' ? 'ki' as const : pr.aura, power: Math.min(1, 0.5 + (f.stage ?? 0) * 0.2 + (f.awakened ? 0.15 : 0)) }; });
   const field: BridgeCtx | null = frame ? {
-    frame, ground: script.climate.ground, pos, actor: live?.actor, target: live?.target, auras, reduced: !!reduced,
+    seed: input.seed, seq: live?.seq ?? 0, frame, ground: script.climate.ground, pos, actor: live?.actor, target: live?.target, auras, reduced: !!reduced,
     propAt: (id) => {
       const el = camRef.current?.querySelector<HTMLElement>(`[data-prop="${id}"]`);
       if (!el || !camRef.current) return undefined;
@@ -280,7 +281,7 @@ export function ArenaStage({ record, cur, done, fighters, players, characters, s
 
   return (
     <>
-    <div ref={arenaRef} className={`arena2${size > 2 ? ' squad' : ''}${cam?.letterbox && !done ? ' letterbox' : ''}${reduced ? ' still' : ''}`} style={{ ['--env-accent' as string]: env.palette[2] + '55', ['--hype' as string]: frame?.hype ?? 0 } as CSSProperties}>
+    <div data-testid="arena-stage" ref={arenaRef} className={`arena2${size > 2 ? ' squad' : ''}${cam?.letterbox && !done ? ' letterbox' : ''}${reduced ? ' still' : ''}`} style={{ ['--env-accent' as string]: env.palette[2] + '55', ['--hype' as string]: frame?.hype ?? 0 } as CSSProperties}>
       <div className="cam" ref={camRef} style={camStyle}>
       <ArenaBackdrop envId={input.environmentId} ambient={!gpu || !!reduced} />
       {input.environmentId === 'colosseum' && <Crowd hype={frame?.hype ?? 0} seq={cur?.seq ?? 0} />}
@@ -288,7 +289,7 @@ export function ArenaStage({ record, cur, done, fighters, players, characters, s
       <PropsLayer script={script} seq={seqNow} layer="back" hitNow={live ? frame?.propHits ?? [] : []} wind={frame?.weather.wind ?? 0} />
       <GroundMarks script={script} seq={seqNow} pos={pos} w={w} h={h} ground={ground} />
       <MoveLight frame={live ? frame : undefined} seq={cur?.seq ?? 0} at={lightAt} />
-      {stageMode && allClips
+      {stageMode
         ? <FightStage input={input} fighters={fighters} live={live} done={done} clips={allClips ?? {}} melee={melee || isClash} speed={speed} reduced={!!reduced}
             register={(id, el) => { if (el) standRefs.current.set(id, el); else standRefs.current.delete(id); }} />
         : <div className="stage" ref={stageRef}>{renderSide(0)}{renderSide(1)}</div>}

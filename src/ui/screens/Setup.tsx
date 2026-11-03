@@ -32,11 +32,12 @@ export function Setup() {
   const [privacy, setPrivacy] = useState(privacyDefault);
   const [poolSource, setPoolSource] = useState<'mix' | 'all' | 'builtin'>('mix');
   const [focus, setFocus] = useState<'tournament' | 'raid'>('tournament');
+  const [fightView, setFightView] = useState<'cards' | '2d'>('cards');
   const hasKey = !!getApiKey();
   const [aiRate, setAiRate] = useState(hasKey);
 
   const setup: G.GameSetup = {
-    name, players, rosterSize, privacyScreens: privacy,
+    name, players, rosterSize, fightView, privacyScreens: privacy,
     auction: { ...G.DEFAULT_AUCTION, mode, openingBid, timerSeconds: timer, scoutTokens, sets, mystery },
     tournament: { soloRounds, tagRound, persistentConditions: persistent, specialEvents: events },
     focus,
@@ -165,6 +166,7 @@ export function Setup() {
           </div>
           <div className="panel col">
             <h3>Tournament</h3>
+            <div className="field"><span className="label">Fight view</span><Seg value={fightView} onChange={setFightView} label="Default fight view" options={[{ v: 'cards', label: 'Cards', title: 'Use the illustrated card arena by default' }, { v: '2d', label: '2D fighters', title: 'Use animated fighters when every fighter in a match is available' }]} /><span className="faint" style={{ fontSize: 12 }}>Each viewer can switch views during a fight.</span></div>
             <div className="field"><span className="label">Solo duel rounds</span><Seg value={soloRounds} onChange={setSoloRounds} label="Solo rounds" options={[1, 2, 3].map((n) => ({ v: n, label: String(n) }))} /></div>
             <label className="toggle"><input type="checkbox" checked={tagRound} onChange={(e) => setTagRound(e.target.checked)} /> Include a tag-team round</label>
             <label className="toggle"><input type="checkbox" checked={persistent} onChange={(e) => setPersistent(e.target.checked)} /> Persistent fatigue &amp; injuries</label>

@@ -33,6 +33,7 @@ export interface GameSetup {
   name: string;
   players: PlayerSetup[];
   rosterSize: 3 | 4;
+  fightView?: 'cards' | '2d';
   auction: AuctionConfig;
   tournament: TournamentConfig;
   privacyScreens: boolean;
@@ -67,7 +68,7 @@ export function newGame(s: GameSetup, secret = freshSeed()): GameState {
     createdAt: now,
     updatedAt: now,
     phase: 'pool',
-    config: { name: s.name.trim(), rosterSize: s.rosterSize, auction: s.auction, tournament: s.tournament, privacyScreens: s.privacyScreens, focus: s.focus ?? 'tournament' },
+    config: { name: s.name.trim(), rosterSize: s.rosterSize, fightView: s.fightView ?? 'cards', auction: s.auction, tournament: s.tournament, privacyScreens: s.privacyScreens, focus: s.focus ?? 'tournament' },
     players: s.players.map((p, i) => ({
       id: `p${i + 1}`, name: p.name.trim(), color: p.color, emblem: p.emblem, kind: p.kind,
       coins: STARTING_COINS, roster: [], scoutTokens: s.auction.scoutTokens, prepPoints: 0,
