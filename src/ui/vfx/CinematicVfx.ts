@@ -6,6 +6,7 @@
 // sword cuts, energy rings and drifting particles, all from the character's profile.
 // Particles are pooled, motion is delta-timed, and quality scales with the device.
 import { Application, Assets, type BLEND_MODES, Container, Graphics, MeshPlane, MeshRope, Point, Sprite, Texture } from 'pixi.js';
+import { destroyApp } from '../fx/releaseGl';
 import type { Mote, VfxProfile } from './profiles';
 
 export type Quality = 'high' | 'medium' | 'low';
@@ -408,7 +409,7 @@ export class CinematicVfx {
 
   destroy() {
     this.dead = true;
-    this.ready.then(() => { this.app.destroy(true, { children: true, texture: true }); this.fxApp.destroy(true, { children: true }); }).catch(() => undefined);
+    this.ready.then(() => { destroyApp(this.app, { children: true, texture: true }); destroyApp(this.fxApp, { children: true }); }).catch(() => undefined);
   }
 }
 

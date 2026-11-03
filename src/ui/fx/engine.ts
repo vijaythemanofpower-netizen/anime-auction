@@ -3,6 +3,7 @@
 // silhouettes and screen-wide washes, plus time control for hit-stop and
 // slow motion. Recipes in recipes.ts compose these into attacks.
 import { Application, Container, Graphics, Sprite, Texture, type Ticker } from 'pixi.js';
+import { destroyApp } from './releaseGl';
 import type { AuraStyle } from '../vfx/profiles';
 import { WeatherSystem } from './weather';
 
@@ -104,7 +105,7 @@ export class FxDirector {
   destroy() {
     if (this.onVis) document.removeEventListener('visibilitychange', this.onVis);
     try { this.weather.destroy(); this.soft?.destroy(true); this.hard?.destroy(true); } catch { /* not created */ }
-    try { this.app?.destroy(true, { children: true }); } catch { /* already gone */ }
+    destroyApp(this.app, { children: true });
     this.particles = []; this.pool = []; this.tasks = []; this.anims = []; this.auras = [];
     this.app = null;
     this.ready = false;
