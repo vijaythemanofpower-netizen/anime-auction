@@ -180,7 +180,7 @@ async function pack(frames: Buffer[], center: boolean, file: string): Promise<{ 
     tiles.push({ input: tile, left: i * fw, top: 0 });
   }
   await sharp({ create: { width: fw * frames.length, height: fh, channels: 4, background: { r: 0, g: 0, b: 0, alpha: 0 } } })
-    .composite(tiles).webp({ quality: 80, alphaQuality: 90, effort: 5 }).toFile(file);
+    .composite(tiles).webp({ quality: 72, alphaQuality: 80, effort: 6 }).toFile(file);
   return { frames: frames.length, w: fw, h: fh, ax: center ? 0.5 : (footX - left) / cw, ay: footY / H };
 }
 
