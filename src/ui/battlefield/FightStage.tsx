@@ -7,14 +7,20 @@
 // Feet kick up dust, landings crack the floor. Clips come from fighterClips.ts.
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from 'react';
 import type { BattleEvent, BattleInput } from '../../engine/types';
+import { ABILITIES } from '../../engine/data/abilities';
 import type { LiveFighter } from '../components/Arena';
 import { clipFor, clipUrl, type ClipName, type FighterClip, type FighterClips } from './fighterClips';
+import { RigFighter } from '../rig/RigView';
+import { ANIMS, type AnimName } from '../rig/animations';
+import { rigBase, useRigIndex } from '../rig/rigIndex';
+import { planMove, reactionFor, type MovePlan } from '../rig/moves';
 
 type Cmd =
   | { k: 'idle' }
   | { k: 'rush'; tx: number; heavy: boolean }
-  | { k: 'cast' | 'strike' }
-  | { k: 'hit'; delay: number; heavy: boolean }
+  | { k: 'cast' | 'strike' | 'transform' }
+  | { k: 'move'; plan: MovePlan; tx?: number; delay: number; hit?: AnimName }
+  | { k: 'hit'; delay: number; heavy: boolean; reaction?: AnimName }
   | { k: 'dodge'; delay: number }
   | { k: 'block'; delay: number }
   | { k: 'knock'; delay: number };
@@ -27,6 +33,7 @@ export function FightStage({ input, fighters, live, done, clips, melee, speed, r
   melee: boolean; speed: number; reduced: boolean; register: (id: string, el: HTMLDivElement | null) => void;
 }) {
   const host = useRef<HTMLDivElement>(null);
+  const rigs = useRigIndex();
   const [box, setBox] = useState({ w: 800, h: 450 });
   useLayoutEffect(() => {
     const el = host.current;
@@ -75,9 +82,27 @@ export function FightStage({ input, fighters, live, done, clips, melee, speed, r
       if (th && ah) cmds.set(a, { k: 'rush', tx: (th.x + ah.x) / 2 + (ah.x < th.x ? -tall * 0.2 : tall * 0.2), heavy: true });
       if (t && th && ah) cmds.set(t, { k: 'rush', tx: (th.x + ah.x) / 2 + (th.x < ah.x ? -tall * 0.2 : tall * 0.2), heavy: true });
     }
-    if (a && ['ability', 'desperation', 'transform', 'awakening', 'secret', 'reinforcement'].includes(live.type)) cmds.set(a, { k: 'cast' });
+    if (a && live.type === 'transform') cmds.set(a, { k: 'transform' });
+    else if (a && ['ability', 'desperation', 'awakening', 'secret', 'reinforcement'].includes(live.type)) cmds.set(a, { k: 'cast' });
+    // Rig fighters use the authored move choreography. Clip fighters retain the original commands.
+    if (a && homes.has(a) && rigBase(rigs, a, fighters.get(a)?.stage ?? 0) && (strike || ['ability', 'desperation', 'awakening', 'secret', 'reinforcement'].includes(live.type))) {
+      const ability = live.action ?? (live.ability ? ABILITIES[live.ability]?.name : undefined) ?? 'Strike';
+      const abilityData = live.ability ? ABILITIES[live.ability] : undefined;
+      const plan = planMove(a, ability, String(live.context?.kind ?? abilityData?.kind ?? 'attack'), String(live.context?.color ?? live.context?.fxColor ?? abilityData?.fx.color ?? ''));
+      const th = t ? homes.get(t) : undefined, ah = homes.get(a);
+      const tx = th && ah ? th.x + (ah.x < th.x ? -tall * 0.25 : tall * 0.25) : undefined;
+      const damage = live.damage ?? 0;
+      const target = t ? fighters.get(t) : undefined;
+      const hit = target && damage > 0 ? reactionFor(damage, target.maxHp, target.hp <= 0 || !!target.down) : undefined;
+      const delay = plan.approach === 'stay' || plan.range !== 'melee' ? win * 0.35 : runMs;
+      cmds.set(a, { k: 'move', plan, tx, delay, hit });
+    }
     if (t && t !== a && live.type !== 'clash') {
       if ((live.type === 'attack' || live.type === 'counter') && (live.damage ?? 0) > 0) cmds.set(t, { k: 'hit', delay: landAt, heavy });
+      else if (['ability', 'desperation', 'awakening', 'secret'].includes(live.type) && (live.damage ?? 0) > 0) {
+        const tf = fighters.get(t);
+        if (tf && rigBase(rigs, t, tf.stage ?? 0)) cmds.set(t, { k: 'hit', delay: landAt, heavy, reaction: reactionFor(live.damage ?? 0, tf.maxHp, tf.hp <= 0 || tf.down) });
+      }
       else if (live.type === 'miss') cmds.set(t, { k: 'dodge', delay: landAt * 0.7 });
       else if (live.type === 'block' || live.type === 'parry') cmds.set(t, { k: 'block', delay: landAt });
       else if (live.type === 'knockdown') cmds.set(t, { k: 'knock', delay: 0 });
@@ -114,8 +139,8 @@ export function FightStage({ input, fighters, live, done, clips, melee, speed, r
       {[...homes.entries()].map(([id, home]) => {
         const f = fighters.get(id)!;
         return (
-          <StageFighter key={id} id={id} f={f} clips={clips[id]} home={home} ground={ground} tall={tall * home.scale}
-            cmd={cmds.get(id) ?? { k: 'idle' }} seq={live?.seq ?? 0} win={win} speed={speed} reduced={reduced} register={register} />
+      <StageFighter key={id} id={id} f={f} clips={clips[id]} rig={rigBase(rigs, id, f.stage ?? 0)} home={home} targetHome={live?.target ? homes.get(live.target) : undefined} ground={ground} tall={tall * home.scale}
+            cmd={cmds.get(id) ?? { k: 'idle' }} seq={live?.seq ?? 0} win={win} speed={speed} reduced={reduced} done={done} register={register} />
         );
       })}
     </div>
@@ -151,14 +176,33 @@ function playStrip(el: HTMLDivElement, clip: FighterClip, h: number, ms: number,
   players.set(el, requestAnimationFrame(tick));
 }
 
-function StageFighter({ id, f, clips, home, ground, tall, cmd, seq, win, speed, reduced, register }: {
-  id: string; f: LiveFighter; clips: FighterClips | undefined; home: { x: number; side: 0 | 1; z: number }; ground: number; tall: number;
-  cmd: Cmd; seq: number; win: number; speed: number; reduced: boolean; register: (id: string, el: HTMLDivElement | null) => void;
+function StageFighter({ id, f, clips, rig, home, targetHome, ground, tall, cmd, seq, win, speed, reduced, done, register }: {
+  id: string; f: LiveFighter; clips: FighterClips | undefined; rig: string | undefined; home: { x: number; side: 0 | 1; z: number }; targetHome?: { x: number; side: 0 | 1; z: number }; ground: number; tall: number;
+  cmd: Cmd; seq: number; win: number; speed: number; reduced: boolean; done: boolean; register: (id: string, el: HTMLDivElement | null) => void;
 }) {
   const root = useRef<HTMLDivElement>(null);
+  const [rigAnim, setRigAnim] = useState<AnimName>('idle');
+  const rigHandle = useRef<import('../rig/RigView').RigHandle>(null);
   const flip = useRef<HTMLDivElement>(null);
   const sprite = useRef<HTMLDivElement>(null);
   const stage = f.stage ?? 0;
+  useEffect(() => {
+    if (!rig) return;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    if (f.down) setRigAnim('defeated');
+    else if (done) setRigAnim('victory');
+    else if (cmd.k === 'rush') { setRigAnim('run'); timer = setTimeout(() => setRigAnim('cross'), Math.min(420, win * 0.3)); }
+    else if (cmd.k === 'strike') setRigAnim('cross');
+    else if (cmd.k === 'move') setRigAnim(cmd.plan.approach === 'walk' ? 'walk' : cmd.plan.approach === 'dash' ? 'dash' : cmd.plan.approach === 'jump' ? 'jump' : cmd.plan.approach === 'run' ? 'run' : cmd.plan.windup ?? cmd.plan.anim);
+    else if (cmd.k === 'transform') setRigAnim('transform');
+    else if (cmd.k === 'cast') { setRigAnim('chargeUp'); timer = setTimeout(() => setRigAnim('castForward'), Math.min(420, win * 0.3)); }
+    else if (cmd.k === 'hit') setRigAnim(cmd.reaction ?? (cmd.heavy ? 'hitHeavy' : 'hit'));
+    else if (cmd.k === 'dodge') setRigAnim('dodge');
+    else if (cmd.k === 'block') setRigAnim('block');
+    else if (cmd.k === 'knock') { setRigAnim('knockdown'); if (!f.down) timer = setTimeout(() => setRigAnim('getUp'), win * 0.55); }
+    else setRigAnim('idle');
+    return () => { if (timer) clearTimeout(timer); };
+  }, [rig, cmd.k, seq, done, f.down, win]);
   const rest: ClipName = f.down || f.floored ? 'knockdown' : 'idle';
   // The loop the fighter returns to between moves (stance, or lying down).
   const settle = useRef<() => void>(() => undefined);
@@ -175,11 +219,11 @@ function StageFighter({ id, f, clips, home, ground, tall, cmd, seq, win, speed, 
 
   useEffect(() => {
     const el = sprite.current, r = root.current;
-    if (!el || !r || cmd.k === 'idle' || f.down) return;
+    if ((!el && !(cmd.k === 'move' && rig)) || !r || cmd.k === 'idle' || f.down) return;
     const anims: Animation[] = [];
     const timers: ReturnType<typeof setTimeout>[] = [];
     const later = (ms: number, fn: () => void) => timers.push(setTimeout(fn, ms));
-    const play = (name: ClipName, ms: number, loop = false) => { const c = clipFor(clips, stage, name); if (c) playStrip(el, c, tall, ms, loop); };
+    const play = (name: ClipName, ms: number, loop = false) => { const c = clipFor(clips, stage, name); if (el && c) playStrip(el, c, tall, ms, loop); };
     const move = (frames: Keyframe[], ms: number, easing = 'cubic-bezier(.2,.7,.25,1)') => { if (!reduced && typeof r.animate === 'function') anims.push(r.animate(frames, { duration: Math.max(60, ms), easing, fill: 'forwards' })); };
     const away = home.side === 0 ? -1 : 1;
     const dust = (x: number, big = false) => {
@@ -190,6 +234,42 @@ function StageFighter({ id, f, clips, home, ground, tall, cmd, seq, win, speed, 
       r.parentElement?.appendChild(d);
       later(900, () => d.remove());
     };
+    if (cmd.k === 'move' && rig) {
+      const { plan } = cmd;
+      const targetX = cmd.tx;
+      const approach = plan.approach;
+      const distance = targetX === undefined ? 0 : targetX - home.x;
+      const travel = approach === 'teleport' ? 140 : approach === 'jump' ? 260 : approach === 'stay' || plan.range !== 'melee' ? 0 : Math.min(420, win * 0.3);
+      const hide = () => { if (approach === 'teleport') r.style.opacity = '0'; };
+      const appear = () => { if (approach === 'teleport') { r.style.opacity = '1'; } };
+      if (approach === 'teleport') { setRigAnim('teleport'); later(travel * .55, hide); later(travel, () => { if (targetX !== undefined) move([{ transform: `translateX(${distance}px)` }], 1); appear(); setRigAnim('appear'); }); }
+      else if (travel > 0 && targetX !== undefined) move([{ transform: 'translateX(0px)' }, { transform: `translateX(${distance}px)` }], travel);
+      const hitAt = travel + (plan.windup ? Math.min(260, win * .2) : 0);
+      if (plan.windup) { setRigAnim(plan.windup); later(travel + Math.min(260, win * .2), () => setRigAnim(plan.anim)); }
+      later(hitAt, () => {
+        setRigAnim(plan.anim);
+        const stageEl = r.parentElement;
+        const joint = rigHandle.current?.joint(plan.effect.from);
+        const startX = home.x + (joint?.x ?? 0), startY = ground + (joint?.y ?? -tall * .55);
+        const color = plan.effect.color, size = plan.effect.size;
+        const add = (cls: string, left: number, top: number, width: number, height: number, duration = 520) => {
+          if (reduced || !stageEl) return;
+          const node = document.createElement('div'); node.className = `fs-move-fx ${cls}`; node.style.left = `${left}px`; node.style.top = `${top}px`; node.style.width = `${width}px`; node.style.height = `${height}px`; node.style.setProperty('--fx-color', color); node.style.setProperty('--fx-size', String(size)); stageEl.appendChild(node); later(duration, () => node.remove()); return node;
+        };
+        const endX = targetHome?.x ?? startX + (home.side === 0 ? tall * 2 : -tall * 2);
+        if (plan.effect.kind === 'palmOrb' || plan.effect.kind === 'chargeHand') add('orb', startX, startY, 28 * size, 28 * size, Math.max(500, hitAt + 150));
+        else if (plan.effect.kind === 'beam') add('beam', Math.min(startX, endX), startY, Math.abs(endX - startX), Math.max(8, 12 * size));
+        else if (plan.effect.kind === 'projectile') { const shot = add('shot', startX, startY, 20 * size, 20 * size); if (shot) shot.animate([{ transform: 'translateX(0)' }, { transform: `translateX(${endX - startX}px)` }], { duration: 360, easing: 'ease-in' }); }
+        else if (plan.effect.kind === 'slashArc' || plan.effect.kind === 'impact') add('arc', endX, ground - tall * .55, 90 * size, 70 * size);
+        else if (plan.effect.kind !== 'none') add('burst', plan.effect.kind === 'aura' ? home.x : endX, ground - tall * .55, 100 * size, 100 * size);
+        if (targetHome && cmd.hit) { /* target reaction is selected by the same move plan */ }
+        if (plan.shake > 0 && stageEl && !reduced) stageEl.animate([{ transform: 'translateX(0)' }, { transform: `translateX(${plan.shake * 8}px)` }, { transform: `translateX(${-plan.shake * 8}px)` }, { transform: 'translateX(0)' }], { duration: 180 });
+        if (plan.label && stageEl) { const label = document.createElement('div'); label.className = 'fs-move-label'; label.textContent = plan.label; stageEl.appendChild(label); later(900, () => label.remove()); }
+      });
+      if (plan.followUp) later(hitAt + Math.min(240, win * .18), () => setRigAnim(plan.followUp!));
+      later(win * .9, () => { r.style.opacity = ''; settle.current(); });
+      return () => { anims.forEach((a) => a.cancel()); timers.forEach(clearTimeout); r.style.opacity = ''; };
+    }
     switch (cmd.k) {
       case 'rush': {
         // Run across the floor, strike at arm's length, then hop back to the start.
@@ -252,11 +332,11 @@ function StageFighter({ id, f, clips, home, ground, tall, cmd, seq, win, speed, 
     <div className={`sf${f.down ? ' down' : ''}${f.stage ? ' formed' : ''}`} ref={root}
       style={{ left: home.x, top: ground, zIndex: home.z, ['--form' as string]: f.formColor ?? '#f5c451' } as CSSProperties}>
       <div className="sf-shadow" style={{ width: tall * 0.5 }} />
-      <div className="sf-flip" ref={flip} style={{ transform: home.side === 1 ? 'scaleX(-1)' : undefined }}>
-        <div className="sf-sprite" ref={sprite} />
-      </div>
+      {rig ? <RigFighter base={rig} anim={ANIMS[rigAnim]} animKey={`${seq}-${rigAnim}`} height={tall} flip={home.side === 1} glow={stage ? (f.formColor ?? '#f5c451') : undefined} handle={rigHandle} style={{ position: 'absolute', left: 0, top: 0 }} onImpact={() => { const wrist = rigHandle.current?.joint('wristF'); if (wrist && root.current) root.current.dataset.castX = String(wrist.x); }} /> : <div className="sf-flip" ref={flip} style={{ transform: home.side === 1 ? 'scaleX(-1)' : undefined }}><div className="sf-sprite" ref={sprite} /></div>}
       {/* The body box: where the effects layer aims hits and auras. */}
       <div className="sf-body" ref={(el) => register(id, el)} style={{ width: tall * 0.42, height: tall * 0.9, left: -tall * 0.21, top: -tall * 0.9 }} />
     </div>
   );
 }
+
+

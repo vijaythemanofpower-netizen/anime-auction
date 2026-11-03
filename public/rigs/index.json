@@ -1,0 +1,877 @@
+{
+ "legend:naruto": {
+  "key": "naruto",
+  "forms": {
+   "1": "rigs/naruto/1/",
+   "2": "rigs/naruto/2/",
+   "3": "rigs/naruto/3/",
+   "base": "rigs/naruto/base/"
+  }
+ },
+ "legend:sasuke": {
+  "key": "sasuke",
+  "forms": {
+   "1": "rigs/sasuke/1/",
+   "2": "rigs/sasuke/2/",
+   "3": "rigs/sasuke/3/",
+   "base": "rigs/sasuke/base/"
+  }
+ },
+ "legend:goku": {
+  "key": "goku",
+  "forms": {
+   "1": "rigs/goku/1/",
+   "2": "rigs/goku/2/",
+   "3": "rigs/goku/3/",
+   "base": "rigs/goku/base/"
+  }
+ },
+ "legend:vegeta": {
+  "key": "vegeta",
+  "forms": {
+   "1": "rigs/vegeta/1/",
+   "2": "rigs/vegeta/2/",
+   "3": "rigs/vegeta/3/",
+   "base": "rigs/vegeta/base/"
+  }
+ },
+ "legend:itachi": {
+  "key": "itachi",
+  "forms": {
+   "1": "rigs/itachi/1/",
+   "2": "rigs/itachi/2/",
+   "base": "rigs/itachi/base/"
+  }
+ },
+ "legend:kakashi": {
+  "key": "kakashi",
+  "forms": {
+   "1": "rigs/kakashi/1/",
+   "2": "rigs/kakashi/2/",
+   "base": "rigs/kakashi/base/"
+  }
+ },
+ "legend:luffy": {
+  "key": "luffy",
+  "forms": {
+   "1": "rigs/luffy/1/",
+   "2": "rigs/luffy/2/",
+   "3": "rigs/luffy/3/",
+   "base": "rigs/luffy/base/"
+  }
+ },
+ "legend:zoro": {
+  "key": "zoro",
+  "forms": {
+   "1": "rigs/zoro/1/",
+   "2": "rigs/zoro/2/",
+   "base": "rigs/zoro/base/"
+  }
+ },
+ "legend:sanji": {
+  "key": "sanji",
+  "forms": {
+   "1": "rigs/sanji/1/",
+   "2": "rigs/sanji/2/",
+   "base": "rigs/sanji/base/"
+  }
+ },
+ "legend:ace": {
+  "key": "ace",
+  "forms": {
+   "1": "rigs/ace/1/",
+   "base": "rigs/ace/base/"
+  }
+ },
+ "legend:frieza": {
+  "key": "frieza",
+  "forms": {
+   "1": "rigs/frieza/1/",
+   "2": "rigs/frieza/2/",
+   "3": "rigs/frieza/3/",
+   "base": "rigs/frieza/base/"
+  }
+ },
+ "legend:ichigo": {
+  "key": "ichigo",
+  "forms": {
+   "1": "rigs/ichigo/1/",
+   "2": "rigs/ichigo/2/",
+   "3": "rigs/ichigo/3/",
+   "base": "rigs/ichigo/base/"
+  }
+ },
+ "legend:byakuya": {
+  "key": "byakuya",
+  "forms": {
+   "1": "rigs/byakuya/1/",
+   "2": "rigs/byakuya/2/",
+   "base": "rigs/byakuya/base/"
+  }
+ },
+ "legend:aizen": {
+  "key": "aizen",
+  "forms": {
+   "1": "rigs/aizen/1/",
+   "2": "rigs/aizen/2/",
+   "base": "rigs/aizen/base/"
+  }
+ },
+ "legend:gojo": {
+  "key": "gojo",
+  "forms": {
+   "1": "rigs/gojo/1/",
+   "2": "rigs/gojo/2/",
+   "base": "rigs/gojo/base/"
+  }
+ },
+ "legend:yuji": {
+  "key": "yuji",
+  "forms": {
+   "1": "rigs/yuji/1/",
+   "2": "rigs/yuji/2/",
+   "base": "rigs/yuji/base/"
+  }
+ },
+ "legend:sukuna": {
+  "key": "sukuna",
+  "forms": {
+   "1": "rigs/sukuna/1/",
+   "2": "rigs/sukuna/2/",
+   "base": "rigs/sukuna/base/"
+  }
+ },
+ "legend:megumi": {
+  "key": "megumi",
+  "forms": {
+   "1": "rigs/megumi/1/",
+   "base": "rigs/megumi/base/"
+  }
+ },
+ "legend:tanjiro": {
+  "key": "tanjiro",
+  "forms": {
+   "1": "rigs/tanjiro/1/",
+   "2": "rigs/tanjiro/2/",
+   "base": "rigs/tanjiro/base/"
+  }
+ },
+ "legend:zenitsu": {
+  "key": "zenitsu",
+  "forms": {
+   "1": "rigs/zenitsu/1/",
+   "base": "rigs/zenitsu/base/"
+  }
+ },
+ "legend:rengoku": {
+  "key": "rengoku",
+  "forms": {
+   "1": "rigs/rengoku/1/",
+   "base": "rigs/rengoku/base/"
+  }
+ },
+ "legend:deku": {
+  "key": "deku",
+  "forms": {
+   "1": "rigs/deku/1/",
+   "2": "rigs/deku/2/",
+   "3": "rigs/deku/3/",
+   "base": "rigs/deku/base/"
+  }
+ },
+ "legend:bakugo": {
+  "key": "bakugo",
+  "forms": {
+   "1": "rigs/bakugo/1/",
+   "base": "rigs/bakugo/base/"
+  }
+ },
+ "legend:todoroki": {
+  "key": "todoroki",
+  "forms": {
+   "1": "rigs/todoroki/1/",
+   "base": "rigs/todoroki/base/"
+  }
+ },
+ "legend:allmight": {
+  "key": "allmight",
+  "forms": {
+   "1": "rigs/allmight/1/",
+   "base": "rigs/allmight/base/"
+  }
+ },
+ "legend:levi": {
+  "key": "levi",
+  "forms": {
+   "1": "rigs/levi/1/",
+   "base": "rigs/levi/base/"
+  }
+ },
+ "legend:eren": {
+  "key": "eren",
+  "forms": {
+   "1": "rigs/eren/1/",
+   "2": "rigs/eren/2/",
+   "base": "rigs/eren/base/"
+  }
+ },
+ "legend:mikasa": {
+  "key": "mikasa",
+  "forms": {
+   "1": "rigs/mikasa/1/",
+   "base": "rigs/mikasa/base/"
+  }
+ },
+ "legend:gon": {
+  "key": "gon",
+  "forms": {
+   "1": "rigs/gon/1/",
+   "2": "rigs/gon/2/",
+   "base": "rigs/gon/base/"
+  }
+ },
+ "legend:killua": {
+  "key": "killua",
+  "forms": {
+   "1": "rigs/killua/1/",
+   "base": "rigs/killua/base/"
+  }
+ },
+ "legend:hisoka": {
+  "key": "hisoka",
+  "forms": {
+   "1": "rigs/hisoka/1/",
+   "base": "rigs/hisoka/base/"
+  }
+ },
+ "legend:edward": {
+  "key": "edward",
+  "forms": {
+   "1": "rigs/edward/1/",
+   "base": "rigs/edward/base/"
+  }
+ },
+ "legend:roy": {
+  "key": "roy",
+  "forms": {
+   "1": "rigs/roy/1/",
+   "base": "rigs/roy/base/"
+  }
+ },
+ "legend:saitama": {
+  "key": "saitama",
+  "forms": {
+   "1": "rigs/saitama/1/",
+   "base": "rigs/saitama/base/"
+  }
+ },
+ "legend:natsu": {
+  "key": "natsu",
+  "forms": {
+   "1": "rigs/natsu/1/",
+   "2": "rigs/natsu/2/",
+   "base": "rigs/natsu/base/"
+  }
+ },
+ "legend:denji": {
+  "key": "denji",
+  "forms": {
+   "1": "rigs/denji/1/",
+   "2": "rigs/denji/2/",
+   "base": "rigs/denji/base/"
+  }
+ },
+ "legend:minato": {
+  "key": "minato",
+  "forms": {
+   "1": "rigs/minato/1/",
+   "base": "rigs/minato/base/"
+  }
+ },
+ "legend:madara": {
+  "key": "madara",
+  "forms": {
+   "1": "rigs/madara/1/",
+   "2": "rigs/madara/2/",
+   "base": "rigs/madara/base/"
+  }
+ },
+ "legend:pain": {
+  "key": "pain",
+  "forms": {
+   "1": "rigs/pain/1/",
+   "base": "rigs/pain/base/"
+  }
+ },
+ "legend:gaara": {
+  "key": "gaara",
+  "forms": {
+   "1": "rigs/gaara/1/",
+   "base": "rigs/gaara/base/"
+  }
+ },
+ "legend:lee": {
+  "key": "lee",
+  "forms": {
+   "1": "rigs/lee/1/",
+   "2": "rigs/lee/2/",
+   "base": "rigs/lee/base/"
+  }
+ },
+ "legend:law": {
+  "key": "law",
+  "forms": {
+   "1": "rigs/law/1/",
+   "base": "rigs/law/base/"
+  }
+ },
+ "legend:whitebeard": {
+  "key": "whitebeard",
+  "forms": {
+   "1": "rigs/whitebeard/1/",
+   "base": "rigs/whitebeard/base/"
+  }
+ },
+ "legend:shanks": {
+  "key": "shanks",
+  "forms": {
+   "1": "rigs/shanks/1/",
+   "base": "rigs/shanks/base/"
+  }
+ },
+ "legend:gohan": {
+  "key": "gohan",
+  "forms": {
+   "1": "rigs/gohan/1/",
+   "2": "rigs/gohan/2/",
+   "3": "rigs/gohan/3/",
+   "base": "rigs/gohan/base/"
+  }
+ },
+ "legend:piccolo": {
+  "key": "piccolo",
+  "forms": {
+   "1": "rigs/piccolo/1/",
+   "2": "rigs/piccolo/2/",
+   "base": "rigs/piccolo/base/"
+  }
+ },
+ "legend:broly": {
+  "key": "broly",
+  "forms": {
+   "1": "rigs/broly/1/",
+   "2": "rigs/broly/2/",
+   "base": "rigs/broly/base/"
+  }
+ },
+ "legend:kenpachi": {
+  "key": "kenpachi",
+  "forms": {
+   "1": "rigs/kenpachi/1/",
+   "2": "rigs/kenpachi/2/",
+   "base": "rigs/kenpachi/base/"
+  }
+ },
+ "legend:toshiro": {
+  "key": "toshiro",
+  "forms": {
+   "1": "rigs/toshiro/1/",
+   "2": "rigs/toshiro/2/",
+   "base": "rigs/toshiro/base/"
+  }
+ },
+ "legend:rukia": {
+  "key": "rukia",
+  "forms": {
+   "1": "rigs/rukia/1/",
+   "base": "rigs/rukia/base/"
+  }
+ },
+ "legend:yuta": {
+  "key": "yuta",
+  "forms": {
+   "1": "rigs/yuta/1/",
+   "base": "rigs/yuta/base/"
+  }
+ },
+ "legend:todo": {
+  "key": "todo",
+  "forms": {
+   "1": "rigs/todo/1/",
+   "base": "rigs/todo/base/"
+  }
+ },
+ "legend:nanami": {
+  "key": "nanami",
+  "forms": {
+   "1": "rigs/nanami/1/",
+   "base": "rigs/nanami/base/"
+  }
+ },
+ "legend:nobara": {
+  "key": "nobara",
+  "forms": {
+   "1": "rigs/nobara/1/",
+   "base": "rigs/nobara/base/"
+  }
+ },
+ "legend:giyu": {
+  "key": "giyu",
+  "forms": {
+   "1": "rigs/giyu/1/",
+   "base": "rigs/giyu/base/"
+  }
+ },
+ "legend:inosuke": {
+  "key": "inosuke",
+  "forms": {
+   "1": "rigs/inosuke/1/",
+   "base": "rigs/inosuke/base/"
+  }
+ },
+ "legend:akaza": {
+  "key": "akaza",
+  "forms": {
+   "1": "rigs/akaza/1/",
+   "2": "rigs/akaza/2/",
+   "base": "rigs/akaza/base/"
+  }
+ },
+ "legend:shinobu": {
+  "key": "shinobu",
+  "forms": {
+   "1": "rigs/shinobu/1/",
+   "base": "rigs/shinobu/base/"
+  }
+ },
+ "legend:shigaraki": {
+  "key": "shigaraki",
+  "forms": {
+   "1": "rigs/shigaraki/1/",
+   "2": "rigs/shigaraki/2/",
+   "base": "rigs/shigaraki/base/"
+  }
+ },
+ "legend:endeavor": {
+  "key": "endeavor",
+  "forms": {
+   "1": "rigs/endeavor/1/",
+   "base": "rigs/endeavor/base/"
+  }
+ },
+ "legend:kurapika": {
+  "key": "kurapika",
+  "forms": {
+   "1": "rigs/kurapika/1/",
+   "base": "rigs/kurapika/base/"
+  }
+ },
+ "legend:meruem": {
+  "key": "meruem",
+  "forms": {
+   "1": "rigs/meruem/1/",
+   "base": "rigs/meruem/base/"
+  }
+ },
+ "legend:jinwoo": {
+  "key": "jinwoo",
+  "forms": {
+   "1": "rigs/jinwoo/1/",
+   "2": "rigs/jinwoo/2/",
+   "3": "rigs/jinwoo/3/",
+   "base": "rigs/jinwoo/base/"
+  }
+ },
+ "legend:jotaro": {
+  "key": "jotaro",
+  "forms": {
+   "1": "rigs/jotaro/1/",
+   "base": "rigs/jotaro/base/"
+  }
+ },
+ "legend:dio": {
+  "key": "dio",
+  "forms": {
+   "1": "rigs/dio/1/",
+   "2": "rigs/dio/2/",
+   "base": "rigs/dio/base/"
+  }
+ },
+ "legend:mob": {
+  "key": "mob",
+  "forms": {
+   "1": "rigs/mob/1/",
+   "2": "rigs/mob/2/",
+   "base": "rigs/mob/base/"
+  }
+ },
+ "legend:kaneki": {
+  "key": "kaneki",
+  "forms": {
+   "1": "rigs/kaneki/1/",
+   "2": "rigs/kaneki/2/",
+   "base": "rigs/kaneki/base/"
+  }
+ },
+ "legend:asta": {
+  "key": "asta",
+  "forms": {
+   "1": "rigs/asta/1/",
+   "2": "rigs/asta/2/",
+   "base": "rigs/asta/base/"
+  }
+ },
+ "legend:yuno": {
+  "key": "yuno",
+  "forms": {
+   "1": "rigs/yuno/1/",
+   "2": "rigs/yuno/2/",
+   "base": "rigs/yuno/base/"
+  }
+ },
+ "legend:power": {
+  "key": "power",
+  "forms": {
+   "1": "rigs/power/1/",
+   "base": "rigs/power/base/"
+  }
+ },
+ "legend:yor": {
+  "key": "yor",
+  "forms": {
+   "1": "rigs/yor/1/",
+   "base": "rigs/yor/base/"
+  }
+ },
+ "legend:gilgamesh": {
+  "key": "gilgamesh",
+  "forms": {
+   "1": "rigs/gilgamesh/1/",
+   "base": "rigs/gilgamesh/base/"
+  }
+ },
+ "legend:saber": {
+  "key": "saber",
+  "forms": {
+   "1": "rigs/saber/1/",
+   "base": "rigs/saber/base/"
+  }
+ },
+ "legend:kirito": {
+  "key": "kirito",
+  "forms": {
+   "1": "rigs/kirito/1/",
+   "2": "rigs/kirito/2/",
+   "base": "rigs/kirito/base/"
+  }
+ },
+ "legend:frieren": {
+  "key": "frieren",
+  "forms": {
+   "1": "rigs/frieren/1/",
+   "base": "rigs/frieren/base/"
+  }
+ },
+ "legend:escanor": {
+  "key": "escanor",
+  "forms": {
+   "1": "rigs/escanor/1/",
+   "2": "rigs/escanor/2/",
+   "base": "rigs/escanor/base/"
+  }
+ },
+ "legend:rimuru": {
+  "key": "rimuru",
+  "forms": {
+   "1": "rigs/rimuru/1/",
+   "2": "rigs/rimuru/2/",
+   "base": "rigs/rimuru/base/"
+  }
+ },
+ "legend:meliodas": {
+  "key": "meliodas",
+  "forms": {
+   "1": "rigs/meliodas/1/",
+   "2": "rigs/meliodas/2/",
+   "base": "rigs/meliodas/base/"
+  }
+ },
+ "legend:guts": {
+  "key": "guts",
+  "forms": {
+   "1": "rigs/guts/1/",
+   "base": "rigs/guts/base/"
+  }
+ },
+ "legend:gintoki": {
+  "key": "gintoki",
+  "forms": {
+   "1": "rigs/gintoki/1/",
+   "base": "rigs/gintoki/base/"
+  }
+ },
+ "legend:tatsumaki": {
+  "key": "tatsumaki",
+  "forms": {
+   "1": "rigs/tatsumaki/1/",
+   "base": "rigs/tatsumaki/base/"
+  }
+ },
+ "anilist:46109": {
+  "key": "kaidou",
+  "forms": {
+   "1": "rigs/kaidou/1/",
+   "2": "rigs/kaidou/2/",
+   "base": "rigs/kaidou/base/"
+  }
+ },
+ "anilist:54495": {
+  "key": "linlin_charlotte",
+  "forms": {
+   "1": "rigs/linlin_charlotte/1/",
+   "base": "rigs/linlin_charlotte/base/"
+  }
+ },
+ "anilist:3331": {
+  "key": "teach_marshall",
+  "forms": {
+   "1": "rigs/teach_marshall/1/",
+   "base": "rigs/teach_marshall/base/"
+  }
+ },
+ "anilist:22687": {
+  "key": "sakazuki",
+  "forms": {
+   "1": "rigs/sakazuki/1/",
+   "base": "rigs/sakazuki/base/"
+  }
+ },
+ "anilist:2754": {
+  "key": "doflamingo_donquixote",
+  "forms": {
+   "1": "rigs/doflamingo_donquixote/1/",
+   "base": "rigs/doflamingo_donquixote/base/"
+  }
+ },
+ "anilist:2749": {
+  "key": "crocodile",
+  "forms": {
+   "1": "rigs/crocodile/1/",
+   "base": "rigs/crocodile/base/"
+  }
+ },
+ "anilist:3908": {
+  "key": "cell",
+  "forms": {
+   "1": "rigs/cell/1/",
+   "2": "rigs/cell/2/",
+   "base": "rigs/cell/base/"
+  }
+ },
+ "anilist:1012": {
+  "key": "majin_boo",
+  "forms": {
+   "1": "rigs/majin_boo/1/",
+   "2": "rigs/majin_boo/2/",
+   "base": "rigs/majin_boo/base/"
+  }
+ },
+ "anilist:76348": {
+  "key": "beerus",
+  "forms": {
+   "1": "rigs/beerus/1/",
+   "base": "rigs/beerus/base/"
+  }
+ },
+ "anilist:126257": {
+  "key": "jiren",
+  "forms": {
+   "1": "rigs/jiren/1/",
+   "base": "rigs/jiren/base/"
+  }
+ },
+ "anilist:126882": {
+  "key": "zamasu",
+  "forms": {
+   "1": "rigs/zamasu/1/",
+   "base": "rigs/zamasu/base/"
+  }
+ },
+ "anilist:126069": {
+  "key": "kaguya_ootsutsuki",
+  "forms": {
+   "1": "rigs/kaguya_ootsutsuki/1/",
+   "base": "rigs/kaguya_ootsutsuki/base/"
+  }
+ },
+ "anilist:2455": {
+  "key": "orochimaru",
+  "forms": {
+   "1": "rigs/orochimaru/1/",
+   "base": "rigs/orochimaru/base/"
+  }
+ },
+ "anilist:68537": {
+  "key": "yhwach",
+  "forms": {
+   "1": "rigs/yhwach/1/",
+   "base": "rigs/yhwach/base/"
+  }
+ },
+ "anilist:1081": {
+  "key": "ulquiorra_cifer",
+  "forms": {
+   "1": "rigs/ulquiorra_cifer/1/",
+   "2": "rigs/ulquiorra_cifer/2/",
+   "base": "rigs/ulquiorra_cifer/base/"
+  }
+ },
+ "anilist:129132": {
+  "key": "muzan_kibutsuji",
+  "forms": {
+   "1": "rigs/muzan_kibutsuji/1/",
+   "base": "rigs/muzan_kibutsuji/base/"
+  }
+ },
+ "anilist:144591": {
+  "key": "douma",
+  "forms": {
+   "1": "rigs/douma/1/",
+   "base": "rigs/douma/base/"
+  }
+ },
+ "anilist:133702": {
+  "key": "mahito",
+  "forms": {
+   "1": "rigs/mahito/1/",
+   "base": "rigs/mahito/base/"
+  }
+ },
+ "anilist:289584": {
+  "key": "kenjaku",
+  "forms": {
+   "1": "rigs/kenjaku/1/",
+   "base": "rigs/kenjaku/base/"
+  }
+ },
+ "anilist:125956": {
+  "key": "all_for_one",
+  "forms": {
+   "1": "rigs/all_for_one/1/",
+   "base": "rigs/all_for_one/base/"
+  }
+ },
+ "anilist:126357": {
+  "key": "kai_chisaki",
+  "forms": {
+   "1": "rigs/kai_chisaki/1/",
+   "base": "rigs/kai_chisaki/base/"
+  }
+ },
+ "anilist:58": {
+  "key": "chrollo_lucilfer",
+  "forms": {
+   "1": "rigs/chrollo_lucilfer/1/",
+   "base": "rigs/chrollo_lucilfer/base/"
+  }
+ },
+ "anilist:12300": {
+  "key": "neferpitou",
+  "forms": {
+   "1": "rigs/neferpitou/1/",
+   "base": "rigs/neferpitou/base/"
+  }
+ },
+ "anilist:5103": {
+  "key": "king_bradley",
+  "forms": {
+   "1": "rigs/king_bradley/1/",
+   "base": "rigs/king_bradley/base/"
+  }
+ },
+ "anilist:37720": {
+  "key": "zeref",
+  "forms": {
+   "1": "rigs/zeref/1/",
+   "base": "rigs/zeref/base/"
+  }
+ },
+ "anilist:49003": {
+  "key": "acnologia",
+  "forms": {
+   "1": "rigs/acnologia/1/",
+   "base": "rigs/acnologia/base/"
+  }
+ },
+ "anilist:21966": {
+  "key": "kars",
+  "forms": {
+   "1": "rigs/kars/1/",
+   "base": "rigs/kars/base/"
+  }
+ },
+ "anilist:12055": {
+  "key": "yoshikage_kira",
+  "forms": {
+   "1": "rigs/yoshikage_kira/1/",
+   "base": "rigs/yoshikage_kira/base/"
+  }
+ },
+ "anilist:137080": {
+  "key": "makima",
+  "forms": {
+   "1": "rigs/makima/1/",
+   "base": "rigs/makima/base/"
+  }
+ },
+ "anilist:424": {
+  "key": "griffith",
+  "forms": {
+   "1": "rigs/griffith/1/",
+   "base": "rigs/griffith/base/"
+  }
+ },
+ "anilist:89263": {
+  "key": "boros_sama",
+  "forms": {
+   "1": "rigs/boros_sama/1/",
+   "base": "rigs/boros_sama/base/"
+  }
+ },
+ "anilist:89277": {
+  "key": "garou",
+  "forms": {
+   "1": "rigs/garou/1/",
+   "2": "rigs/garou/2/",
+   "base": "rigs/garou/base/"
+  }
+ },
+ "anilist:88946": {
+  "key": "kishou_arima",
+  "forms": {
+   "1": "rigs/kishou_arima/1/",
+   "base": "rigs/kishou_arima/base/"
+  }
+ },
+ "anilist:125661": {
+  "key": "zeke",
+  "forms": {
+   "1": "rigs/zeke/1/",
+   "base": "rigs/zeke/base/"
+  }
+ },
+ "anilist:89103": {
+  "key": "momonga",
+  "forms": {
+   "1": "rigs/momonga/1/",
+   "base": "rigs/momonga/base/"
+  }
+ },
+ "anilist:601": {
+  "key": "alucard",
+  "forms": {
+   "1": "rigs/alucard/1/",
+   "base": "rigs/alucard/base/"
+  }
+ }
+}

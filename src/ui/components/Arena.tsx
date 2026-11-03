@@ -3,6 +3,7 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { FightStage } from '../battlefield/FightStage';
 import { preloadClips, stageReady, useFighterClips } from '../battlefield/fighterClips';
+import { rigReady, useRigIndex } from '../rig/rigIndex';
 import { profileFor } from '../vfx/profiles';
 import type { BattleEvent, BattleInjury, BattleRecord, FighterSnapshot, Player, PublicCharacter, VfxKind } from '../../engine/types';
 import { ABILITIES, getAbility, vfxOf } from '../../engine/data/abilities';
@@ -106,7 +107,8 @@ export function ArenaStage({ record, cur, done, fighters, players, characters, s
   }, [record.battleId]); // eslint-disable-line react-hooks/exhaustive-deps
   // Animated fighters on the stage once everyone in this fight has clips; the card view otherwise.
   const allClips = useFighterClips();
-  const stageMode = !!allClips && input.sides.every((s) => s.fighters.every((f) => stageReady(allClips[f.charId])));
+  const rigs = useRigIndex();
+  const stageMode = input.sides.every((s) => s.fighters.every((f) => stageReady(allClips?.[f.charId]) || rigReady(rigs, f.charId)));
   useEffect(() => { if (allClips) for (const s of input.sides) for (const f of s.fighters) preloadClips(allClips[f.charId]); }, [allClips, record.battleId]); // eslint-disable-line react-hooks/exhaustive-deps
   const seqNow = done ? Number.MAX_SAFE_INTEGER : cur?.seq ?? 0;
   const frame = cur ? (done ? script.frames[script.frames.length - 1] : frameAt(script, cur.seq)) : script.frames[0];
@@ -287,7 +289,7 @@ export function ArenaStage({ record, cur, done, fighters, players, characters, s
       <GroundMarks script={script} seq={seqNow} pos={pos} w={w} h={h} ground={ground} />
       <MoveLight frame={live ? frame : undefined} seq={cur?.seq ?? 0} at={lightAt} />
       {stageMode && allClips
-        ? <FightStage input={input} fighters={fighters} live={live} done={done} clips={allClips} melee={melee || isClash} speed={speed} reduced={!!reduced}
+        ? <FightStage input={input} fighters={fighters} live={live} done={done} clips={allClips ?? {}} melee={melee || isClash} speed={speed} reduced={!!reduced}
             register={(id, el) => { if (el) standRefs.current.set(id, el); else standRefs.current.delete(id); }} />
         : <div className="stage" ref={stageRef}>{renderSide(0)}{renderSide(1)}</div>}
       <PropsLayer script={script} seq={seqNow} layer="front" hitNow={live ? frame?.propHits ?? [] : []} wind={frame?.weather.wind ?? 0} />

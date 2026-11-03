@@ -12,6 +12,9 @@ import { generateHidden } from '../../engine/hidden';
 import { simulateBattle } from '../../engine/combat/engine';
 import { freshSeed } from '../../engine/rng';
 import { clipFor, clipUrl, stageReady, useFighterClips, type FighterClips } from '../battlefield/fighterClips';
+import { rigBase, rigReady, useRigIndex } from '../rig/rigIndex';
+const BASE = (import.meta as { env?: { BASE_URL?: string } }).env?.BASE_URL ?? '/';
+const rigBasePath = (index: ReturnType<typeof useRigIndex>, id: string) => rigBase(index, id, 0);
 import { BattleOverride, BattleView } from './Battle';
 import { Seg } from '../components/common';
 
@@ -19,7 +22,8 @@ const EVERYONE: PublicCharacter[] = [...LEGEND_CHARACTERS, ...VILLAINS];
 const SIDE_COLORS = ['#38bdf8', '#f43f5e'] as const;
 
 /** A fighter's stance, playing frame by frame (for the roster tiles). */
-function IdlePreview({ clips, h = 120 }: { clips: FighterClips | undefined; h?: number }) {
+function IdlePreview({ clips, rig, h = 120 }: { clips: FighterClips | undefined; rig?: string; h?: number }) {
+  if (rig) return <img className="vs-idle" src={`${BASE}${rig.replace(/^\//, '')}art.webp`} alt="" style={{ height: h, maxWidth: '100%', objectFit: 'contain' }} />;
   const c = clipFor(clips, 0, 'idle');
   if (!c) return null;
   const w = (h * c.frameW) / c.frameH;
@@ -33,6 +37,7 @@ function IdlePreview({ clips, h = 120 }: { clips: FighterClips | undefined; h?: 
 
 export function Versus() {
   const clips = useFighterClips();
+  const rigs = useRigIndex();
   const [size, setSize] = useState<1 | 2 | 3>(1);
   const [sides, setSides] = useState<[string[], string[]]>([[], []]);
   const [active, setActive] = useState<0 | 1>(0);
@@ -40,7 +45,7 @@ export function Versus() {
   const [q, setQ] = useState('');
   const [record, setRecord] = useState<BattleRecord | null>(null);
 
-  const ready = useMemo(() => EVERYONE.filter((c) => clips && stageReady(clips[c.id])), [clips]);
+  const ready = useMemo(() => EVERYONE.filter((c) => stageReady(clips?.[c.id]) || rigReady(rigs, c.id)), [clips, rigs]);
   const shown = ready.filter((c) => !q.trim() || `${c.name} ${c.series}`.toLowerCase().includes(q.trim().toLowerCase()));
   const byId = (id: string) => EVERYONE.find((c) => c.id === id)!;
 
@@ -126,7 +131,7 @@ export function Versus() {
               <span className="vs-picks">
                 {Array.from({ length: size }, (_, k) => {
                   const id = sides[side][k];
-                  return <span key={k} className="vs-slot">{id ? <><IdlePreview clips={clips?.[id]} h={84} /><small>{byId(id).name}</small></> : <small className="faint">Empty</small>}</span>;
+                  return <span key={k} className="vs-slot">{id ? <><IdlePreview clips={clips?.[id]} rig={rigBasePath(rigs, id)} h={84} /><small>{byId(id).name}</small></> : <small className="faint">Empty</small>}</span>;
                 })}
               </span>
             </button>
@@ -144,7 +149,7 @@ export function Versus() {
             const side = sides[0].includes(c.id) ? 0 : sides[1].includes(c.id) ? 1 : -1;
             return (
               <button key={c.id} type="button" className={`vs-tile${side >= 0 ? ' picked' : ''}`} style={side === 0 || side === 1 ? { ['--sc' as string]: SIDE_COLORS[side] } as CSSProperties : undefined} onClick={() => pick(c.id)} aria-pressed={side >= 0}>
-                <IdlePreview clips={clips?.[c.id]} />
+                <IdlePreview clips={clips?.[c.id]} rig={rigBasePath(rigs, c.id)} />
                 <b>{c.name}</b>
                 <span className="faint">{c.series}</span>
               </button>
