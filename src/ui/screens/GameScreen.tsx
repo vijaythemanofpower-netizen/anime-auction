@@ -6,6 +6,7 @@ import type { GameState, Player } from '../../engine/types';
 import * as G from '../../engine/game';
 import { describeFormat, matchOrder, rankedPlayers } from '../../engine/tournament';
 import { LEGEND_CHARACTERS } from '../../engine/data/legends';
+import { VILLAINS } from '../../engine/data/villains';
 import { randomPopular } from '../../engine/providers/anilist';
 import { withAiMoves } from '../ai/moveWriter';
 import { getEnvironment } from '../../engine/data/world';
@@ -107,11 +108,17 @@ function HostPool({ g }: { g: GameState }) {
   const ok = g.pool.length >= need;
   const settings = useApp((s) => s.settings);
   const [filling, setFilling] = useState(false);
-  const fillAllAnime = async () => {
+  const [from, setFrom] = useState<'legends' | 'all' | 'anime'>('legends');
+  const [balanced, setBalanced] = useState(true);
+  const [shuffled, setShuffled] = useState<string[]>([]); // what the last shuffle put in; hand picks stay
+  const shuffle = async () => {
     setFilling(true);
     try {
-      const picks = (await randomPopular(Math.max(25, G.poolRecommended(g) * 2))).map(withAiMoves);
-      store.act((d, v) => G.autoFillPool(d, v, picks));
+      const catalog = from === 'anime' ? (await randomPopular(Math.max(30, G.poolRecommended(g) * 3))).map(withAiMoves)
+        : from === 'all' ? [...LEGEND_CHARACTERS, ...VILLAINS] : LEGEND_CHARACTERS;
+      let added: string[] = [];
+      store.act((d, v) => { const r = G.shufflePool(d, v, catalog, { balanced, replace: shuffled.filter((id) => d.pool.includes(id)) }); added = r.added ?? []; return r; });
+      setShuffled(added);
     } catch (e) { store.toast((e as Error).message, 'error'); }
     finally { setFilling(false); }
   };
@@ -125,9 +132,9 @@ function HostPool({ g }: { g: GameState }) {
         </div>
         <Explorer embedded />
       </div>
-      <aside className="panel col" style={{ position: 'sticky', top: 76 }}>
+      <aside className="panel col" style={{ position: 'sticky', top: 76, maxHeight: 'calc(100vh - 92px)', overflowY: 'auto' }}>
         <div className="panel-title"><h3 style={{ margin: 0 }}>Auction pool</h3><span className={`tag`} style={{ color: ok ? 'var(--good)' : 'var(--warn)' }}>{g.pool.length} / {need}+</span></div>
-        <div className="col" style={{ gap: 6, maxHeight: 420, overflowY: 'auto' }}>
+        <div className="col" style={{ gap: 6, maxHeight: 'min(420px, 32vh)', minHeight: 120, overflowY: 'auto' }}>
           {g.pool.map((id) => {
             const c = g.characters[id];
             return (
@@ -140,10 +147,22 @@ function HostPool({ g }: { g: GameState }) {
           })}
           {!g.pool.length && <div className="faint">Empty. Add fighters or auto-fill.</div>}
         </div>
-        <div className="row">
-          <button className="btn sm" onClick={() => store.act((d, v) => G.autoFillPool(d, v, LEGEND_CHARACTERS))} title="Fill with characters that have signature moves">Auto-fill</button>
-          {settings.useOnlineProvider && <button className="btn sm" disabled={filling} onClick={fillAllAnime} title="Fill with random popular characters from any anime">{filling ? 'Loading…' : 'Auto-fill: any anime'}</button>}
-          <button className="btn sm danger" disabled={!g.pool.length} onClick={() => { if (confirm('Remove every character from the pool?')) store.act((d) => { for (const id of [...d.pool]) G.removeFromPool(d, id); return { ok: true }; }); }}>Clear</button>
+        <div className="pool-shuffle col" style={{ gap: 8, paddingTop: 10, borderTop: "1px solid var(--line)" }}>
+          <span className="label">Shuffle from</span>
+          <Seg value={from} onChange={setFrom} label="Shuffle from" options={[
+            { v: 'legends', label: 'Signature fighters', title: 'The hand-made characters with their real moves' },
+            { v: 'all', label: '+ Villains', title: 'Signature fighters and the raid villains' },
+            ...(settings.useOnlineProvider ? [{ v: 'anime' as const, label: 'Any anime', title: 'Random popular characters from every anime on AniList' }] : []),
+          ]} />
+          <label className="row" style={{ gap: 6, fontSize: 13 }}>
+            <input type="checkbox" checked={balanced} onChange={(e) => setBalanced(e.target.checked)} />
+            Balanced sets <span className="faint">(every auction set gets fighters)</span>
+          </label>
+          <div className="row">
+            <button className="btn gold" style={{ flex: 1 }} disabled={filling} onClick={shuffle}>{filling ? 'Shuffling…' : shuffled.length ? '🎲 Shuffle again' : '🎲 Shuffle pool'}</button>
+            <button className="btn sm danger" disabled={!g.pool.length} onClick={() => { if (confirm('Remove every character from the pool?')) { store.act((d) => { for (const id of [...d.pool]) G.removeFromPool(d, id); return { ok: true }; }); setShuffled([]); } }}>Clear</button>
+          </div>
+          <span className="faint" style={{ fontSize: 12 }}>Fighters you add by hand stay when you shuffle again.</span>
         </div>
         <button className="btn primary lg" disabled={!ok} onClick={() => store.act((d, v) => G.startAuction(d, Date.now(), v))}>Start auction</button>
         {!ok && <div className="faint">Add {need - g.pool.length} more to start.</div>}
