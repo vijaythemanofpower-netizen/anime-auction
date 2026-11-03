@@ -16,7 +16,9 @@ import { LEGEND_CHARACTERS } from './data/legends';
 import { registerCharacterMoves } from './data/abilities';
 
 /** Built-in villains that can be raid bosses. */
-export const RAID_VILLAINS = ['frieza', 'aizen', 'madara', 'pain', 'sukuna', 'akaza', 'shigaraki', 'meruem', 'dio', 'itachi', 'hisoka'].map((k) => `legend:${k}`);
+export const RAID_VILLAINS = ['frieza', 'aizen', 'madara', 'pain', 'sukuna', 'akaza', 'shigaraki', 'meruem', 'dio', 'itachi', 'hisoka',
+  // Nov 3 2026: built-in villains added with canon sheets (same boss rules as the rest).
+  'obito', 'kisame', 'deidara', 'hidan', 'sasori', 'isshiki', 'momoshiki', 'kuzan', 'borsalino', 'gilgamesh'].map((k) => `legend:${k}`);
 /** More villains looked up on AniList when online (they have canon stat sheets). */
 export const ANILIST_VILLAINS: Array<[name: string, series: string]> = [
   // One Piece

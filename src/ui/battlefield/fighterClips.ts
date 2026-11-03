@@ -2,6 +2,7 @@
 // for each built-in, per form ('base', '1', '2', '3'), a transparent strip of frames per
 // move (idle, run, strike, special, hit, knockdown). The fight stage plays them.
 import { useEffect, useState } from 'react';
+import { TWO_D_READY } from './view';
 
 export interface FighterClip { url: string; frames: number; fps: number; loop: boolean; frameW: number; frameH: number; ax: number; ay: number }
 export interface FighterClips { states: Record<string, Partial<Record<ClipName, FighterClip>>> }
@@ -16,6 +17,7 @@ export const clipUrl = (u: string) => `${BASE}${u.replace(/^\//, '')}`;
 
 function load(): Promise<Manifest> {
   if (manifest) return Promise.resolve(manifest);
+  if (!TWO_D_READY) { manifest = {}; return Promise.resolve(manifest); } // 2D is off: load nothing
   loading ??= fetch(`${BASE}fighters/manifest.json`).then((r) => (r.ok ? r.json() : {})).catch(() => ({})).then((m: Manifest) => {
     manifest = m && typeof m === 'object' ? m : {};
     listeners.forEach((f) => f());

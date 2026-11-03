@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { TWO_D_READY } from '../battlefield/view';
 
 export interface RigIndexEntry { key: string; forms: Record<string, string> }
 export type RigIndex = Record<string, RigIndexEntry>;
@@ -9,6 +10,7 @@ const BASE = (import.meta as { env?: { BASE_URL?: string } }).env?.BASE_URL ?? '
 
 function load(): Promise<RigIndex> {
   if (cached) return Promise.resolve(cached);
+  if (!TWO_D_READY) { cached = {}; return Promise.resolve(cached); } // 2D is off: load nothing
   pending ??= fetch(`${BASE}rigs/index.json`).then((r) => r.ok ? r.json() : {}).catch(() => ({})).then((v: RigIndex) => {
     cached = v && typeof v === 'object' ? v : {};
     listeners.forEach((fn) => fn());

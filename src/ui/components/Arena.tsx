@@ -2,7 +2,7 @@
 // the current playback position: effects never invent hits or damage.
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { FightStage } from '../battlefield/FightStage';
-import { arenaUses2D, type FightView } from '../battlefield/view';
+import { TWO_D_READY, arenaUses2D, type FightView } from '../battlefield/view';
 import { preloadClips, stageReady, useFighterClips } from '../battlefield/fighterClips';
 import { rigReady, useRigIndex } from '../rig/rigIndex';
 import { profileFor } from '../vfx/profiles';
@@ -110,7 +110,9 @@ export function ArenaStage({ record, cur, done, fighters, players, characters, s
   const allClips = useFighterClips();
   const rigs = useRigIndex();
   const stageMode = arenaUses2D(view, input.sides.every((s) => s.fighters.every((f) => stageReady(allClips?.[f.charId]) || rigReady(rigs, f.charId))));
-  useEffect(() => { if (allClips) for (const s of input.sides) for (const f of s.fighters) preloadClips(allClips[f.charId]); }, [allClips, record.battleId]); // eslint-disable-line react-hooks/exhaustive-deps
+  // Only while 2D is on: the clip strips are large (~1.5 MB a fighter) and, kept in memory fight after
+  // fight, ran phones out of memory into black screens by the third raid (Nov 3 2026).
+  useEffect(() => { if (TWO_D_READY && allClips) for (const s of input.sides) for (const f of s.fighters) preloadClips(allClips[f.charId]); }, [allClips, record.battleId]); // eslint-disable-line react-hooks/exhaustive-deps
   const seqNow = done ? Number.MAX_SAFE_INTEGER : cur?.seq ?? 0;
   const frame = cur ? (done ? script.frames[script.frames.length - 1] : frameAt(script, cur.seq)) : script.frames[0];
   // GPU effects replace the simpler CSS effects once the canvas is ready.

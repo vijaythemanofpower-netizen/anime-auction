@@ -49,14 +49,14 @@ export function GameScreen() {
         </div>
       </div>
       <PhaseBar phase={g.phase} />
-      {exhibition ? <BattleView record={exhibition} exhibition />
+      {exhibition ? <BattleView key={exhibition.battleId} record={exhibition} exhibition />
         : stillWatching ? (
           <div className="col" style={{ gap: 12 }}>
             <div className="panel row" style={{ justifyContent: 'space-between', borderColor: 'var(--cyan)' }}>
               <span>The tournament has moved on. Finish watching, then head back.</span>
               <button className="btn sm primary" onClick={() => setWatching(null)}>Back to the tournament</button>
             </div>
-            <BattleView record={stillWatching} exhibition />
+            <BattleView key={stillWatching.battleId} record={stillWatching} exhibition />
           </div>
         ) : <Phase g={g} />}
     </div>
