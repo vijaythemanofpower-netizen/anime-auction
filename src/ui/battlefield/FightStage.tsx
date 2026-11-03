@@ -10,7 +10,7 @@ import type { BattleEvent, BattleInput } from '../../engine/types';
 import { ABILITIES } from '../../engine/data/abilities';
 import type { LiveFighter } from '../components/Arena';
 import { clipFor, clipUrl, type ClipName, type FighterClip, type FighterClips } from './fighterClips';
-import { RigFighter } from '../rig/RigView';
+import { RigStage, type RigStageHandle } from '../rig/RigStage';
 import { ANIMS, type AnimName } from '../rig/animations';
 import { rigBase, useRigIndex } from '../rig/rigIndex';
 import { planMove, reactionFor, type MovePlan } from '../rig/moves';
@@ -34,6 +34,7 @@ export function FightStage({ input, fighters, live, done, clips, melee, speed, r
   melee: boolean; speed: number; reduced: boolean; register: (id: string, el: HTMLDivElement | null) => void;
 }) {
   const host = useRef<HTMLDivElement>(null);
+  const rigStage = useRef<RigStageHandle>(null);
   const rigs = useRigIndex();
   const [box, setBox] = useState({ w: 800, h: 450 });
   useLayoutEffect(() => {
@@ -140,10 +141,11 @@ export function FightStage({ input, fighters, live, done, clips, melee, speed, r
       {[...homes.entries()].map(([id, home]) => {
         const f = fighters.get(id)!;
         return (
-      <StageFighter key={id} id={id} f={f} clips={clips[id]} rig={rigBase(rigs, id, f.stage ?? 0)} home={home} targetHome={live?.target ? homes.get(live.target) : undefined} ground={ground} tall={tall * home.scale}
+      <StageFighter key={id} id={id} f={f} clips={clips[id]} rig={rigBase(rigs, id, f.stage ?? 0)} rigStage={rigStage} home={home} targetHome={live?.target ? homes.get(live.target) : undefined} ground={ground} tall={tall * home.scale}
             cmd={cmds.get(id) ?? { k: 'idle' }} seq={live?.seq ?? 0} win={win} speed={speed} reduced={reduced} done={done} register={register} />
         );
       })}
+      <RigStage handle={rigStage} fighters={[...homes.entries()].flatMap(([id, home]) => { const f = fighters.get(id)!; const base = rigBase(rigs, id, f.stage ?? 0); return base ? [{ id, base, x: home.x, ground, height: tall * home.scale, flip: home.side === 1, form: f.stage, tint: f.formColor }] : []; })} />
       {done && <div className="fs-ko-call" role="status">K.O.</div>}
     </div>
   );
@@ -178,13 +180,13 @@ function playStrip(el: HTMLDivElement, clip: FighterClip, h: number, ms: number,
   players.set(el, requestAnimationFrame(tick));
 }
 
-function StageFighter({ id, f, clips, rig, home, targetHome, ground, tall, cmd, seq, win, speed, reduced, done, register }: {
+function StageFighter({ id, f, clips, rig, rigStage, home, targetHome, ground, tall, cmd, seq, win, speed, reduced, done, register }: {
   id: string; f: LiveFighter; clips: FighterClips | undefined; rig: string | undefined; home: { x: number; side: 0 | 1; z: number }; targetHome?: { x: number; side: 0 | 1; z: number }; ground: number; tall: number;
+  rigStage: React.RefObject<RigStageHandle | null>;
   cmd: Cmd; seq: number; win: number; speed: number; reduced: boolean; done: boolean; register: (id: string, el: HTMLDivElement | null) => void;
 }) {
   const root = useRef<HTMLDivElement>(null);
   const [rigAnim, setRigAnim] = useState<AnimName>('idle');
-  const rigHandle = useRef<import('../rig/RigView').RigHandle>(null);
   const flip = useRef<HTMLDivElement>(null);
   const sprite = useRef<HTMLDivElement>(null);
   const stage = f.stage ?? 0;
@@ -205,6 +207,7 @@ function StageFighter({ id, f, clips, rig, home, targetHome, ground, tall, cmd, 
     else setRigAnim('idle');
     return () => { if (timer) clearTimeout(timer); };
   }, [rig, cmd.k, seq, done, f.down, win]);
+  useEffect(() => { if (rig) rigStage.current?.play(id, ANIMS[rigAnim], { speed, key: `${seq}-${rigAnim}`, onImpact: () => { const wrist = rigStage.current?.joint(id, 'wristF'); if (wrist && root.current) root.current.dataset.castX = String(wrist.x); } }); }, [rig, rigAnim, rigStage, id, seq, speed]);
   const rest: ClipName = f.down || f.floored ? 'knockdown' : 'idle';
   // The loop the fighter returns to between moves (stance, or lying down).
   const settle = useRef<() => void>(() => undefined);
@@ -226,7 +229,7 @@ function StageFighter({ id, f, clips, rig, home, targetHome, ground, tall, cmd, 
     const timers: ReturnType<typeof setTimeout>[] = [];
     const later = (ms: number, fn: () => void) => timers.push(setTimeout(fn, ms));
     const play = (name: ClipName, ms: number, loop = false) => { const c = clipFor(clips, stage, name); if (el && c) playStrip(el, c, tall, ms, loop); };
-    const move = (frames: Keyframe[], ms: number, easing = 'cubic-bezier(.2,.7,.25,1)') => { if (!reduced && typeof r.animate === 'function') anims.push(r.animate(frames, { duration: Math.max(60, ms), easing, fill: 'forwards' })); };
+    const move = (frames: Keyframe[], ms: number, easing = 'cubic-bezier(.2,.7,.25,1)') => { if (rig) { const last = frames[frames.length - 1]?.transform; const match = typeof last === 'string' ? /translateX\((-?[\d.]+)px\)/.exec(last) : null; if (match) rigStage.current?.moveTo(id, home.x + Number(match[1]), reduced ? 0 : Math.max(60, ms)); return; } if (!reduced && typeof r.animate === 'function') anims.push(r.animate(frames, { duration: Math.max(60, ms), easing, fill: 'forwards' })); };
     const away = home.side === 0 ? -1 : 1;
     const dust = (x: number, big = false) => {
       if (reduced) return;
@@ -251,7 +254,7 @@ function StageFighter({ id, f, clips, rig, home, targetHome, ground, tall, cmd, 
       later(hitAt, () => {
         setRigAnim(plan.anim);
         const stageEl = r.parentElement;
-        const joint = rigHandle.current?.joint(plan.effect.from);
+        const joint = rigStage.current?.joint(id, plan.effect.from);
         const startX = home.x + (joint?.x ?? 0), startY = ground + (joint?.y ?? -tall * .55);
         const color = plan.effect.color, size = plan.effect.size;
         const add = (cls: string, left: number, top: number, width: number, height: number, duration = 520) => {
@@ -336,7 +339,7 @@ function StageFighter({ id, f, clips, rig, home, targetHome, ground, tall, cmd, 
       <div className="sf-shadow" style={{ width: tall * 0.5 }} />
       {f.injuries.map((w, i) => <span key={`${w.part}-${i}`} aria-label={`${w.part} injury: ${w.label}`} className={`sf-wound ${w.part} severity-${w.severity}`} />)}
       {f.hp > 0 && f.hp / Math.max(1, f.maxHp) < .28 && <span className="sf-hurt-breath" aria-hidden="true" />}
-      {rig ? <RigFighter base={rig} anim={ANIMS[rigAnim]} animKey={`${seq}-${rigAnim}`} height={tall} flip={home.side === 1} glow={stage ? (f.formColor ?? '#f5c451') : undefined} handle={rigHandle} style={{ position: 'absolute', left: 0, top: 0 }} onImpact={() => { const wrist = rigHandle.current?.joint('wristF'); if (wrist && root.current) root.current.dataset.castX = String(wrist.x); }} /> : <div className="sf-flip" ref={flip} style={{ transform: home.side === 1 ? 'scaleX(-1)' : undefined }}><div className="sf-sprite" ref={sprite} /></div>}
+      {!rig && <div className="sf-flip" ref={flip} style={{ transform: home.side === 1 ? 'scaleX(-1)' : undefined }}><div className="sf-sprite" ref={sprite} /></div>}
       {/* The body box: where the effects layer aims hits and auras. */}
       <div className="sf-body" ref={(el) => register(id, el)} style={{ width: tall * 0.42, height: tall * 0.9, left: -tall * 0.21, top: -tall * 0.9 }} />
     </div>

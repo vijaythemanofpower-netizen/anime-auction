@@ -33,6 +33,8 @@ Automatic failover (Nov 2 2026): start Claude with `claude-failover` (any repo) 
 
 ## Open work (Nov 1 2026, end of Claude session)
 
+Nov 3, 2026 (shared rig stage): FightStage now renders rig fighters as skinned meshes through one full-stage PixiJS application, with imperative animation/form/movement/joint/effects hooks, resize and cleanup guards; removed arena-stage clipping. Rig-specific injuries and move effects still need to be moved into the shared scene.
+
 Progress (Nov 3, 2026, fight presentation): updated rig knockdown/defeated poses with stronger launch, bounce, and horizontal resting keys; FightStage now displays persistent injury markers from fighter injury state, low-HP hurt breathing, and a prominent K.O. call. Added phone-sized/reduced-motion styling in `src/ui/battlefield/battlefield.css`. Still weak: marks are stage-space approximations rather than decals skinned to bones, and RigFighter still owns a separate Pixi Application per fighter; the shared full-stage renderer, blood effects, move-specific anime effects, and impact camera choreography remain open.
 
 NEXT (owner's requests, Nov 2 2026, not started yet; do these next, in order):

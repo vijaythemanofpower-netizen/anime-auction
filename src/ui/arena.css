@@ -2,7 +2,7 @@
 .arena2 {
   position: relative;
   border-radius: 20px;
-  overflow: hidden;
+  overflow: visible;
   border: 1px solid var(--line-strong);
   height: clamp(380px, 52vw, 560px);
   background: #05050b;
