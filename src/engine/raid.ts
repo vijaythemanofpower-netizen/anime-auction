@@ -86,11 +86,19 @@ export function bossTiers(pool: PublicCharacter[], secret: number): PublicCharac
  * The random boss (or bosses, at level 5) for a level of the climb. Villains already fought in this
  * game (`seen`) are skipped until the whole tier has been fought, so every run meets new faces.
  */
-export function levelBosses(pool: PublicCharacter[], secret: number, level: number, seed: number, seen: string[] = []): PublicCharacter[] {
+export function levelBosses(pool: PublicCharacter[], secret: number, level: number, seed: number, seen: string[] = [], partySize = 0): PublicCharacter[] {
   const tier = bossTiers(pool, secret)[Math.min(RAID_LEVELS, Math.max(1, level)) - 1];
-  const want = level >= RAID_LEVELS ? 2 : 1;
+  return pickFresh(tier, bossCount(level, partySize), seed ^ (level * 0x9e37), seen);
+}
+
+/** One boss per level; two at the top level, or from level 3 on when a big party (6+) would overrun one. */
+export function bossCount(level: number, partySize = 0): number {
+  return level >= RAID_LEVELS || (level >= 3 && partySize >= 6) ? 2 : 1;
+}
+
+function pickFresh(tier: PublicCharacter[], want: number, seed: number, seen: string[]): PublicCharacter[] {
   const fresh = tier.filter((c) => !seen.includes(c.id));
-  const rng = new Rng(seed ^ (level * 0x9e37));
+  const rng = new Rng(seed);
   const picks = rng.shuffle(fresh).slice(0, want);
   // Tier used up: top up from the rest of it, least recently fought first.
   const old = tier.filter((c) => !picks.includes(c)).sort((a, b) => seen.lastIndexOf(a.id) - seen.lastIndexOf(b.id));

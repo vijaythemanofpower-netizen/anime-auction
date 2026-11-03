@@ -3,7 +3,7 @@
 // them and see the results (engine/raid.ts).
 import { useMemo } from 'react';
 import type { GameState, RaidResult } from '../../engine/types';
-import { RAID_LEVELS, RAID_MAX_TEAM, foughtBosses, legendVillains, levelBosses, nextRaidLevel, raidSlots } from '../../engine/raid';
+import { RAID_LEVELS, RAID_MAX_TEAM, bossCount, foughtBosses, legendVillains, levelBosses, nextRaidLevel, raidSlots } from '../../engine/raid';
 import { VILLAINS } from '../../engine/data/villains';
 import { store, useApp } from '../../store/store';
 import { CharArt } from './Portrait';
@@ -18,7 +18,8 @@ export function RaidHub({ g }: { g: GameState }) {
   const runStart = leveled.map((r) => r.level).lastIndexOf(1);
   const run = runStart >= 0 ? leveled.slice(runStart) : [];
   const lastRun = run[run.length - 1];
-  const fight = (lv: number) => store.startRaid(levelBosses(bosses, g.secret, lv, Date.now(), foughtBosses(g)), lv);
+  const party = Math.min(RAID_MAX_TEAM, raidSlots(g) * g.players.length);
+  const fight = (lv: number) => store.startRaid(levelBosses(bosses, g.secret, lv, Date.now(), foughtBosses(g), party), lv);
   const raids = (g.raids ?? []).slice().reverse();
   const record = useApp((s) => s.battles);
   const wins = (g.raids ?? []).filter((r) => r.won).length;
@@ -43,7 +44,7 @@ export function RaidHub({ g }: { g: GameState }) {
             return (
               <li key={n} className={`climb-step ${state}`} aria-label={`Level ${n}: ${state === 'next' ? 'up next' : state}`}>
                 <b>{n}</b>
-                <small>{r ? (r.won ? '✓ ' : '✗ ') + r.bossName : n === RAID_LEVELS ? 'Two bosses' : state === 'next' ? 'Up next' : 'Locked'}</small>
+                <small>{r ? (r.won ? '✓ ' : '✗ ') + r.bossName : bossCount(n, party) === 2 ? 'Two bosses' : state === 'next' ? 'Up next' : 'Locked'}</small>
               </li>
             );
           })}
@@ -51,7 +52,7 @@ export function RaidHub({ g }: { g: GameState }) {
         <p className="muted" style={{ margin: 0 }}>
           {level === null
             ? (lastRun?.won ? 'Your party cleared all five levels!' : `The run ended at Level ${lastRun?.level ?? 1}. Start a new run to climb again.`)
-            : `Level ${level}: a random villain${level === RAID_LEVELS ? ' pair from the very top' : level === 1 ? ' from the weakest fifth' : ''}. Who you face stays secret until the fight starts. Win to unlock the next level; lose and the run ends.`}
+            : `Level ${level}: ${bossCount(level, party) === 2 ? (level === RAID_LEVELS ? 'two random villains from the very top' : 'two random villains (your party is big)') : level === 1 ? 'a random villain from the weakest fifth' : 'a random villain'}. Who you face stays secret until the fight starts. Win to unlock the next level; lose and the run ends.`}
         </p>
         {guest ? <div className="faint">The host starts each level. You'll watch it here.</div> : (
           <>

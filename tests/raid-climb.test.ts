@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { RAID_LEVELS, bossTiers, legendVillains, levelBosses, nextRaidLevel, runRaid } from '../src/engine/raid';
+import { RAID_LEVELS, bossCount, bossTiers, legendVillains, levelBosses, nextRaidLevel, runRaid } from '../src/engine/raid';
 import { VILLAINS } from '../src/engine/data/villains';
 import { canonFor } from '../src/engine/data/canonByName';
 import { generateHidden, truePower } from '../src/engine/hidden';
@@ -31,6 +31,12 @@ describe('boss climb, levels 1 to 5', () => {
     const top = levelBosses(pool, 7, 5, 3);
     expect(top).toHaveLength(2);
     for (const b of top) expect(tiers[4].map((c) => c.id)).toContain(b.id);
+  });
+
+  it('sends one boss per level, two at level 5 or from level 3 for a big party', () => {
+    expect([1, 2, 3, 4, 5].map((lv) => bossCount(lv, 4))).toEqual([1, 1, 1, 1, 2]);
+    expect([1, 2, 3, 4, 5].map((lv) => bossCount(lv, 8))).toEqual([1, 1, 2, 2, 2]);
+    expect(levelBosses(pool, 7, 3, 1, [], 8)).toHaveLength(2);
   });
 
   it('never repeats a villain at a level until the whole tier has been fought', () => {
