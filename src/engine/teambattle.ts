@@ -46,12 +46,14 @@ export function setTeam(g: GameState, playerId: string, team: Team): R {
 }
 
 /** A player chooses who they send (from their own roster). */
-export function setTeamPick(g: GameState, playerId: string, ids: string[]): R {
+export function setTeamPick(g: GameState, playerId: string, ids: string[], front?: string[]): R {
   const p = g.players.find((x) => x.id === playerId);
   if (!p) return { ok: false, error: 'Unknown player.' };
   const mine = [...new Set(ids)].filter((id) => p.roster.includes(id));
   if (mine.length > teamSlots(g, playerId)) return { ok: false, error: `Send at most ${teamSlots(g, playerId)}.` };
-  g.teamSetup = { teams: teamsOf(g), picks: { ...(g.teamSetup?.picks ?? {}), [playerId]: mine } };
+  const oldFront = g.teamSetup?.front?.[playerId] ?? mine.slice(0, Math.min(2, mine.length));
+  const selectedFront = (front ? [...new Set(front)].filter((id) => mine.includes(id)) : oldFront.filter((id) => mine.includes(id)));
+  g.teamSetup = { teams: teamsOf(g), picks: { ...(g.teamSetup?.picks ?? {}), [playerId]: mine }, front: { ...(g.teamSetup?.front ?? {}), [playerId]: selectedFront } };
   return { ok: true };
 }
 
@@ -67,7 +69,9 @@ export function teamFighters(g: GameState, vault: Vault, team: Team): string[] {
     const p = g.players.find((x) => x.id === pid)!;
     const chosen = (g.teamSetup?.picks?.[pid] ?? []).filter((id) => p.roster.includes(id));
     const best = p.roster.slice().sort((a, b) => power(g, vault, b) - power(g, vault, a));
-    out.push(...(chosen.length ? chosen : best).slice(0, teamSlots(g, pid)));
+    const slots = teamSlots(g, pid);
+    const completed = chosen.length ? [...chosen, ...best.filter((id) => !chosen.includes(id))] : best;
+    out.push(...completed.slice(0, slots));
   }
   return out.slice(0, teamFighterCount(g));
 }
@@ -80,7 +84,13 @@ export function teamName(g: GameState, team: Team): string {
 export function buildTeamInput(g: GameState, vault: Vault, seed: number): BattleInput {
   const side = (team: Team, i: 0 | 1) => {
     const ids = teamFighters(g, vault, team);
-    const fighters = ids.map((id, k) => ({ ...buildSnapshot(g, vault, id, i, k < 2 ? 'front' : 'back'), injuries: [], fatigue: 0 }));
+    const fighters = ids.map((id, k) => {
+      const owner = g.players.find((p) => p.roster.includes(id))?.id;
+      const pickedByOwner = !!owner && (g.teamSetup?.picks?.[owner]?.includes(id) ?? false);
+      const onFront = pickedByOwner ? (g.teamSetup?.front?.[owner!]?.includes(id) ?? (g.teamSetup?.picks?.[owner!]?.indexOf(id) ?? 0) < 2) : k < 2;
+      return { ...buildSnapshot(g, vault, id, i, onFront ? 'front' : 'back'), injuries: [], fatigue: 0 };
+    });
+    if (fighters.length && fighters.every((f) => f.position === 'back')) fighters[0].position = 'front';
     return { playerId: `team-${team}`, strategy: 'balanced' as const, mental: 'composure' as const, fighters, synergies: [], coach: 'auto' as const };
   };
   return {

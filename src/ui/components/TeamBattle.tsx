@@ -46,7 +46,17 @@ export function TeamBattleHub({ g }: { g: GameState }) {
       {mine.map((p) => {
         const picked = g.teamSetup?.picks?.[p.id] ?? [];
         const slots = teamSlots(g, p.id);
-        const toggle = (id: string) => store.move(p.id, { t: 'teamPick', ids: picked.includes(id) ? picked.filter((x) => x !== id) : [...picked, id].slice(-slots) });
+        const front = g.teamSetup?.front?.[p.id] ?? picked.slice(0, Math.min(2, picked.length));
+        const toggle = (id: string) => {
+          const ids = picked.includes(id) ? picked.filter((x) => x !== id) : [...picked, id].slice(-slots);
+          const nextFront = front.filter((x) => ids.includes(x));
+          if (!picked.includes(id) && nextFront.length < Math.min(2, ids.length)) nextFront.push(id);
+          store.move(p.id, { t: 'teamPick', ids, front: nextFront });
+        };
+        const toggleLine = (id: string) => {
+          const nextFront = front.includes(id) ? front.filter((x) => x !== id) : [...front, id];
+          store.move(p.id, { t: 'teamPick', ids: picked, front: nextFront });
+        };
         return (
           <div key={p.id} className="panel col" style={{ gap: 6 }}>
             <span className="faint">{mine.length > 1 ? `${p.name}` : 'You'} (Team {teams[p.id]}): send {slots} fighter{slots > 1 ? 's' : ''} ({picked.length}/{slots})</span>
@@ -62,6 +72,9 @@ export function TeamBattleHub({ g }: { g: GameState }) {
                 );
               })}
             </div>
+            {picked.length > 0 && <div className="row" style={{ gap: 6, flexWrap: 'wrap' }}>
+              {picked.map((id) => <button key={id} className="btn sm" onClick={() => toggleLine(id)}>{g.characters[id]?.name}: {front.includes(id) ? 'Frontline' : 'Backline'}</button>)}
+            </div>}
           </div>
         );
       })}
@@ -78,7 +91,6 @@ export function TeamBattleHub({ g }: { g: GameState }) {
     </div>
   );
 }
-
 function TeamResult({ r, g, canWatch, latest }: { r: TeamBattleResult; g: GameState; canWatch: boolean; latest: boolean }) {
   const names = (ids: string[]) => ids.map((id) => g.players.find((p) => p.id === id)?.name ?? id).join(' & ');
   const winners = r.winner === 'A' ? r.teamA : r.teamB;

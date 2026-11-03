@@ -28,6 +28,26 @@ describe('full game flow', () => {
     });
   }
 
+  it('plays six-player 3v3 semifinals and a 3v3 Grand Final', () => {
+    const { g, vault } = makeGame(6, 3, 'live', 606);
+    runAuction(g);
+    const records = runTournament(g, vault, 3600);
+    const semis = g.tournament!.stages.find((stage) => stage.name === 'Semifinals')!;
+    const final = g.tournament!.stages.find((stage) => stage.name === 'Grand Final')!;
+
+    expect(semis.matches).toHaveLength(2);
+    expect(final.matches).toHaveLength(1);
+    expect(final.matches[0].players.slice().sort()).toEqual(semis.matches.map((match) => match.winner!).sort());
+    const squadRecords = records.filter((record) => record.input.mode === 'squad');
+    expect(squadRecords).toHaveLength(3);
+    for (const record of squadRecords) {
+      expect(record.input.sides[0].fighters).toHaveLength(3);
+      expect(record.input.sides[1].fighters).toHaveLength(3);
+      expect(record.result.events.length).toBeGreaterThan(0);
+    }
+    expect(g.phase).toBe('champion');
+    expect(g.tournament!.championId).toBe(final.matches[0].winner);
+  });
   it('a tag-team round needs two fighters, and a pick can be undone before locking in', () => {
     const { g, vault } = makeGame(2, 3, 'live', 3);
     runAuction(g);

@@ -296,14 +296,16 @@ async function pushState(full: boolean, onlyTo?: string) {
     await send({ k: 'lobby', settings: room.settings, seats: room.seats, started: room.started }, onlyTo);
   }
   if (!room.started || !s.game) return;
-  if (full || s.game !== lastGame) {
-    if (!onlyTo) lastGame = s.game;
-    await send({ k: 'sync', game: { ...s.game, secret: 0 }, sentAt: Date.now() }, onlyTo);
-  }
+  // Deliver new battle records before the game phase that points at them. This
+  // avoids a guest briefly rendering a 2v2 battle screen without its record.
   for (const [id, rec] of Object.entries(s.battles)) {
     if (full || lastBattles[id] !== rec) await send({ k: 'battle', record: rec }, onlyTo);
   }
   if (!onlyTo) lastBattles = s.battles;
+  if (full || s.game !== lastGame) {
+    if (!onlyTo) lastGame = s.game;
+    await send({ k: 'sync', game: { ...s.game, secret: 0 }, sentAt: Date.now() }, onlyTo);
+  }
   for (const [playerId, userId] of Object.entries(room.seats)) {
     if (userId === room.userId || (onlyTo && userId !== onlyTo)) continue;
     const profiles = store.hiddenVisibleTo(playerId);

@@ -149,7 +149,12 @@ class Store {
     if (lot) lot.deadline += Date.now() - sentAt;
     for (const c of Object.values(game.characters)) registerCharacterMoves(c);
     const first = !this.state.game || this.state.game.id !== game.id;
-    this.set({ game, viewer: myPlayerId, ...(first ? { screen: 'game' as const, exhibition: null } : {}) });
+    // During room rejoin the host sends battle records before the game snapshot.
+    // A raid/team record can therefore open its exhibition first; keep that
+    // matching record when the first snapshot arrives instead of blanking it.
+    const pendingExhibition = !this.state.game && this.state.exhibition
+      && this.state.battles[this.state.exhibition.battleId] === this.state.exhibition;
+    this.set({ game, viewer: myPlayerId, ...(first ? { screen: 'game' as const, ...(!pendingExhibition ? { exhibition: null } : {}) } : {}) });
   }
   receiveBattle(record: BattleRecord) {
     const patch: Partial<AppState> = { battles: { ...this.state.battles, [record.battleId]: record } };

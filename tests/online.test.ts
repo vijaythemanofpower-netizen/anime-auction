@@ -3,6 +3,8 @@ import { applyMove, isPlayerMove } from '../src/engine/actions';
 import { Reassembler, pack, split, unpack, PART_SIZE } from '../src/online/wire';
 import * as G from '../src/engine/game';
 import { makeGame, runAuction } from './helpers';
+import { store } from '../src/store/store';
+import type { BattleRecord } from '../src/engine/types';
 
 describe('player moves sent over the network', () => {
   it('accepts only well-formed moves', () => {
@@ -30,6 +32,37 @@ describe('player moves sent over the network', () => {
     // A player can't field someone else's fighters.
     const other = g.players.find((p) => p.id === a)!.roster[0];
     expect(applyMove(g, vault, b, { t: 'prep', patch: { fighters: [other] } }, Date.now()).ok).toBe(false);
+  });
+});
+
+describe('online exhibitions', () => {
+  it('opens raid and team battle records for guests automatically', () => {
+    store.setOnline({ role: 'guest', myPlayerId: 'p2', started: true, code: 'ABC123' });
+    store.receiveBattle({ battleId: 'tournament-1', kind: 'tournament' } as unknown as BattleRecord);
+    expect(store.getState().exhibition).toBeNull();
+
+    const raid = { battleId: 'raid-1', kind: 'raid' } as unknown as BattleRecord;
+    store.receiveBattle(raid);
+    expect(store.getState().exhibition).toBe(raid);
+
+    store.closeExhibition();
+    const team = { battleId: 'team-1', kind: 'team' } as unknown as BattleRecord;
+    store.receiveBattle(team);
+    expect(store.getState().exhibition).toBe(team);
+
+    store.closeExhibition();
+    store.setOnline(null);
+  });
+
+  it('keeps a raid or team exhibition opened before the first game snapshot', () => {
+    const { g } = makeGame(2, 3, 'live', 22);
+    const raid = { battleId: 'rejoin-raid', kind: 'raid' } as unknown as BattleRecord;
+    store.setOnline({ role: 'guest', myPlayerId: 'p2', started: true, code: 'ABC123' });
+    store.receiveBattle(raid);
+    store.receiveGame(g, Date.now(), 'p2');
+    expect(store.getState().exhibition).toBe(raid);
+    store.leaveOnlineGame();
+    store.setOnline(null);
   });
 });
 

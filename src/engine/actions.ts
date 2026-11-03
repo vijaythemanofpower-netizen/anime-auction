@@ -17,7 +17,7 @@ export type PlayerMove =
   | { t: 'prepAction'; act: G.PrepAction }
   | { t: 'lock' }
   | { t: 'raidPick'; ids: string[] }
-  | { t: 'teamPick'; ids: string[] };
+  | { t: 'teamPick'; ids: string[]; front?: string[] };
 
 const KINDS = new Set(['bid', 'pass', 'scout', 'revealed', 'prep', 'prepAction', 'lock', 'raidPick', 'teamPick']);
 
@@ -28,7 +28,7 @@ export function isPlayerMove(x: unknown): x is PlayerMove {
   if (typeof m.t !== 'string' || !KINDS.has(m.t)) return false;
   if (m.t === 'bid') return typeof m.amount === 'number' && Number.isFinite(m.amount);
   if (m.t === 'prep') return !!m.patch && typeof m.patch === 'object';
-  if (m.t === 'teamPick') return Array.isArray(m.ids) && m.ids.length <= 3 && m.ids.every((x) => typeof x === 'string');
+  if (m.t === 'teamPick') return Array.isArray(m.ids) && m.ids.length <= 3 && m.ids.every((x) => typeof x === 'string') && (m.front === undefined || (Array.isArray(m.front) && m.front.length <= 3 && m.front.every((x) => typeof x === 'string')));
   if (m.t === 'raidPick') return Array.isArray(m.ids) && m.ids.length <= 6 && m.ids.every((x) => typeof x === 'string');
   if (m.t === 'prepAction') return !!m.act && typeof m.act === 'object' && typeof (m.act as { charId?: unknown }).charId === 'string';
   return true;
@@ -46,6 +46,6 @@ export function applyMove(g: GameState, vault: Vault, playerId: string, move: Pl
     case 'prepAction': return G.prepAction(g, playerId, move.act);
     case 'lock': return G.lockPrep(g, playerId);
     case 'raidPick': return setRaidPick(g, playerId, move.ids);
-    case 'teamPick': return setTeamPick(g, playerId, move.ids);
+    case 'teamPick': return setTeamPick(g, playerId, move.ids, move.front);
   }
 }

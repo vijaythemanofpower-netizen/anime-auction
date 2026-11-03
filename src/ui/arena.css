@@ -228,6 +228,10 @@
 .fstatus { display: flex; gap: 6px; align-items: flex-start; margin-top: 6px; padding: 5px 6px; border-radius: 10px; background: rgba(5,5,15,0.72); border: 1px solid rgba(255,255,255,0.08); }
 .fstatus .body-chart { flex-shrink: 0; }
 .fs-words { min-width: 0; font-size: 10.5px; line-height: 1.35; }
+.fs-damage { display: grid; gap: 2px; color: #e2e8f0; font-size: 8px; line-height: 1.25; }
+.fs-damage b { color: #fbbf24; font-size: 8px; letter-spacing: .08em; }
+.fs-damage span { display: flex; flex-wrap: wrap; gap: 1px 5px; }
+.fs-damage span::first-letter { color: #94a3b8; }
 .fs-k { color: #94a3b8; font-weight: 600; }
 .fs-v { font-weight: 800; }
 .fs-v.good { color: #86efac; } .fs-v.mid { color: #fde047; } .fs-v.low { color: #fb923c; } .fs-v.crit { color: #f87171; }
@@ -236,6 +240,9 @@
 .fs-inj .inj.sev2, .injury-report .inj.sev2 { background: rgba(239,68,68,0.3); color: #fff; border-color: #ef4444; }
 .body-chart .bp { transition: fill 0.3s; }
 .body-chart .bp.crit { animation: bp-pulse 0.9s ease-in-out infinite alternate; }
+.body-chart .body-crack path { stroke-dasharray: 24; stroke-dashoffset: 24; animation: crack-draw 0.24s ease-out forwards; }
+@keyframes crack-draw { to { stroke-dashoffset: 0; } }
+@media (prefers-reduced-motion: reduce) { .body-chart .body-crack path { animation: none; stroke-dashoffset: 0; } }
 .body-chart.down { transform: rotate(-70deg); transform-origin: 50% 70%; opacity: 0.8; }
 @keyframes bp-pulse { to { opacity: 0.55; } }
 .arena2.squad .fstatus { flex-direction: column; align-items: center; padding: 4px; }

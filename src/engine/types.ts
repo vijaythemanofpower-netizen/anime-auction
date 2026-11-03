@@ -566,7 +566,7 @@ export interface GameState {
   /** Who each player sends into the next raid (their own fighters); missing means "pick my best". */
   raidPicks?: Record<string, string[]>;
   /** Team battles between players: who is on which team, who each player sends, and results. */
-  teamSetup?: { teams: Record<string, 'A' | 'B'>; picks: Record<string, string[]> };
+  teamSetup?: { teams: Record<string, 'A' | 'B'>; picks: Record<string, string[]>; front?: Record<string, string[]> };
   teamBattles?: TeamBattleResult[];
   /** Raid Boss attempts, newest last (older saves lack it). */
   raids?: RaidResult[];

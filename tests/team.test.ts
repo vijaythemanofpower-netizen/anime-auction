@@ -19,8 +19,8 @@ describe('team battles', () => {
     for (let k = 0; k < 8; k++) {
       const { record, result } = runTeamBattle(g, vault, 40 + k);
       expect(record.kind).toBe('team');
-      expect(record.input.sides[0].fighters.length).toBe(2);
-      expect(record.input.sides[1].fighters.length).toBe(2);
+      expect(record.input.sides[0].fighters).toHaveLength(2);
+      expect(record.input.sides[1].fighters).toHaveLength(2);
       expect(result.mvp).toBe(result.contributions[0].charId);
       if (result.winner === 'A') aWins++;
     }
@@ -35,8 +35,21 @@ describe('team battles', () => {
     setTeam(g, 'p1', 'A'); setTeam(g, 'p2', 'B'); setTeam(g, 'p3', 'B');
     expect(teamSlots(g, 'p1')).toBe(2);
     expect(teamSlots(g, 'p2')).toBe(1);
+    const pick = g.players[0].roster.slice(0, 2);
+    setTeamPick(g, 'p1', pick, [pick[1]]);
     const { record } = runTeamBattle(g, vault, 5);
-    expect(record.input.sides[0].fighters.length).toBe(2);
-    expect(record.input.sides[1].fighters.length).toBe(2);
+    expect(record.input.sides[0].fighters).toHaveLength(2);
+    expect(record.input.sides[1].fighters).toHaveLength(2);
+    expect(record.input.sides[0].fighters.find((f) => f.charId === pick[0])?.position).toBe('back');
+    expect(record.input.sides[0].fighters.find((f) => f.charId === pick[1])?.position).toBe('front');
+  });
+
+  it('runs a full 3v3 team battle', () => {
+    const { g, vault } = makeGame(6, 3, 'live', 1009) as never as { g: GameState; vault: Vault };
+    runAuction(g);
+    const { record } = runTeamBattle(g, vault, 33);
+    expect(record.input.sides[0].fighters).toHaveLength(3);
+    expect(record.input.sides[1].fighters).toHaveLength(3);
+    expect(record.result.events.length).toBeGreaterThan(0);
   });
 });

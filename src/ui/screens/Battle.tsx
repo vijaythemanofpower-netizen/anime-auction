@@ -1,4 +1,5 @@
 import { RaidCard } from '../components/Raid';
+import { ErrorBoundary } from '../components/ErrorBoundary';
 import { PreFightPoll, Predictions } from '../components/Predictions';
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import type { BattleEvent, BattleInjury, BattleInput, BattleRecord, GameState } from '../../engine/types';
@@ -58,7 +59,16 @@ function teamSideName(g: GameState, input: BattleInput, id: string): string {
   return owners.map((o) => g.players.find((p) => p.id === o)?.name ?? o).join(' & ') || id;
 }
 
-export function BattleView({ record, exhibition }: { record: BattleRecord; exhibition?: boolean }) {
+export function BattleView(props: { record: BattleRecord; exhibition?: boolean }) {
+  const fallback = <div className="panel" role="alert">
+    <strong>This battle view hit a display error.</strong>
+    <p>The shared battle record is still safe. Close this exhibition and reopen it, or reload the room to try again.</p>
+    {props.exhibition && <button className="btn" onClick={() => store.closeExhibition()}>Close battle</button>}
+  </div>;
+  return <ErrorBoundary resetKey={props.record.battleId} fallback={fallback}><BattleViewContent {...props} /></ErrorBoundary>;
+}
+
+function BattleViewContent({ record, exhibition }: { record: BattleRecord; exhibition?: boolean }) {
   const g = useApp((s) => s.game)!;
   const baseSpeed = useApp((s) => s.settings.narrationSpeed);
   const sound = useApp((s) => s.settings.sound);
@@ -267,9 +277,9 @@ export function BattleView({ record, exhibition }: { record: BattleRecord; exhib
         if (sev > 0) tgt.injuries = [...tgt.injuries, { part: part as BattleInjury['part'], severity: sev as 1 | 2, label: String(e.context.cure_label) }];
       }
       if (e.type === 'call' && e.context?.call === 'callback' && act && e.hpAfter !== undefined) act.hp = e.hpAfter;
-      if (e.type === 'replacement' && e.actor) { fs.get(e.actor)!.position = 'front'; if (e.action === 'tag' && e.target) fs.get(e.target)!.position = 'back'; }
+      if (e.type === 'replacement' && e.actor) { const entering = fs.get(e.actor); if (entering) entering.position = 'front'; if (e.action === 'tag' && e.target) { const leaving = fs.get(e.target); if (leaving) leaving.position = 'back'; } }
     }
-    if (idx >= events.length) for (const r of result.fighters) { const f = fs.get(r.charId)!; f.hp = r.hp; f.st = r.stamina; f.down = r.defeated; f.floored = false; f.howDown = r.howDown; }
+    if (idx >= events.length) for (const r of result.fighters) { const f = fs.get(r.charId); if (f) { f.hp = r.hp; f.st = r.stamina; f.down = r.defeated; f.floored = false; f.howDown = r.howDown; } }
     return { fs };
   }, [idx, events, input, result]);
 
@@ -303,7 +313,9 @@ export function BattleView({ record, exhibition }: { record: BattleRecord; exhib
       </div>
       {comic
         ? <ComicStage record={record} script={script} cur={idx > 0 ? cur : null} done={done} characters={g.characters} waiting={waitingArt && !prepping} reduced={reduced} aiDrawings={aiDrawings} remoteArt={remoteArt} manga={comicStyle === 'manga'} prep={prepping ? prep : undefined} onStartNow={() => setStartEarly(true)} />
-        : <ArenaStage record={record} cur={idx > 0 ? cur : null} done={done} fighters={state.fs} players={g.players} characters={g.characters} speed={speed} />}
+        : <ErrorBoundary resetKey={record.battleId} fallback={<div className="panel" role="alert">The arena couldn't draw this fight on this device. The fight itself is fine: the play-by-play and the result still work, and Skip jumps to the end.</div>}>
+            <ArenaStage record={record} cur={idx > 0 ? cur : null} done={done} fighters={state.fs} players={g.players} characters={g.characters} speed={speed} />
+          </ErrorBoundary>}
       {remoteCorner && cornerPlayer && (
         <div className="panel row" style={{ justifyContent: 'space-between', borderColor: 'var(--warn)' }}>
           <span><span className="spinner" style={{ display: 'inline-block', width: 14, height: 14, verticalAlign: 'middle', marginRight: 8 }} />Waiting for <strong>{cornerPlayer.name}</strong>&apos;s corner call…</span>

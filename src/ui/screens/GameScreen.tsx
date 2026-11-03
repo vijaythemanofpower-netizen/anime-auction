@@ -382,7 +382,9 @@ function CurrentBattle({ g }: { g: GameState }) {
   if (!rec) {
     return (
       <div className="panel empty">
-        <p>The battle record could not be found.</p>
+        {store.isGuest()
+          ? <p role="status" aria-live="polite"><span className="spinner" aria-hidden="true" /> Waiting for the host&apos;s battle record…</p>
+          : <p>The battle record could not be found.</p>}
         {g.phase === 'results' && !store.isGuest() && <button className="btn primary" onClick={() => store.act((d) => G.continueAfterResults(d))}>Continue</button>}
       </div>
     );

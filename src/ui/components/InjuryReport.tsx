@@ -64,14 +64,14 @@ export function BodyChart({ injuries, size = 54, down, damage, target = '' }: { 
         </linearGradient>
       </defs>
       {REGIONS.map((r) => (
-        <g key={r} className={`bp${sevAt(r) === 2 ? ' crit' : sevAt(r) || pct(r) >= 50 ? ' hurt' : ''}`}>
+        <g key={`${r}-${pct(r)}-${sevAt(r)}`} className={`bp${sevAt(r) === 2 ? ' crit' : sevAt(r) || pct(r) >= 50 ? ' hurt' : ''}`}>
           <path d={SHAPES[r]} fill={tint(pct(r))} stroke="rgba(0,0,0,0.55)" strokeWidth="0.6" />
           <path d={SHAPES[r]} fill={`url(#sh${id})`} />
         </g>
       ))}
       <path d={DETAIL} fill="none" stroke="rgba(0,0,0,0.35)" strokeWidth="0.55" strokeLinecap="round" />
-      {REGIONS.filter((r) => sevAt(r) > 0).map((r) => (
-        <g key={`f${r}`}>
+      {REGIONS.filter((r) => sevAt(r) > 0 || pct(r) >= 25).map((r) => (
+        <g key={`f${r}-${pct(r)}-${sevAt(r)}`} className="body-crack">
           <path d={FRACTURE[r]} fill="none" stroke="#120406" strokeWidth={sevAt(r) === 2 ? 1.6 : 1} strokeLinejoin="bevel" />
           {sevAt(r) === 2 && <path d={FRACTURE[r]} fill="none" stroke="#fecaca" strokeWidth="0.45" transform="translate(0.4 0.3)" strokeLinejoin="bevel" />}
         </g>
@@ -90,11 +90,16 @@ function damageLine(damage: BodyDamage | undefined, hp: number | undefined, maxH
 const tone = (p: number) => (p >= 70 ? 'crit' : p >= 40 ? 'low' : p >= 15 ? 'mid' : 'good');
 
 /** Injury cues under a fighter card; numeric health and resource meters stay hidden. */
-export function FighterStatus({ injuries, down, damage, target }: { injuries: BattleInjury[]; guard: number; staminaPct: number; down?: boolean; damage?: BodyDamage; hp?: number; maxHp?: number; target?: string }) {
+export function FighterStatus({ injuries, down, damage, hp, maxHp, target }: { injuries: BattleInjury[]; guard: number; staminaPct: number; down?: boolean; damage?: BodyDamage; hp?: number; maxHp?: number; target?: string }) {
+  const overall = damageLine(damage, hp, maxHp)?.total;
+  const parts = damage ? REGIONS.map((r) => `${REGION_NAME[r]} ${damage[r]}%`) : [];
   return (
     <div className="fstatus">
       <BodyChart injuries={injuries} size={62} down={down} damage={damage} target={target} />
       <div className="fs-words">
+        {damage && <div className="fs-damage" aria-label={`Body damage: ${parts.join(', ')}`}>
+          <b>BODY DAMAGE{overall !== undefined ? ` · ${overall}% TOTAL` : ''}</b><span>{parts.join(' · ')}</span>
+        </div>}
         <div className="fs-inj">{injuries.length ? injuries.map((i) => <span key={i.part} className={`inj sev${i.severity}`}>{i.label}</span>) : <span className="faint">Unhurt</span>}</div>
       </div>
     </div>

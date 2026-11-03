@@ -73,8 +73,9 @@ function placeIn(el: HTMLElement, root: HTMLElement): { x: number; y: number; w:
   while (n && n !== root) { x += n.offsetLeft; y += n.offsetTop; n = n.offsetParent as HTMLElement | null; }
   let w = el.offsetWidth, h = el.offsetHeight;
   // The back line is drawn smaller and raised (scale(0.86) translateY(-18px), origin bottom centre).
+  // (closest() also matches the element itself: the back line's own box is not scaled again.)
   const line = el.closest('.line.back') as HTMLElement | null;
-  if (line && n === root) {
+  if (line && line !== el && n === root) {
     const lp = placeIn(line, root);
     const ox = lp.x + lp.w / 2, oy = lp.y + lp.h, s = 0.86;
     x = ox + s * (x - ox); y = oy + s * (y - oy - 18); w *= s; h *= s;

@@ -93,8 +93,13 @@ function PrepPanel({ g, player }: { g: GameState; player: Player }) {
     const next = size === 1 ? [id] : prep.fighters.length < size ? [...prep.fighters, id] : [...prep.fighters.slice(1), id];
     set({ fighters: next });
   };
-  const toggleFront = (id: string) => {
-    const front = prep.front.includes(id) ? prep.front.filter((x) => x !== id) : [...prep.front, id];
+  // Put a fighter on the front or back line. Each line needs at least one fighter, so a
+  // move that would empty a line swaps a teammate across instead (in 2v2: the two trade places).
+  const setLine = (id: string, line: 'front' | 'back') => {
+    let front = line === 'front' ? [...new Set([...prep.front, id])] : prep.front.filter((x) => x !== id);
+    if (front.length === prep.fighters.length) front = front.filter((x) => x === id || x !== prep.front.find((f) => f !== id));
+    if (front.length === prep.fighters.length) front = [id];
+    if (!front.length) front = prep.fighters.filter((x) => x !== id).slice(0, 1);
     set({ front });
   };
   const syns = activeSynergies(prep.fighters.map((id) => ({ tags: g.characters[id].tags, archetype: g.characters[id].archetype })));
@@ -139,7 +144,12 @@ function PrepPanel({ g, player }: { g: GameState; player: Player }) {
                   {arena && (fits[id] !== 0 || recommended.includes(id)) && <span className={`tag arena-fit ${fits[id] >= 0 ? 'good' : 'bad'}`}>{recommended.includes(id) ? '⭐ Best pick here' : fits[id] > 0 ? '▲ Suits the arena' : '▼ Struggles here'}</span>}
                   <div className="row" style={{ gap: 6 }}>
                     <button className={`btn sm ${picked ? 'active' : ''}`} onClick={() => toggleFighter(id)} aria-pressed={picked}>{picked ? '✓ Selected' : 'Select'}</button>
-                    {picked && size > 1 && <button className="btn sm" onClick={() => toggleFront(id)}>{prep.front.includes(id) ? 'Frontline' : 'Backline'}</button>}
+                    {picked && size > 1 && (
+                      <span className="seg sm" role="group" aria-label={`${pc.name}'s line`}>
+                        <button className={`btn sm${prep.front.includes(id) ? ' active' : ''}`} aria-pressed={prep.front.includes(id)} onClick={() => setLine(id, 'front')}>Front</button>
+                        <button className={`btn sm${!prep.front.includes(id) ? ' active' : ''}`} aria-pressed={!prep.front.includes(id)} onClick={() => setLine(id, 'back')}>Back</button>
+                      </span>
+                    )}
                     <button className="btn sm ghost" onClick={() => setView(view === id ? null : id)}>Stats</button>
                   </div>
                   {view === id && h && <StatBars stats={progressedStats(h, g.conditions[id])} base={h.stats} />}
