@@ -191,6 +191,15 @@ fs.mkdirSync(OUT, { recursive: true });
 type ClipEntry = { id?: string; url: string; frames: number; fps: number; loop: boolean; frameW: number; frameH: number; ax: number; ay: number };
 // Each clip has a sidecar (<clip>.json) next to its strip; the manifest is rebuilt from all of them on
 // every save, so several runs at once never overwrite each other's entries.
+/** A clip's sidecar, or null if it is missing or was left half-written (an interrupted run): that clip is redone. */
+function readSide(file: string): ClipEntry | null {
+  try { return JSON.parse(fs.readFileSync(file, 'utf8')) as ClipEntry; } catch { return null; }
+}
+/** Written to a temporary file first and then renamed, so an interrupted run never leaves a broken sidecar. */
+function writeSide(file: string, entry: ClipEntry) {
+  fs.writeFileSync(`${file}.tmp`, JSON.stringify(entry));
+  fs.renameSync(`${file}.tmp`, file);
+}
 function save() {
   const manifest: Record<string, { states: Record<string, Record<string, ClipEntry>> }> = {};
   for (const key of fs.readdirSync(OUT).filter((k) => fs.statSync(path.join(OUT, k)).isDirectory())) {
@@ -199,7 +208,8 @@ function save() {
       for (const f of fs.readdirSync(sd).filter((x) => x.endsWith('.json'))) {
         const clip = f.slice(0, -5);
         if (!fs.existsSync(path.join(sd, `${clip}.webp`))) continue;
-        const entry = JSON.parse(fs.readFileSync(path.join(sd, f), 'utf8')) as ClipEntry;
+        const entry = readSide(path.join(sd, f));
+        if (!entry) continue;
         ((manifest[entry.id ?? `legend:${key}`] ??= { states: {} }).states[state] ??= {})[clip] = entry;
       }
     }
@@ -248,12 +258,12 @@ for (const key of keys) {
       if (repack) {
         if (!fs.existsSync(cache)) continue;
         const frames = fs.readdirSync(cache).filter((f) => f.endsWith('.png')).sort().map((f) => fs.readFileSync(path.join(cache, f)));
-        fs.writeFileSync(side, JSON.stringify(entryFor(c.id, key, state, clip, await pack(frames, a.center, file), a.loop)));
+        writeSide(side, (entryFor(c.id, key, state, clip, await pack(frames, a.center, file), a.loop)));
         save();
         console.log(`  ${c.name} ${state}/${clip}: re-packed`);
         continue;
       }
-      if (fs.existsSync(file) && fs.existsSync(side) && !force) continue;
+      if (fs.existsSync(file) && readSide(side) && !force) continue;
       const formText = form ? ` in ${form.name} form (${form.look})` : '';
       const prompt = `Anime fighting game animation. ${c.name}${formText} ${a.text}. Full body visible, side view, static camera, plain background, smooth fluid motion, expressive face, high quality 2D anime animation.`;
       const t1 = Date.now();
@@ -263,7 +273,7 @@ for (const key of keys) {
       fs.mkdirSync(cache, { recursive: true });
       frames.forEach((f, i) => fs.writeFileSync(path.join(cache, `${String(i).padStart(2, '0')}.png`), f));
       const r = await pack(frames, a.center, file);
-      fs.writeFileSync(side, JSON.stringify(entryFor(c.id, key, state, clip, r, a.loop)));
+      writeSide(side, (entryFor(c.id, key, state, clip, r, a.loop)));
       save();
       console.log(`  ${c.name} ${state}/${clip}: ${r.frames} frames, ${Math.round((Date.now() - t1) / 1000)} s`);
     }

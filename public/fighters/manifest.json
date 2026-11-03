@@ -289,6 +289,45 @@
  },
  "legend:naruto": {
   "states": {
+   "1": {
+    "idle": {
+     "id": "legend:naruto",
+     "url": "fighters/naruto/1/idle.webp",
+     "frames": 17,
+     "fps": 12,
+     "loop": true,
+     "frameW": 182,
+     "frameH": 300,
+     "ax": 0.499,
+     "ay": 0.953
+    }
+   },
+   "2": {
+    "idle": {
+     "id": "legend:naruto",
+     "url": "fighters/naruto/2/idle.webp",
+     "frames": 17,
+     "fps": 12,
+     "loop": true,
+     "frameW": 207,
+     "frameH": 300,
+     "ax": 0.849,
+     "ay": 0.999
+    }
+   },
+   "3": {
+    "idle": {
+     "id": "legend:naruto",
+     "url": "fighters/naruto/3/idle.webp",
+     "frames": 17,
+     "fps": 12,
+     "loop": true,
+     "frameW": 167,
+     "frameH": 300,
+     "ax": 0.496,
+     "ay": 0.996
+    }
+   },
    "base": {
     "hit": {
      "id": "legend:naruto",
@@ -454,6 +493,28 @@
      "frameW": 208,
      "frameH": 300,
      "ax": 0.5,
+     "ay": 0.986
+    },
+    "special": {
+     "id": "legend:zoro",
+     "url": "fighters/zoro/base/special.webp",
+     "frames": 17,
+     "fps": 12,
+     "loop": false,
+     "frameW": 282,
+     "frameH": 300,
+     "ax": 0.431,
+     "ay": 0.986
+    },
+    "strike": {
+     "id": "legend:zoro",
+     "url": "fighters/zoro/base/strike.webp",
+     "frames": 17,
+     "fps": 12,
+     "loop": false,
+     "frameW": 293,
+     "frameH": 300,
+     "ax": 0.396,
      "ay": 0.986
     }
    }
