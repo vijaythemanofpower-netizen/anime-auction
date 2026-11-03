@@ -582,6 +582,78 @@ export const LEGEND_MOVESETS: Record<string, Ability[]> = {
     mv('rimuru', 'sage', 'Great Sage Analysis', 'buff', 'self', 16, 5, 0, 'aura', '#7dd3fc', "A calm voice in his head reads the enemy's every move.", 'Analysis complete: focus for 3 actions.', { el: 'MAGIC', st: st('focus', 1, 3, 0.4) }),
     mv('rimuru', 'beelzebuth', 'Beelzebuth', 'ultimate', 'all_enemies', 44, 7, 1.8, 'domain', '#1e1b4b', 'A black void opens behind him and starts eating everything in the arena.', 'The Lord of Gluttony devours.', { el: 'DARK', tr: 'hp_below_50' }),
   ],
+  hidan: [
+    mv('hidan', 'scythe', 'Triple-Bladed Scythe', 'attack', 'enemy', 16, 2, 1.7, 'slash', '#b91c1c', 'He swings his triple-bladed scythe in a wide, unpredictable arc.', 'A brutal scythe attack.', { el: 'DARK' }),
+    mv('hidan', 'blood_ritual', 'Jashin Ritual', 'debuff', 'enemy', 18, 3, 1.5, 'genjutsu', '#991b1b', 'After tasting the target’s blood, he draws a circle and marks himself with their wounds.', 'Links his pain to the marked target.', { el: 'DEMON' }),
+    mv('hidan', 'immortality', 'Immortality', 'buff', 'self', 16, 5, 0, 'aura', '#7f1d1d', 'Fatal wounds close around his still-laughing body.', 'His devotion to Jashin makes ordinary wounds useless.', { el: 'DARK' }),
+    mv('hidan', 'jashin_punishment', 'Curse Technique: Death Controlling Possessed Blood', 'ultimate', 'enemy', 42, 7, 2.8, 'explosion', '#dc2626', 'Inside the ritual circle, he drives a blade into himself and the target collapses with the same wound.', 'The final strike of his blood-linked curse.', { el: 'DARK', tr: 'hp_below_50', pierce: true }),
+  ],
+  sasori: [
+    mv('sasori', 'iron_sand', 'Iron Sand: World Order', 'attack', 'all_enemies', 18, 3, 1.5, 'projectile', '#9f1239', 'The Third Kazekage puppet launches a storm of iron sand across the arena.', 'The Third Kazekage’s iron sand overwhelms the field.', { el: 'EARTH' }),
+    mv('sasori', 'puppet_strings', 'Puppet Technique', 'debuff', 'enemy', 16, 3, 1.2, 'wave', '#be123c', 'Fine chakra threads snap onto the target and wrench their limbs off balance.', 'Chakra threads seize control.', { el: 'MAGIC' }),
+    mv('sasori', 'flame_stream', 'Flame Stream', 'attack', 'all_enemies', 20, 4, 1.6, 'fire', '#f97316', 'The puppet’s arm opens into a spinning blade and a sweeping stream of fire.', 'A puppet mechanism combines blades and fire.', { el: 'FIRE' }),
+    mv('sasori', 'hundred_puppets', 'Red Secret Technique: Performance of a Hundred Puppets', 'ultimate', 'all_enemies', 44, 7, 1.9, 'summon', '#be123c', 'A hundred armed puppets pour from his sleeves and fill the battlefield.', 'His entire puppet army attacks at once.', { el: 'DARK', tr: 'hp_below_50' }),
+  ],
+  isshiki: [
+    mv('isshiki', 'sukunahikona', 'Sukunahikona', 'debuff', 'enemy', 18, 3, 1.4, 'wave', '#c4b5fd', 'He shrinks himself to evade, then returns to full size beside the target.', 'Instantly changes his size to evade and counter.', { el: 'DIVINE' }),
+    mv('isshiki', 'sukunahikona_rods', 'Black Chakra Rods', 'attack', 'enemy', 18, 3, 1.8, 'projectile', '#6d28d9', 'Tiny black rods expand at full size as they strike from every angle.', 'Shrunk rods become lethal projectiles.', { el: 'DARK' }),
+    mv('isshiki', 'daikokuten', 'Daikokuten', 'buff', 'self', 16, 5, 0, 'aura', '#a78bfa', 'A massive black cube drops from a timeless dimension around him.', 'Stores objects in a dimension where time does not flow.', { el: 'DIVINE' }),
+    mv('isshiki', 'cube_crush', 'Daikokuten: Falling Cubes', 'ultimate', 'all_enemies', 44, 7, 2.0, 'explosion', '#7c3aed', 'A formation of enormous black cubes falls from a timeless dimension and crushes the arena.', 'Unleashes the stored cubes at once.', { el: 'DIVINE', tr: 'hp_below_50' }),
+  ],
+  momoshiki: [
+    mv('momoshiki', 'chakra_absorption', 'Rinnegan Chakra Absorption', 'buff', 'self', 16, 4, 0, 'aura', '#db2777', 'A red palm Rinnegan absorbs the incoming chakra and glows brighter.', 'Absorbs chakra-based attacks through his palm.', { el: 'MAGIC' }),
+    mv('momoshiki', 'vanishing_rasengan', 'Vanishing Rasengan', 'attack', 'enemy', 18, 3, 1.8, 'wave', '#60a5fa', 'Boruto’s Rasengan disappears from sight and bursts against the target.', 'A compressed Rasengan vanishes before impact.', { el: 'WIND' }),
+    mv('momoshiki', 'amplified_release', 'Amplified Release', 'attack', 'all_enemies', 20, 4, 1.8, 'beam', '#e879f9', 'He returns absorbed chakra as a massive amplified blast.', 'Fires absorbed ninjutsu back with greater force.', { el: 'MAGIC' }),
+    mv('momoshiki', 'massive_rasengan', 'Massive Rasengan', 'ultimate', 'enemy', 44, 7, 3.0, 'explosion', '#38bdf8', 'Boruto drives a colossal Rasengan into the target as Momoshiki guides his hand.', 'A giant Rasengan powered by Naruto’s chakra.', { el: 'WIND', tr: 'hp_below_50', pierce: true }),
+  ],
+  boruto: [
+    mv('boruto', 'rasengan', 'Rasengan', 'attack', 'enemy', 16, 2, 1.7, 'wave', '#60a5fa', 'A spinning sphere of chakra forms in his palm and drives forward.', 'The Rasengan taught by Konohamaru.', { el: 'WIND' }),
+    mv('boruto', 'vanishing_rasengan_boruto', 'Vanishing Rasengan', 'attack', 'enemy', 18, 3, 1.8, 'wave', '#38bdf8', 'The Rasengan vanishes after he throws it, then strikes from an unseen angle.', 'A lightning-natured Rasengan disappears in flight.', { el: 'LIGHTNING' }),
+    mv('boruto', 'karma', 'Karma', 'buff', 'self', 18, 5, 0, 'aura', '#7c3aed', 'Dark diamond patterns spread over his arm and face as the seal activates.', 'Momoshiki’s Kāma unlocks Otsutsuki power.', { el: 'DARK' }),
+    mv('boruto', 'uzuhiko', 'Rasengan Uzuhiko', 'ultimate', 'enemy', 44, 7, 2.8, 'wave', '#38bdf8', 'A spiraling planetary force wraps around the target and keeps turning with the world.', 'Channels the planet’s rotation through the Rasengan.', { el: 'WIND', tr: 'hp_below_50', pierce: true }),
+  ],
+  kurama: [
+    mv('kurama', 'tail_sweep', 'Nine-Tails Tail Sweep', 'attack', 'all_enemies', 18, 3, 1.6, 'wave', '#f97316', 'Nine enormous tails sweep across the arena in a blazing arc.', 'A sweeping strike from all nine tails.', { el: 'SPIRIT' }),
+    mv('kurama', 'chakra_roar', 'Tailed Beast Roar', 'attack', 'enemy', 18, 3, 1.8, 'wave', '#fb923c', 'A roar releases a concussive wave of dense orange chakra.', 'A roar backed by immense chakra.', { el: 'SPIRIT' }),
+    mv('kurama', 'chakra_cloak', 'Kurama Chakra', 'buff', 'self', 16, 5, 0, 'aura', '#f59e0b', 'A blazing cloak of orange chakra surrounds the fox.', 'Draws on the Nine-Tails’ vast chakra.', { el: 'SPIRIT' }),
+    mv('kurama', 'tailed_beast_bomb', 'Tailed Beast Bomb', 'ultimate', 'all_enemies', 44, 7, 2.0, 'explosion', '#1f2937', 'He gathers a black-and-violet sphere of compressed chakra and fires it across the arena.', 'The signature chakra bomb of a tailed beast.', { el: 'SPIRIT', tr: 'hp_below_50' }),
+  ],
+  sabo: [
+    mv('sabo', 'dragon_claw', 'Dragon Claw Fist', 'attack', 'enemy', 16, 2, 1.8, 'punch', '#f97316', 'His Haki-coated fingers close like a dragon’s claw and crush through the guard.', 'The Ryusoken grip can crush armor.', { el: 'WARRIOR' }),
+    mv('sabo', 'fire_fist', 'Fire Fist', 'attack', 'all_enemies', 18, 3, 1.7, 'fire', '#f97316', 'A vast fist of flame surges across the enemy line.', 'The Flame-Flame Fruit’s signature attack.', { el: 'FIRE' }),
+    mv('sabo', 'hiken', 'Hiken', 'attack', 'enemy', 18, 3, 1.8, 'projectile', '#fb923c', 'He launches a focused column of fire from his hand.', 'The Fire Fist technique inherited from Ace.', { el: 'FIRE' }),
+    mv('sabo', 'flame_emperor', 'Flame Emperor', 'ultimate', 'all_enemies', 44, 7, 2.0, 'explosion', '#ef4444', 'A towering orb of fire blooms overhead and engulfs the battlefield.', 'The revolutionary’s immense flame attack.', { el: 'FIRE', tr: 'hp_below_50' }),
+  ],
+  boa: [
+    mv('boa', 'pistol_kiss', 'Pistol Kiss', 'attack', 'enemy', 16, 2, 1.7, 'projectile', '#ec4899', 'She blows a kiss that hardens into a heart-shaped projectile.', 'A Love-Love Fruit attack.', { el: 'MAGIC' }),
+    mv('boa', 'slave_arrow', 'Slave Arrow', 'attack', 'all_enemies', 18, 3, 1.7, 'projectile', '#f472b6', 'She forms a heart between her hands and rains petrifying arrows over the field.', 'A barrage that turns struck targets to stone.', { el: 'MAGIC' }),
+    mv('boa', 'perfume_femur', 'Perfume Femur', 'attack', 'enemy', 18, 3, 1.9, 'punch', '#db2777', 'A high kick lands and petrifies the point of impact.', 'A powerful kick infused with her Devil Fruit ability.', { el: 'WARRIOR' }),
+    mv('boa', 'love_love_beam', 'Love-Love Mellow', 'ultimate', 'all_enemies', 42, 7, 1.9, 'beam', '#ec4899', 'A heart-shaped beam washes across the arena, petrifying those caught by it.', 'Her signature petrifying beam.', { el: 'MAGIC', tr: 'hp_below_50' }),
+  ],
+  mihawk: [
+    mv('mihawk', 'black_blade', 'Yoru Slash', 'attack', 'enemy', 16, 2, 1.9, 'slash', '#1f2937', 'The black blade Yoru cuts through the air in a single precise arc.', 'A controlled slash from the world’s strongest swordsman.', { el: 'WARRIOR' }),
+    mv('mihawk', 'flying_slash', 'Flying Slash', 'attack', 'all_enemies', 18, 3, 1.7, 'wave', '#334155', 'A dark crescent of compressed air races across the battlefield.', 'A distant slash launched with Yoru.', { el: 'WIND' }),
+    mv('mihawk', 'haki_guard', 'Armament Haki', 'buff', 'self', 16, 4, 0, 'aura', '#475569', 'A dark sheen coats the blade as he settles into a measured stance.', 'Hardens his sword with Haki.', { el: 'WARRIOR' }),
+    mv('mihawk', 'worlds_strongest_slash', 'World’s Strongest Slash', 'ultimate', 'all_enemies', 44, 7, 2.0, 'slash', '#0f172a', 'One enormous black slash cleaves a path through the arena.', 'The full reach and force of the Black Sword Yoru.', { el: 'WARRIOR', tr: 'hp_below_50' }),
+  ],
+  kuzan: [
+    mv('kuzan', 'ice_saber', 'Ice Saber', 'attack', 'enemy', 16, 2, 1.7, 'ice', '#67e8f9', 'He forms a long blade from ice and cuts through the target.', 'A blade formed from his Ice-Ice Fruit.', { el: 'ICE' }),
+    mv('kuzan', 'ice_age', 'Ice Age', 'attack', 'all_enemies', 18, 3, 1.7, 'ice', '#22d3ee', 'A wave of frost races outward, freezing the arena floor and enemy line.', 'Freezes a vast area with a touch.', { el: 'ICE' }),
+    mv('kuzan', 'ice_time', 'Ice Time', 'debuff', 'enemy', 16, 4, 1.2, 'ice', '#a5f3fc', 'A touch encases the target in a shell of ice.', 'Freezes the opponent in place.', { el: 'ICE' }),
+    mv('kuzan', 'ice_ball', 'Ice Block: Partisan', 'ultimate', 'all_enemies', 42, 7, 1.9, 'projectile', '#06b6d4', 'A storm of sharpened ice spears launches at every enemy.', 'Forms and fires multiple ice spears.', { el: 'ICE', tr: 'hp_below_50' }),
+  ],
+  borsalino: [
+    mv('borsalino', 'light_sword', 'Ama no Murakumo', 'attack', 'enemy', 16, 2, 1.8, 'slash', '#facc15', 'He gathers light into a long, glowing blade and cuts in a flash.', 'Forms a sword from his Glint-Glint Fruit.', { el: 'LIGHTNING' }),
+    mv('borsalino', 'yasakani', 'Yasakani Sacred Jewel', 'attack', 'all_enemies', 18, 3, 1.7, 'projectile', '#fde047', 'A spray of bright light particles descends over the enemy line.', 'A barrage of light beams.', { el: 'DIVINE' }),
+    mv('borsalino', 'light_kick', 'Ama no Murakumo: Light-Speed Kick', 'attack', 'enemy', 18, 3, 1.9, 'punch', '#fbbf24', 'He vanishes into a flash and lands a kick at light speed.', 'A light-speed attack.', { el: 'LIGHTNING' }),
+    mv('borsalino', 'laser', 'Yasakani no Magatama', 'ultimate', 'all_enemies', 44, 7, 2.0, 'beam', '#fef08a', 'A brilliant network of lasers ricochets across the battlefield.', 'Unleashes repeated light beams at every enemy.', { el: 'DIVINE', tr: 'hp_below_50' }),
+  ],
+  garp: [
+    mv('garp', 'galaxy_fist', 'Galaxy Fist', 'attack', 'enemy', 18, 2, 2.0, 'punch', '#60a5fa', 'His Haki-coated fist slams into the target with a shockwave.', 'A crushing punch from Garp the Fist.', { el: 'WARRIOR' }),
+    mv('garp', 'blue_hole', 'Blue Hole', 'attack', 'enemy', 18, 3, 1.8, 'punch', '#3b82f6', 'He grabs the target and drives them into the ground.', 'A powerful grappling throw.', { el: 'EARTH' }),
+    mv('garp', 'conquerors_haki', 'Conqueror’s Haki', 'buff', 'self', 16, 4, 0, 'aura', '#60a5fa', 'A burst of Haki cracks the air around him as he raises his fist.', 'Imbues his attack with Conqueror’s Haki.', { el: 'WARRIOR' }),
+    mv('garp', 'galaxy_impact', 'Galaxy Impact', 'ultimate', 'all_enemies', 44, 7, 2.0, 'explosion', '#93c5fd', 'He punches the air and a vast Haki shockwave tears through the battlefield.', 'A tremendous long-range Haki punch.', { el: 'WARRIOR', tr: 'hp_below_50' }),
+  ],
 };
 
 export const LEGEND_MOVES: Ability[] = Object.values(LEGEND_MOVESETS).flat();

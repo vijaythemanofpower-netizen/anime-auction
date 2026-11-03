@@ -84,6 +84,10 @@ const LEGEND_TAGS: Record<string, string> = {
   obito: 'obito uchiha, naruto shippuden, masked man, kamui', jiraiya: 'jiraiya, naruto, toad sage, legendary sannin', hashirama: 'hashirama senju, naruto, first hokage, wood release', tobirama: 'tobirama senju, naruto, second hokage, flying raijin',
   mightguy: 'might guy, maito gai, naruto, eight gates', tsunade: 'tsunade, naruto, fifth hokage, sannin', sakura: 'sakura haruno, naruto, medical ninja', hinata: 'hinata hyuga, naruto, byakugan, gentle fist', neji: 'neji hyuga, naruto, byakugan, gentle fist',
   shikamaru: 'shikamaru nara, naruto, shadow possession', kisame: 'kisame hoshigaki, naruto, akatsuki, samehada', deidara: 'deidara, naruto, akatsuki, explosive clay',
+  hidan: 'hidan, naruto shippuden, akatsuki, triple bladed scythe, jashin ritual', sasori: 'sasori of the red sand, naruto shippuden, akatsuki, puppet master',
+  isshiki: 'isshiki otsutsuki, boruto, horn, black markings', momoshiki: 'momoshiki otsutsuki, boruto, white robe, rinnegan palms', boruto: 'uzumaki boruto, boruto: naruto next generations', kurama: 'kurama, nine tailed fox, naruto',
+  sabo: 'sabo, one piece, revolutionary army, top hat, pipe', boa: 'boa hancock, one piece, pirate empress', mihawk: 'dracule mihawk, one piece, hawk eyes, black sword yoru',
+  kuzan: 'kuzan, aokiji, one piece, ice logia', borsalino: 'borsalino, kizaru, one piece, yellow suit, light beams', garp: 'monkey d. garp, one piece, marine hero',
 };
 
 const SERIES_TAGS: Record<string, string> = {

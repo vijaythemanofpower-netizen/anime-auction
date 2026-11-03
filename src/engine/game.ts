@@ -127,6 +127,33 @@ export function autoFillPool(g: GameState, vault: Vault, catalog: PublicCharacte
   return OK;
 }
 
+/**
+ * Shuffle: takes out the characters a previous shuffle put in (`replace`), keeps everything
+ * added by hand, then fills the pool up to the recommended size with a fresh random draw.
+ * Balanced draws deal one character per auction set in turn, so every set gets fighters.
+ */
+export function shufflePool(g: GameState, vault: Vault, catalog: PublicCharacter[], opts: { balanced: boolean; replace: string[] }, target = poolRecommended(g)): R & { added?: string[] } {
+  if (g.phase !== 'pool') return fail('The auction pool is locked once the auction starts.');
+  g.pool = g.pool.filter((id) => !opts.replace.includes(id));
+  const rng = new Rng(g.rngState);
+  const free = rng.shuffle(catalog.filter((c) => !g.pool.includes(c.id)));
+  let order = free;
+  if (opts.balanced) {
+    const groups = new Map<string, PublicCharacter[]>();
+    for (const c of free) groups.set(roleOf(c), [...(groups.get(roleOf(c)) ?? []), c]);
+    const piles = rng.shuffle([...groups.values()]);
+    order = [];
+    for (let i = 0; order.length < free.length; i++) for (const p of piles) if (p[i]) order.push(p[i]);
+  }
+  const added: string[] = [];
+  for (const pc of order) {
+    if (g.pool.length >= target) break;
+    if (addToPool(g, vault, pc).ok) added.push(pc.id);
+  }
+  g.rngState = rng.state;
+  return { ...OK, added };
+}
+
 // --------------------------------------------------------------- Auction
 
 export function startAuction(g: GameState, now: number, vault?: Vault): R {

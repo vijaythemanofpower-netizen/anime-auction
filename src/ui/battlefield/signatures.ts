@@ -58,6 +58,12 @@ export const SIGNATURES: Record<string, Signature> = {
   rimuru: S('caster', ['blink'], { idle: 'still' }),
   meliodas: S('blade', ['blink'], { idle: 'still' }), guts: S('blade', ['heavy'], { idle: 'proud' }), gintoki: S('blade', ['casual'], { idle: 'sway' }),
   tatsumaki: S('caster', [], { idle: 'still', floats: true }),
+  hidan: S('blade', ['spinner'], { idle: 'proud' }), sasori: S('caster', ['stand'], { idle: 'still' }),
+  isshiki: S('shadow', ['blink', 'casual'], { idle: 'still' }), momoshiki: S('caster', ['stand'], { idle: 'proud', floats: true }),
+  boruto: S('brawler', ['blink'], { idle: 'bounce' }), kurama: S('tank', ['heavy'], { idle: 'sway' }),
+  sabo: S('brawler', ['spinner'], { idle: 'proud' }), boa: S('brawler', ['kicks', 'spinner'], { idle: 'proud' }),
+  mihawk: S('blade', ['casual'], { idle: 'still' }), kuzan: S('caster', ['casual'], { idle: 'still' }),
+  borsalino: S('shadow', ['blink'], { idle: 'still' }), garp: S('brawler', ['heavy'], { idle: 'proud' }),
 };
 
 /** The built-in's key from a fighter id ("legend:luffy", "legend:luffy#b" in tests). */

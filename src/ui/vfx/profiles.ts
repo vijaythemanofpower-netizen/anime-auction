@@ -80,6 +80,17 @@ export const PROFILES: Record<string, VfxProfile> = {
   gon: P({ primary: '#22c55e', secondary: '#f97316', aura: 'ki', smoke: { color: '#0c1a0e', density: 0.5, glow: false }, motes: { kind: 'leaf', rate: 10, color: '#5aa84a' }, rings: 0.3 }),
   hisoka: P({ primary: '#ec4899', secondary: '#a855f7', aura: 'void', smoke: { color: '#22081a', density: 0.45, glow: true }, motes: { kind: 'petal', rate: 10, color: '#ff8ad0' } }),
   rimuru: P({ primary: '#38bdf8', secondary: '#6366f1', aura: 'water', smoke: { color: '#0b1a3a', density: 0.5, glow: true }, motes: { kind: 'droplet', rate: 14, color: '#bae6fd' }, lightning: { color: '#818cf8', rate: 0.4 }, water: true, rings: 0.25 }),
+  hidan: P({ primary: '#b91c1c', secondary: '#111827', aura: 'shadow', smoke: { color: '#1f0707', density: 0.7, glow: false }, motes: { kind: 'ember', rate: 12, color: '#ef4444' }, cuts: { color: '#dc2626', rate: 0.45 } }),
+  sasori: P({ primary: '#be123c', secondary: '#9f1239', aura: 'shadow', smoke: { color: '#210711', density: 0.6, glow: false }, motes: { kind: 'mote', rate: 12, color: '#fb7185' }, cuts: { color: '#e11d48', rate: 0.3 } }),
+  isshiki: P({ primary: '#a78bfa', secondary: '#312e81', aura: 'void', smoke: { color: '#100b23', density: 0.7, glow: true }, motes: { kind: 'mote', rate: 14, color: '#c4b5fd' }, rings: 0.35 }),
+  momoshiki: P({ primary: '#db2777', secondary: '#e9d5ff', aura: 'void', smoke: { color: '#24091d', density: 0.55, glow: true }, motes: { kind: 'mote', rate: 15, color: '#f9a8d4' }, rings: 0.25 }),
+  kurama: P({ primary: '#f97316', secondary: '#facc15', aura: 'flame', smoke: { color: '#271006', density: 0.75, glow: true }, motes: { kind: 'ember', rate: 22, color: '#fb923c' }, fire: true, rings: 0.25 }),
+  sabo: P({ primary: '#f97316', secondary: '#fbbf24', aura: 'flame', smoke: { color: '#261006', density: 0.55, glow: true }, motes: { kind: 'ember', rate: 18, color: '#fdba74' }, fire: true }),
+  boa: P({ primary: '#ec4899', secondary: '#f9a8d4', aura: 'void', smoke: { color: '#26091b', density: 0.45, glow: true }, motes: { kind: 'petal', rate: 14, color: '#fbcfe8' }, rings: 0.25 }),
+  mihawk: P({ primary: '#334155', secondary: '#a78bfa', aura: 'blade', smoke: { color: '#090d17', density: 0.5, glow: false }, motes: { kind: 'mote', rate: 9, color: '#cbd5e1' }, cuts: { color: '#818cf8', rate: 0.4 } }),
+  kuzan: P({ primary: '#22d3ee', secondary: '#bae6fd', aura: 'water', smoke: { color: '#06202a', density: 0.55, glow: true }, motes: { kind: 'mote', rate: 16, color: '#cffafe' }, water: true, rings: 0.25 }),
+  borsalino: P({ primary: '#facc15', secondary: '#fff7ae', aura: 'electric', smoke: { color: '#211b05', density: 0.35, glow: true }, motes: { kind: 'spark', rate: 20, color: '#fef08a' }, lightning: { color: '#fde047', rate: 1.1 } }),
+  garp: P({ primary: '#60a5fa', secondary: '#e2e8f0', aura: 'ki', smoke: { color: '#081321', density: 0.55, glow: false }, motes: { kind: 'dust', rate: 15, color: '#bfdbfe' }, rings: 0.35, wind: 0.2 }),
 };
 
 /** Aura style for the rest of the built-ins (their colours come from the form). */
@@ -92,6 +103,7 @@ const STYLE: Record<string, AuraStyle> = {
   todo: 'ki', nanami: 'blade', nobara: 'ki', shinobu: 'blade', inosuke: 'blade', shigaraki: 'shadow', kurapika: 'blade', edward: 'electric',
   deku: 'electric', allmight: 'ki', denji: 'blade', power: 'shadow', kaneki: 'shadow', asta: 'shadow', yor: 'blade', mob: 'void',
   jotaro: 'ki', dio: 'shadow', frieren: 'void', rimuru: 'water', meliodas: 'shadow', guts: 'shadow', gintoki: 'blade', tatsumaki: 'void',
+  hidan: 'shadow', sasori: 'shadow', isshiki: 'void', momoshiki: 'void', boruto: 'electric', kurama: 'flame', sabo: 'flame', boa: 'void', mihawk: 'blade', kuzan: 'water', borsalino: 'electric', garp: 'ki',
 };
 
 /** The profile for a world key or character id; others get one built from their accent colour. */
