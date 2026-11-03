@@ -69,6 +69,31 @@ export function multiBoss(s: { hpScale: number; power: number }, n: number) {
 
 export const RAID_MAX_BOSSES = 4;
 
+/** Raid runs climb five levels: each level is a random villain from a stronger fifth of all villains. */
+export const RAID_LEVELS = 5;
+/** On top of the party scaling: early levels are gentler, level 5 brings two of the strongest. */
+const LEVEL_SCALE = [0.7, 0.82, 0.93, 1, 1];
+
+/** Villains ranked weakest to strongest (canon sheet, else hidden stats) and cut into five tiers. */
+export function bossTiers(pool: PublicCharacter[], secret: number): PublicCharacter[][] {
+  const ranked = pool.map((c) => ({ c, p: truePower(canonFor(c) ?? generateHidden(c, secret).stats) })).sort((a, b) => a.p - b.p).map((x) => x.c);
+  return Array.from({ length: RAID_LEVELS }, (_, i) => ranked.slice(Math.floor((i * ranked.length) / RAID_LEVELS), Math.floor(((i + 1) * ranked.length) / RAID_LEVELS)));
+}
+
+/** The random boss (or bosses, at level 5) for a level of the climb. */
+export function levelBosses(pool: PublicCharacter[], secret: number, level: number, seed: number): PublicCharacter[] {
+  const tier = bossTiers(pool, secret)[Math.min(RAID_LEVELS, Math.max(1, level)) - 1];
+  const rng = new Rng(seed ^ (level * 0x9e37));
+  return rng.shuffle(tier).slice(0, level >= RAID_LEVELS ? 2 : 1);
+}
+
+/** Where the climb stands: the level to fight next, or null when the run is over (lost or cleared). */
+export function nextRaidLevel(g: GameState): number | null {
+  const last = [...(g.raids ?? [])].reverse().find((r) => r.level);
+  if (!last) return 1;
+  return last.won && last.level! < RAID_LEVELS ? last.level! + 1 : null;
+}
+
 export function legendVillains(): PublicCharacter[] {
   return RAID_VILLAINS.map((id) => LEGEND_CHARACTERS.find((c) => c.id === id)).filter((c): c is PublicCharacter => !!c);
 }
@@ -106,7 +131,7 @@ function power(g: GameState, vault: Vault, id: string) {
 }
 
 /** The boss as a fighter: canon stats (or its profile) pushed up, health and damage scaled. */
-function bossSnapshot(boss: PublicCharacter, secret: number, teamSize: number, bossCount = 1): FighterSnapshot {
+function bossSnapshot(boss: PublicCharacter, secret: number, teamSize: number, bossCount = 1, level?: number): FighterSnapshot {
   registerCharacterMoves(boss);
   const h = generateHidden(boss, secret);
   const canon = canonFor(boss);
@@ -115,11 +140,16 @@ function bossSnapshot(boss: PublicCharacter, secret: number, teamSize: number, b
   return {
     charId: boss.id, name: boss.name, playerId: 'raid-boss', side: 1, archetype: boss.archetype, temperament: boss.temperament, reach: boss.reach,
     tags: boss.tags, stats, traits: h.traits, abilities: [...boss.knownAbilities, h.hiddenAbility], position: 'front', fatigue: 0, injuries: [],
-    price: 0, vulnerability: null, boss: multiBoss(bossScaling(teamSize), bossCount),
+    price: 0, vulnerability: null, boss: levelScaled(multiBoss(bossScaling(teamSize), bossCount), level),
   };
 }
 
-export function buildRaidInput(g: GameState, vault: Vault, boss: PublicCharacter | PublicCharacter[], seed: number): BattleInput {
+function levelScaled(s: { hpScale: number; power: number }, level?: number) {
+  const k = level ? LEVEL_SCALE[Math.min(RAID_LEVELS, level) - 1] : 1;
+  return { hpScale: s.hpScale * k, power: s.power * k };
+}
+
+export function buildRaidInput(g: GameState, vault: Vault, boss: PublicCharacter | PublicCharacter[], seed: number, level?: number): BattleInput {
   const bosses = (Array.isArray(boss) ? boss : [boss]).slice(0, RAID_MAX_BOSSES);
   const team = raidTeam(g, vault);
   const fighters = team.map((id, i) => ({ ...buildSnapshot(g, vault, id, 0, i < 3 ? 'front' : 'back'), injuries: [], fatigue: 0 }));
@@ -128,7 +158,7 @@ export function buildRaidInput(g: GameState, vault: Vault, boss: PublicCharacter
     battleId: uid('raid'), engineVersion: ENGINE_VERSION, seed, mode: 'squad', environmentId: env, rivalry: null,
     sides: [
       { playerId: 'raid-team', strategy: 'balanced', mental: 'composure', fighters, synergies: [], coach: 'auto' },
-      { playerId: 'raid-boss', strategy: 'aggressive', mental: 'intimidate', fighters: bosses.map((b) => bossSnapshot(b, g.secret, fighters.length, bosses.length)), synergies: [], coach: 'auto' },
+      { playerId: 'raid-boss', strategy: 'aggressive', mental: 'intimidate', fighters: bosses.map((b) => bossSnapshot(b, g.secret, fighters.length, bosses.length, level)), synergies: [], coach: 'auto' },
     ],
   };
 }
@@ -158,11 +188,11 @@ export function raidContributions(record: BattleRecord): RaidContribution[] {
 }
 
 /** Runs a raid and records it on the game. Never touches the tournament. */
-export function runRaid(g: GameState, vault: Vault, bossOrBosses: PublicCharacter | PublicCharacter[], seed: number): { record: BattleRecord; result: RaidResult } {
+export function runRaid(g: GameState, vault: Vault, bossOrBosses: PublicCharacter | PublicCharacter[], seed: number, level?: number): { record: BattleRecord; result: RaidResult } {
   const bosses = (Array.isArray(bossOrBosses) ? bossOrBosses : [bossOrBosses]).slice(0, RAID_MAX_BOSSES);
   for (const b of bosses) if (!g.characters[b.id]) g.characters[b.id] = b;
   const boss = { ...bosses[0], name: bosses.map((b) => b.name).join(' & ') };
-  const input = buildRaidInput(g, vault, bosses, seed);
+  const input = buildRaidInput(g, vault, bosses, seed, level);
   const result = simulateBattle(input);
   const playerNames = { ...Object.fromEntries(g.players.map((p) => [p.id, p.name])), 'raid-team': 'The raid party', 'raid-boss': boss.name };
   const narration = narrate(input, result, { prices: g.prices, playerNames, previousLoss: {}, stageName: `the raid on ${boss.name}` });
@@ -170,7 +200,7 @@ export function runRaid(g: GameState, vault: Vault, bossOrBosses: PublicCharacte
   const contributions = raidContributions(record);
   const raid: RaidResult = {
     id: input.battleId, battleId: input.battleId, bossId: boss.id, bossName: boss.name, bossIds: bosses.map((b) => b.id), won: result.winnerSide === 0,
-    mvp: contributions[0]?.charId ?? null, contributions, at: Date.now(),
+    mvp: contributions[0]?.charId ?? null, contributions, at: Date.now(), ...(level ? { level } : {}),
   };
   g.raids = [...(g.raids ?? []), raid];
   return { record, result: raid };

@@ -591,5 +591,5 @@ export interface HallEntry {
 }
 
 export interface RaidContribution { charId: string; name: string; playerId: string; dealt: number; tanked: number; healed: number; finalBlow: boolean; score: number; role: string }
-export interface RaidResult { id: string; battleId: string; bossId: string; bossName: string; /** Every boss in a multi-boss raid (bossId is the first). */ bossIds?: string[]; won: boolean; mvp: string | null; contributions: RaidContribution[]; at: number }
+export interface RaidResult { id: string; battleId: string; bossId: string; bossName: string; /** Every boss in a multi-boss raid (bossId is the first). */ bossIds?: string[]; won: boolean; mvp: string | null; contributions: RaidContribution[]; at: number; /** Level of the 1-5 climb (raids before the climb have none). */ level?: number }
 export interface TeamBattleResult { id: string; battleId: string; teamA: string[]; teamB: string[]; winner: 'A' | 'B'; mvp: string | null; contributions: RaidContribution[]; at: number }

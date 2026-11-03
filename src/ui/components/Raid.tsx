@@ -1,9 +1,9 @@
 // Raid Boss: pick a real anime villain, send the party's strongest fighters in, and
 // see who carried the fight. The host starts raids; everyone in the room can watch
 // them and see the results (engine/raid.ts).
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import type { GameState, RaidResult } from '../../engine/types';
-import { RAID_MAX_BOSSES, RAID_MAX_TEAM, legendVillains, raidSlots } from '../../engine/raid';
+import { RAID_LEVELS, RAID_MAX_TEAM, legendVillains, levelBosses, nextRaidLevel, raidSlots } from '../../engine/raid';
 import { VILLAINS } from '../../engine/data/villains';
 import { store, useApp } from '../../store/store';
 import { CharArt } from './Portrait';
@@ -11,11 +11,14 @@ import { CharArt } from './Portrait';
 
 export function RaidHub({ g }: { g: GameState }) {
   const guest = store.isGuest();
-  const [picks, setPicks] = useState<string[]>([]);
   const bosses = useMemo(() => [...legendVillains(), ...VILLAINS], []);
-  const chosen = picks.map((id) => bosses.find((b) => b.id === id)).filter((b): b is (typeof bosses)[number] => !!b);
-  const toggleBoss = (id: string) => setPicks((p) => (p.includes(id) ? p.filter((x) => x !== id) : [...p, id].slice(-RAID_MAX_BOSSES)));
-  const names = chosen.map((b) => b.name).join(' & ');
+  const level = nextRaidLevel(g);
+  // The current run: from the latest Level 1 raid onwards.
+  const leveled = (g.raids ?? []).filter((r) => r.level);
+  const runStart = leveled.map((r) => r.level).lastIndexOf(1);
+  const run = runStart >= 0 ? leveled.slice(runStart) : [];
+  const lastRun = run[run.length - 1];
+  const fight = (lv: number) => store.startRaid(levelBosses(bosses, g.secret, lv, Date.now()), lv);
   const raids = (g.raids ?? []).slice().reverse();
   const record = useApp((s) => s.battles);
   const wins = (g.raids ?? []).filter((r) => r.won).length;
@@ -31,29 +34,34 @@ export function RaidHub({ g }: { g: GameState }) {
 
       <TeamPicker g={g} />
 
-      {guest ? <div className="panel faint">The host chooses the boss and starts the raid once everyone has picked. You'll be able to watch it here.</div> : (
-        <div className="panel col" style={{ gap: 10 }}>
-          <strong>Choose 1 to {RAID_MAX_BOSSES} villains <span className="faint" style={{ fontWeight: 500 }}>({chosen.length} picked · more bosses, harder raid)</span></strong>
-          <div className="boss-grid">
-            {bosses.map((b) => (
-              <button key={b.id} className={`boss-card${picks.includes(b.id) ? ' picked' : ''}`} onClick={() => toggleBoss(b.id)} aria-pressed={picks.includes(b.id)}>
-                <span className="boss-art"><CharArt c={b} /></span>
-                <b>{b.name}</b><span className="faint">{b.series}</span>
-              </button>
-            ))}
-          </div>
-          {waiting.length > 0 && <div className="faint">Still choosing: {waiting.map((p) => p.name).join(', ')}. Anyone who hasn't picked sends their strongest fighters.</div>}
-          {/* Stays in view while scrolling the villain list. */}
-          <button className="btn primary lg" style={{ position: 'sticky', bottom: 8, zIndex: 2 }} disabled={!chosen.length} onClick={() => chosen.length && store.startRaid(chosen)}>
-            {chosen.length ? `⚔ Raid ${names}${waiting.length ? ' anyway' : ''}` : 'Pick a villain'}
-          </button>
-        </div>
-      )}
+      <div className="panel col raid-climb" style={{ gap: 12 }}>
+        <strong>Boss climb: five levels</strong>
+        <ol className="climb-steps">
+          {Array.from({ length: RAID_LEVELS }, (_, i) => i + 1).map((n) => {
+            const r = run.find((x) => x.level === n);
+            const state = r ? (r.won ? 'cleared' : 'failed') : n === level ? 'next' : 'locked';
+            return (
+              <li key={n} className={`climb-step ${state}`} aria-label={`Level ${n}: ${state === 'next' ? 'up next' : state}`}>
+                <b>{n}</b>
+                <small>{r ? (r.won ? '✓ ' : '✗ ') + r.bossName : n === RAID_LEVELS ? 'Two bosses' : state === 'next' ? 'Up next' : 'Locked'}</small>
+              </li>
+            );
+          })}
+        </ol>
+        <p className="muted" style={{ margin: 0 }}>
+          {level === null
+            ? (lastRun?.won ? 'Your party cleared all five levels!' : `The run ended at Level ${lastRun?.level ?? 1}. Start a new run to climb again.`)
+            : `Level ${level}: a random villain${level === RAID_LEVELS ? ' pair from the very top' : level === 1 ? ' from the weakest fifth' : ''}. Who you face stays secret until the fight starts. Win to unlock the next level; lose and the run ends.`}
+        </p>
+        {guest ? <div className="faint">The host starts each level. You'll watch it here.</div> : (
+          <>
+            {waiting.length > 0 && <div className="faint">Still choosing: {waiting.map((p) => p.name).join(', ')}. Anyone who hasn't picked sends their strongest fighters.</div>}
+            <button className="btn primary lg" onClick={() => fight(level ?? 1)}>{level === null ? '⚔ New run from Level 1' : `⚔ Fight Level ${level}${waiting.length ? ' anyway' : ''}`}</button>
+          </>
+        )}
+      </div>
 
-      {raids.map((r, i) => {
-        const team = (r.bossIds ?? [r.bossId]).map((id) => bosses.find((b) => b.id === id) ?? g.characters[id]).filter(Boolean);
-        return <RaidCard key={r.id} r={r} g={g} canWatch={!!record[r.battleId]} again={i === 0 && team.length ? { label: r.won ? `Raid ${r.bossName} again` : `Try ${r.bossName} again`, run: () => store.startRaid(team) } : undefined} />;
-      })}
+      {raids.map((r) => <RaidCard key={r.id} r={{ ...r, title: r.level ? `Level ${r.level}: ${r.won ? `${r.bossName} defeated!` : `${r.bossName} wins.`}` : undefined }} g={g} canWatch={!!record[r.battleId]} />)}
     </div>
   );
 }
