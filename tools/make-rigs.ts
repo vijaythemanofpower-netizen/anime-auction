@@ -171,6 +171,8 @@ async function buildRig(png: Buffer): Promise<Omit<RigData, 'art'>> {
 // ------------------------------------------------------------------ main
 
 async function main() {
+  // The owner can pause all drawing: while this file exists the tool draws nothing.
+  if (fs.existsSync(path.resolve('handoff-logs/PAUSE-DRAWING'))) { console.log('Drawing is paused (handoff-logs/PAUSE-DRAWING exists); nothing drawn.'); return; }
   fs.mkdirSync(OUT, { recursive: true });
   const pose = await poseImage();
   fs.writeFileSync(path.join(OUT, 'pose-guide.png'), pose);
