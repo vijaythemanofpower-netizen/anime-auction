@@ -63,3 +63,5 @@ Known limits:
 5. Characters outside the built-ins and raid villains have no kit (they keep type-based moves and the generic awakening).
 
 Nov 3, 2026 (rig injuries): RigStage now draws bone-following wound decals, replay-driven pooled blood sprays and persistent floor pools, and low-HP hurt breathing/tint/stagger. Remaining weakness: wound placement is approximate per body region, and blood impact direction/visual style can be refined.
+
+Nov 3, 2026 (rig knockdowns): Reworked heavy-hit, knockdown, get-up and defeated poses for an airborne arc, hard bounce, ground-level lingering KO, landing shake/flash, dust and floor cracks; added a KO camera push and winner victory pose. Remaining weakness: spin amount is authored as a shared pose rather than scaled by each hit's actual severity.

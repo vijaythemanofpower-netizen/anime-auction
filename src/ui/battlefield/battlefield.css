@@ -16,6 +16,8 @@
 .sf-wound.arm { left: 9px; top: -53%; transform: rotate(38deg); }
 .sf-wound.leg { left: -11px; top: -24%; transform: rotate(14deg); }
 .sf-ko-call { position: absolute; z-index: 80; top: 12%; left: 50%; transform: translateX(-50%) rotate(-5deg); color: #fff; font: 1000 clamp(42px, 11vw, 104px)/.9 Impact, system-ui, sans-serif; letter-spacing: .08em; -webkit-text-stroke: 2px #790d18; text-shadow: 0 5px 0 #4b0910, 0 0 24px #e11d48; animation: fs-ko .65s cubic-bezier(.15,1.7,.35,1) both; }
+.fstage.ko > div[aria-hidden="true"] { transform: scale(1.16); transform-origin: var(--ko-x, 50%) var(--ground, 90%); transition: transform 850ms cubic-bezier(.16,.72,.18,1); }
+.fstage.ko .sf-ko-call { top: 8%; font-size: clamp(58px, 15vw, 138px); }
 .sf-hurt-breath { position: absolute; left: -19px; top: -66%; width: 38px; height: 80px; border-radius: 50%; background: rgba(130, 12, 27, .16); filter: blur(8px); animation: fs-hurt 1.2s ease-in-out infinite; }
 @keyframes fs-ko { from { opacity: 0; scale: 2.2; } 65% { opacity: 1; scale: .9; } to { opacity: 1; scale: 1; } }
 @keyframes fs-hurt { 50% { opacity: .35; transform: scale(1.12, .94); } }

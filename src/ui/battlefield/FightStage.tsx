@@ -100,10 +100,13 @@ export function FightStage({ input, fighters, live, done, clips, melee, speed, r
       cmds.set(a, { k: 'move', plan, tx, delay, hit });
     }
     if (t && t !== a && live.type !== 'clash') {
-      if ((live.type === 'attack' || live.type === 'counter') && (live.damage ?? 0) > 0) cmds.set(t, { k: 'hit', delay: landAt, heavy });
+      if ((live.type === 'attack' || live.type === 'counter') && (live.damage ?? 0) > 0) {
+        const target = fighters.get(t);
+        cmds.set(t, target && (target.hp <= 0 || target.down) ? { k: 'knock', delay: landAt } : { k: 'hit', delay: landAt, heavy });
+      }
       else if (['ability', 'desperation', 'awakening', 'secret'].includes(live.type) && (live.damage ?? 0) > 0) {
         const tf = fighters.get(t);
-        if (tf && rigBase(rigs, t, tf.stage ?? 0)) cmds.set(t, { k: 'hit', delay: landAt, heavy, reaction: reactionFor(live.damage ?? 0, tf.maxHp, tf.hp <= 0 || tf.down) });
+        if (tf && rigBase(rigs, t, tf.stage ?? 0)) cmds.set(t, tf.hp <= 0 || tf.down ? { k: 'knock', delay: landAt } : { k: 'hit', delay: landAt, heavy, reaction: reactionFor(live.damage ?? 0, tf.maxHp, false) });
       }
       else if (live.type === 'miss') cmds.set(t, { k: 'dodge', delay: landAt * 0.7 });
       else if (live.type === 'block' || live.type === 'parry') cmds.set(t, { k: 'block', delay: landAt });
@@ -141,7 +144,7 @@ export function FightStage({ input, fighters, live, done, clips, melee, speed, r
   }, [live?.seq, input.battleId, done]);
 
   return (
-    <div className="fstage" ref={host} style={{ ['--ground' as string]: `${ground}px` } as CSSProperties}>
+    <div className={`fstage${done ? ' ko' : ''}`} ref={host} style={{ ['--ground' as string]: `${ground}px`, ['--ko-x' as string]: `${[...homes.entries()].find(([id]) => fighters.get(id)?.down)?.[1].x ?? box.w / 2}px` } as CSSProperties}>
       <svg className="fs-floor" width={box.w} height={box.h} aria-hidden="true">
         {marks.current.list.map((m) => m.kind === 'crack'
           ? <g key={`c${m.seq}${m.x}`} className={`fs-crack${live && m.seq === live.seq ? ' fresh' : ''}`} transform={`translate(${m.x} ${ground + 4})`}>
@@ -205,7 +208,8 @@ function StageFighter({ id, f, clips, rig, rigStage, home, targetHome, ground, t
   useEffect(() => {
     if (!rig) return;
     let timer: ReturnType<typeof setTimeout> | undefined;
-    if (f.down) setRigAnim('defeated');
+    if (f.down && (cmd.k === 'knock' || cmd.k === 'hit')) { setRigAnim('knockdown'); timer = setTimeout(() => setRigAnim('defeated'), Math.min(win * .72, 760)); }
+    else if (f.down) setRigAnim('defeated');
     else if (done) setRigAnim('victory');
     else if (cmd.k === 'rush') { setRigAnim('run'); timer = setTimeout(() => setRigAnim('cross'), Math.min(420, win * 0.3)); }
     else if (cmd.k === 'strike') setRigAnim('cross');
@@ -219,7 +223,7 @@ function StageFighter({ id, f, clips, rig, rigStage, home, targetHome, ground, t
     else setRigAnim('idle');
     return () => { if (timer) clearTimeout(timer); };
   }, [rig, cmd.k, seq, done, f.down, win]);
-  useEffect(() => { if (rig) rigStage.current?.play(id, ANIMS[rigAnim], { speed, key: `${seq}-${rigAnim}`, onImpact: () => { const wrist = rigStage.current?.joint(id, 'wristF'); if (wrist && root.current) root.current.dataset.castX = String(wrist.x); } }); }, [rig, rigAnim, rigStage, id, seq, speed]);
+  useEffect(() => { if (rig) rigStage.current?.play(id, ANIMS[rigAnim], { speed: rigAnim === 'knockdown' ? speed * .72 : speed, key: `${seq}-${rigAnim}`, onImpact: () => { const wrist = rigStage.current?.joint(id, 'wristF'); if (wrist && root.current) root.current.dataset.castX = String(wrist.x); } }); }, [rig, rigAnim, rigStage, id, seq, speed]);
   const rest: ClipName = f.down || f.floored ? 'knockdown' : 'idle';
   // The loop the fighter returns to between moves (stance, or lying down).
   const settle = useRef<() => void>(() => undefined);
@@ -323,9 +327,14 @@ function StageFighter({ id, f, clips, rig, rigStage, home, targetHome, ground, t
         break;
       case 'knock':
         later(cmd.delay, () => {
-          play('knockdown', win * 0.6);
-          move([{ transform: 'translateX(0px)' }, { transform: `translateX(${tall * 0.32 * away}px)` }, { transform: 'translateX(0px)' }], win * 0.9, 'ease-out');
-          later(win * 0.45, () => {
+          play('knockdown', win * 0.82);
+          move([{ transform: 'translateX(0px)' }, { transform: `translateX(${tall * 0.48 * away}px) translateY(${-tall * .18}px) rotate(${away * 18}deg)`, offset: .42 }, { transform: `translateX(${tall * .55 * away}px) translateY(0px) rotate(${away * 9}deg)`, offset: .64 }, { transform: `translateX(${tall * .62 * away}px) translateY(${-tall * .035}px) rotate(${away * 5}deg)`, offset: .78 }, { transform: `translateX(${tall * .66 * away}px) rotate(${away * 3}deg)` }], win * 0.94, 'cubic-bezier(.18,.72,.2,1)');
+          const stageEl = r.parentElement;
+          if (stageEl && !reduced) {
+            stageEl.animate([{ transform: 'translate(0,0)' }, { transform: `translate(${-away * 7}px,2px)` }, { transform: `translate(${away * 5}px,-1px)` }, { transform: 'translate(0,0)' }], { duration: 260, delay: win * .48 });
+            stageEl.animate([{ opacity: 1 }, { opacity: .15, offset: .08 }, { opacity: 1, offset: .16 }, { opacity: 1 }], { duration: 170, delay: win * .48 });
+          }
+          later(win * 0.48, () => {
             dust(home.x + tall * 0.3 * away, true);
             if (reduced) return;
             // Chunks of floor thrown up by the landing.
