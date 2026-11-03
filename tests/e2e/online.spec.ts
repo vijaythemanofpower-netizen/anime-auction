@@ -1,4 +1,4 @@
-import { expect, test, type Browser, type BrowserContext, type Page } from '@playwright/test';
+import { expect, test, type Browser, type BrowserContext, type Page, type TestInfo } from '@playwright/test';
 
 // These local-service requests are optional features and their refusal is harmless in CI.
 // Keep this list narrow so application and Supabase errors still fail the test.
@@ -67,6 +67,53 @@ async function setSegment(page: Page, group: string, option: RegExp) {
   await row.getByRole('button', { name: option }).click();
 }
 
+async function captureBattleFailure(players: MonitoredPage[], testInfo: TestInfo, reason: unknown) {
+  await Promise.all(players.map(async ({ page }, i) => {
+    try {
+      await page.screenshot({ path: testInfo.outputPath(`battle-failure-${i + 1}.png`), fullPage: true });
+    } catch { /* Keep the original assertion failure if the page has already closed. */ }
+  }));
+  throw reason;
+}
+
+async function inspectBattlePlayer(player: MonitoredPage, view: 'cards' | '2d', errorStart: number) {
+  const { page, errors } = player;
+  const stage = page.getByTestId('arena-stage');
+  await expect(stage, 'arena-stage remains visible').toBeVisible({ timeout: 5_000 });
+  const box = await stage.boundingBox();
+  expect(box?.width, 'arena width').toBeGreaterThan(0);
+  expect(box?.height, 'arena height').toBeGreaterThan(0);
+  await expect(page.getByTestId('error-boundary-fallback'), 'no ErrorBoundary fallback').toHaveCount(0);
+  if (view === '2d') {
+    const canvas = stage.locator('.fstage canvas');
+    await expect(canvas, '2D stage canvas').toHaveCount(1);
+    await expect(canvas, '2D stage canvas is visible').toBeVisible();
+    const canvasBox = await canvas.boundingBox();
+    expect(canvasBox?.width, '2D canvas width').toBeGreaterThan(0);
+    expect(canvasBox?.height, '2D canvas height').toBeGreaterThan(0);
+  } else {
+    const fighters = stage.locator('.stand:visible');
+    await expect.poll(() => fighters.count(), { message: 'visible arena fighters', timeout: 5_000 }).toBeGreaterThanOrEqual(2);
+  }
+  expect(errors.slice(errorStart), `new browser errors on ${page.url()}`).toEqual([]);
+}
+
+async function watchBattle(players: MonitoredPage[], view: 'cards' | '2d', testInfo: TestInfo, errorStarts = players.map(({ errors }) => errors.length)) {
+  const battleTimeout = 10 * 60 * 1000;
+  const deadline = Date.now() + battleTimeout;
+  try {
+    for (;;) {
+      await Promise.all(players.map((player, i) => inspectBattlePlayer(player, view, errorStarts[i])));
+      const verdicts = await Promise.all(players.map(({ page }) => page.getByText(/final verdict/i).isVisible().catch(() => false)));
+      if (verdicts.every(Boolean)) return;
+      if (Date.now() >= deadline) throw new Error(`Battle did not reach Final Verdict within ${battleTimeout / 60_000} minutes`);
+      await Promise.all(players.map(({ page }) => page.waitForTimeout(2_000)));
+    }
+  } catch (error) {
+    await captureBattleFailure(players, testInfo, error);
+  }
+}
+
 async function enterOnlineRoom(browser: Browser, view: 'cards' | '2d') {
   const hostContext = await browser.newContext();
   const guestContext = await browser.newContext();
@@ -89,11 +136,6 @@ async function enterOnlineRoom(browser: Browser, view: 'cards' | '2d') {
   await healthy(host);
   await healthy(guest);
 
-  // Verify that this build exposes the view selector before attempting the 2D pass.
-  const viewGroup = host.page.getByRole('group', { name: /default fight view/i });
-  if (!(await viewGroup.isVisible().catch(() => false)) || !(await viewGroup.getByRole('button', { name: /^2d fighters$/i }).count())) {
-    test.skip(view === '2d', 'The lobby does not expose the 2D fight view setting in this build.');
-  }
   if (view === '2d') await setSegment(host.page, 'Default fight view', /^2d fighters$/i);
   else await setSegment(host.page, 'Default fight view', /^cards$/i);
   await setSegment(host.page, 'Roster size', /^3$/);
@@ -157,7 +199,7 @@ async function runOnlineAuction(host: Page, guest: Page, h: MonitoredPage, g: Mo
   await host.getByRole('button', { name: /begin tournament/i }).click();
 }
 
-async function playNextMatch(host: Page, guest: Page, h: MonitoredPage, g: MonitoredPage, expected: RegExp) {
+async function playNextMatch(host: Page, guest: Page, h: MonitoredPage, g: MonitoredPage, expected: RegExp, view: 'cards' | '2d', testInfo: TestInfo) {
   await expect(host.getByText(expected).first()).toBeVisible({ timeout: 120_000 });
   await expect(guest.getByText(expected).first()).toBeVisible({ timeout: 120_000 });
   await healthy(h);
@@ -167,16 +209,13 @@ async function playNextMatch(host: Page, guest: Page, h: MonitoredPage, g: Monit
     if (await lock.isVisible().catch(() => false)) await lock.click();
   }
   await expect(host.getByRole('button', { name: /enter the arena/i })).toBeVisible({ timeout: 120_000 });
+  const battleErrorStarts = [h, g].map(({ errors }) => errors.length);
   await host.getByRole('button', { name: /enter the arena/i }).click();
   await expect(host.getByTestId('arena-stage')).toBeVisible({ timeout: 120_000 });
   await expect(guest.getByTestId('arena-stage')).toBeVisible({ timeout: 120_000 });
-  await healthy(h, true);
-  await healthy(g, true);
-  const skip = host.getByRole('button', { name: /skip for all/i });
-  if (await skip.isVisible().catch(() => false)) await skip.click();
-  else await host.getByRole('button', { name: /skip to results/i }).click();
-  await expect(host.getByText(/final verdict/i)).toBeVisible({ timeout: 120_000 });
-  await expect(guest.getByText(/final verdict/i)).toBeVisible({ timeout: 120_000 });
+  await setSegment(host, 'Narration speed', /^4×$/);
+  await setSegment(guest, 'Narration speed', /^4×$/);
+  await watchBattle([h, g], view, testInfo, battleErrorStarts);
   await healthy(h);
   await healthy(g);
   const next = host.getByRole('button', { name: /^continue/i });
@@ -189,20 +228,20 @@ async function playNextMatch(host: Page, guest: Page, h: MonitoredPage, g: Monit
 
 for (const view of ['cards', '2d'] as const) {
   test(`two online guests complete 1v1 and 2v2 battles (${view})`, async ({ browser }) => {
-    test.setTimeout(12 * 60 * 1000);
+    test.setTimeout(40 * 60 * 1000);
     const room = await enterOnlineRoom(browser, view);
     try {
       await runOnlineAuction(room.host.page, room.guest.page, room.host, room.guest);
-      await playNextMatch(room.host.page, room.guest.page, room.host, room.guest, /1v1 Solo Duel/i);
-      await playNextMatch(room.host.page, room.guest.page, room.host, room.guest, /2v2 Tag Team/i);
+      await playNextMatch(room.host.page, room.guest.page, room.host, room.guest, /1v1 Solo Duel/i, view, test.info());
+      await playNextMatch(room.host.page, room.guest.page, room.host, room.guest, /2v2 Tag Team/i, view, test.info());
     } finally {
       await Promise.all([room.hostContext.close(), room.guestContext.close()]);
     }
   });
 }
 
-test('single player vs NPC reaches a 2v2 battle without a blank arena', async ({ browser }) => {
-  test.setTimeout(12 * 60 * 1000);
+test('single player vs NPC watches 1v1 and 2v2 battles without a blank arena', async ({ browser }) => {
+  test.setTimeout(30 * 60 * 1000);
   const context: BrowserContext = await browser.newContext();
   const watched = monitor(await context.newPage());
   const page = watched.page;
@@ -255,26 +294,25 @@ test('single player vs NPC reaches a 2v2 battle without a blank arena', async ({
     const begin = page.getByRole('button', { name: /begin tournament/i });
     if (await begin.isVisible().catch(() => false)) await begin.click();
     await expect(page.getByText(/1v1 Solo Duel/i).first()).toBeVisible({ timeout: 180_000 });
-    await playSingleMatch(page, watched, /1v1 Solo Duel/i);
+    await playSingleMatch(page, watched, /1v1 Solo Duel/i, test.info());
     await expect(page.getByText(/2v2 Tag Team/i).first()).toBeVisible({ timeout: 180_000 });
-    await playSingleMatch(page, watched, /2v2 Tag Team/i);
+    await playSingleMatch(page, watched, /2v2 Tag Team/i, test.info());
     await healthy(watched);
   } finally {
     await context.close();
   }
 });
 
-async function playSingleMatch(page: Page, watched: MonitoredPage, mode: RegExp) {
+async function playSingleMatch(page: Page, watched: MonitoredPage, mode: RegExp, testInfo: TestInfo) {
   await expect(page.getByText(mode).first()).toBeVisible({ timeout: 120_000 });
     const lock = page.getByRole('button', { name: /lock in preparation/i });
     if (await lock.isVisible().catch(() => false)) await lock.click();
     await expect(page.getByRole('button', { name: /enter the arena/i })).toBeVisible({ timeout: 120_000 });
+    const battleErrorStarts = [watched.errors.length];
     await page.getByRole('button', { name: /enter the arena/i }).click();
     await expect(page.getByTestId('arena-stage')).toBeVisible({ timeout: 120_000 });
-    await healthy(watched, true);
-    const skip = page.getByRole('button', { name: /skip to results/i });
-    if (await skip.isVisible().catch(() => false)) await skip.click();
-    await expect(page.getByText(/final verdict/i)).toBeVisible({ timeout: 120_000 });
+    await setSegment(page, 'Narration speed', /^4×$/);
+    await watchBattle([watched], 'cards', testInfo, battleErrorStarts);
     await healthy(watched);
     const next = page.getByRole('button', { name: /^continue/i });
     if (await next.isVisible().catch(() => false)) await next.click();

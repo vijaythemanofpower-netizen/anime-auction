@@ -25,6 +25,10 @@ export interface Signature {
 const S = (style: MotionProfile['style'] | undefined, traits: Trait[] = [], o: Partial<Signature> = {}): Signature => ({ style, traits, ...o });
 
 export const SIGNATURES: Record<string, Signature> = {
+  obito: S('shadow', ['blink'], { idle: 'still' }), jiraiya: S('caster', ['stand'], { idle: 'proud' }), hashirama: S('tank', ['heavy', 'stand'], { idle: 'proud' }),
+  tobirama: S('shadow', ['blink'], { idle: 'still' }), mightguy: S('brawler', ['kicks', 'spinner'], { idle: 'bounce' }), tsunade: S('tank', ['heavy'], { idle: 'proud' }),
+  sakura: S('brawler', ['heavy'], { idle: 'bounce' }), hinata: S('brawler', ['spinner'], { idle: 'sway' }), neji: S('brawler', ['spinner'], { idle: 'still' }),
+  shikamaru: S('caster', ['stand'], { idle: 'still' }), kisame: S('blade', ['heavy'], { idle: 'sway' }), deidara: S('shooter', ['stand'], { idle: 'proud', floats: true }),
   naruto: S('brawler', ['spinner'], { idle: 'bounce' }), sasuke: S('blade', ['blink'], { idle: 'still' }), itachi: S('caster', ['blink', 'casual'], { idle: 'still' }),
   kakashi: S('shadow', ['blink'], { idle: 'still' }), luffy: S('brawler', ['stretch'], { idle: 'bounce' }), zoro: S('blade', ['spinner'], { idle: 'still' }),
   sanji: S('brawler', ['kicks', 'spinner'], { idle: 'proud' }), ace: S('brawler', [], { idle: 'proud' }), goku: S('brawler', ['blink'], { idle: 'bounce', floats: false }),

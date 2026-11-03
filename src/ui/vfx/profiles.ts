@@ -42,6 +42,18 @@ const P = (p: Partial<VfxProfile> & Pick<VfxProfile, 'primary' | 'secondary' | '
 });
 
 export const PROFILES: Record<string, VfxProfile> = {
+  obito: P({ primary: '#7c3aed', secondary: '#111827', aura: 'shadow', smoke: { color: '#10091c', density: 0.8, glow: false }, motes: { kind: 'ash', rate: 14, color: '#a78bfa' }, rings: 0.3 }),
+  jiraiya: P({ primary: '#ef4444', secondary: '#16a34a', aura: 'flame', smoke: { color: '#32110a', density: 0.55, glow: false }, motes: { kind: 'ember', rate: 15, color: '#fb923c' }, fire: true }),
+  hashirama: P({ primary: '#65a30d', secondary: '#854d0e', aura: 'cloud', smoke: { color: '#1c2a0c', density: 0.45, glow: false }, motes: { kind: 'leaf', rate: 16, color: '#bef264' }, wind: 0.35 }),
+  tobirama: P({ primary: '#38bdf8', secondary: '#e2e8f0', aura: 'water', smoke: { color: '#082f49', density: 0.45, glow: true }, motes: { kind: 'droplet', rate: 18, color: '#bae6fd' }, water: true, lightning: { color: '#7dd3fc', rate: 0.5 } }),
+  mightguy: P({ primary: '#22c55e', secondary: '#ef4444', aura: 'flame', smoke: { color: '#14532d', density: 0.5, glow: false }, motes: { kind: 'ember', rate: 20, color: '#fca5a5' }, fire: true, rings: 0.4 }),
+  tsunade: P({ primary: '#d946ef', secondary: '#86efac', aura: 'ki', smoke: { color: '#2e1065', density: 0.4, glow: true }, motes: { kind: 'mote', rate: 12, color: '#f0abfc' }, rings: 0.3 }),
+  sakura: P({ primary: '#f472b6', secondary: '#86efac', aura: 'ki', smoke: { color: '#500724', density: 0.4, glow: true }, motes: { kind: 'petal', rate: 20, color: '#fbcfe8' }, rings: 0.3 }),
+  hinata: P({ primary: '#a78bfa', secondary: '#fbcfe8', aura: 'void', smoke: { color: '#1e1b4b', density: 0.4, glow: true }, motes: { kind: 'mote', rate: 10, color: '#ddd6fe' }, rings: 0.2 }),
+  neji: P({ primary: '#60a5fa', secondary: '#e0f2fe', aura: 'water', smoke: { color: '#172554', density: 0.4, glow: true }, motes: { kind: 'mote', rate: 10, color: '#bfdbfe' }, rings: 0.25 }),
+  shikamaru: P({ primary: '#475569', secondary: '#94a3b8', aura: 'shadow', smoke: { color: '#020617', density: 0.8, glow: false }, motes: { kind: 'ash', rate: 8, color: '#94a3b8' } }),
+  kisame: P({ primary: '#0284c7', secondary: '#1e293b', aura: 'water', smoke: { color: '#082f49', density: 0.7, glow: false }, motes: { kind: 'droplet', rate: 18, color: '#7dd3fc' }, water: true, wind: 0.25 }),
+  deidara: P({ primary: '#facc15', secondary: '#f97316', aura: 'flame', smoke: { color: '#422006', density: 0.5, glow: false }, motes: { kind: 'dust', rate: 14, color: '#fde68a' }, fire: true, wind: 0.4 }),
   gojo: P({ primary: '#5ab0ff', secondary: '#b47cff', aura: 'void', smoke: { color: '#2a3f8a', density: 0.45, glow: true }, motes: { kind: 'mote', rate: 22, color: '#bfe3ff' }, rings: 0.35, wind: 0.05, life: 0.5 }),
   sukuna: P({ primary: '#ff2a3d', secondary: '#3a0008', aura: 'shadow', smoke: { color: '#2a0006', density: 0.85, glow: false }, motes: { kind: 'ember', rate: 14, color: '#ff4a3a' }, cuts: { color: '#ff3346', rate: 0.6 }, wind: -0.2 }),
   goku: P({ primary: '#ffcf33', secondary: '#4fb4ff', aura: 'ki', smoke: { color: '#3a3020', density: 0.6, glow: false }, motes: { kind: 'dust', rate: 12, color: '#ffe9a0' }, lightning: { color: '#cfe8ff', rate: 0.35 }, rings: 0.4, wind: 0.2 }),
@@ -72,6 +84,7 @@ export const PROFILES: Record<string, VfxProfile> = {
 
 /** Aura style for the rest of the built-ins (their colours come from the form). */
 const STYLE: Record<string, AuraStyle> = {
+  obito: 'shadow', jiraiya: 'flame', hashirama: 'cloud', tobirama: 'water', mightguy: 'flame', tsunade: 'ki', sakura: 'ki', hinata: 'void', neji: 'water', shikamaru: 'shadow', kisame: 'water', deidara: 'flame',
   ace: 'flame', endeavor: 'flame', natsu: 'flame', roy: 'flame', todoroki: 'flame', bakugo: 'flame', escanor: 'flame', akaza: 'ki', gilgamesh: 'void',
   kakashi: 'electric', minato: 'electric', killua: 'electric', yuno: 'cloud', gaara: 'cloud', lee: 'ki', pain: 'void', meruem: 'void',
   toshiro: 'water', giyu: 'water', rukia: 'water', byakuya: 'blade', saber: 'blade', kirito: 'blade', mikasa: 'blade', sanji: 'flame',

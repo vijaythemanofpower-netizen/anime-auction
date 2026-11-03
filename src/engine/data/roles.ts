@@ -30,7 +30,7 @@ const norm = (name: string) => name.normalize('NFD').replace(/[̀-ͯ]/g, '').toL
   .replace(/ou/g, 'o').replace(/uu/g, 'u').replace(/[^a-z ]/g, ' ').split(/\s+/).filter(Boolean).sort().join(' ');
 
 /** Characters who heal others in their own story (by built-in key, or by name for everyone else). */
-const MEDICS = new Set(['shinobu', 'yuta', 'kurapika', 'rimuru', ...[
+const MEDICS = new Set(['shinobu', 'yuta', 'kurapika', 'rimuru', 'tsunade', 'sakura', ...[
   'Orihime Inoue', 'Sakura Haruno', 'Tsunade', 'Tony Tony Chopper', 'Shouko Ieiri', 'Chiyo', 'Kabuto Yakushi', 'Isane Kotetsu',
   'Retsu Unohana', 'Asia Argento', 'Aqua', 'Rem', 'Emilia', 'Shizune', 'Ino Yamanaka', 'Chiyo Shuzenji', 'Eri', 'Raphtalia',
 ].map(norm)]);

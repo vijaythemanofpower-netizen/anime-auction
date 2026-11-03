@@ -6,6 +6,18 @@ import type { PublicCharacter } from '../types';
 import { LEGEND_FACTS } from './legendFacts';
 
 const TRIVIA: Record<string, string> = {
+  obito: 'Obito Uchiha\'s name was kept hidden behind the mask for much of the Fourth Great Ninja War.',
+  jiraiya: 'Jiraiya is one of the central characters in the folk tale Jiraiya Goketsu Monogatari, which also inspired his toad techniques.',
+  hashirama: 'Hashirama and Madara named the village they founded Konohagakure, the Village Hidden in the Leaves.',
+  tobirama: 'Tobirama created many techniques later used throughout the shinobi world, including the Shadow Clone Jutsu.',
+  mightguy: 'Might Guy calls his lifelong rival Kakashi his eternal rival, despite Kakashi rarely playing along.',
+  tsunade: 'Tsunade is the granddaughter of Hashirama Senju, the First Hokage.',
+  sakura: 'Sakura’s name means cherry blossom, matching the pink hair in her character design.',
+  hinata: 'Hinata’s name can be read as “a place in the sun,” fitting her warm, hopeful nature.',
+  neji: 'Neji means “screw” in Japanese, a detail reflected in the spiral motifs of the Hyuga clan.',
+  shikamaru: 'Shikamaru enjoys watching clouds drift by because it is a suitably low-effort pastime.',
+  kisame: 'Kisame’s name combines words associated with demon and shark, matching his appearance and reputation.',
+  deidara: 'Deidara’s signature line is “Art is an explosion,” which he repeats before detonating his clay creations.',
   naruto: 'Naruto\'s name comes from narutomaki, the swirled fish cake in ramen, his favourite food.',
   sasuke: 'Sasuke is named after Sarutobi Sasuke, a legendary ninja from Japanese folklore.',
   itachi: 'Itachi means "weasel" in Japanese, an animal folklore links to illusions and trickery.',

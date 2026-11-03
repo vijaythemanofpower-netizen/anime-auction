@@ -24,6 +24,78 @@ function mv(
 
 /** Per character: [known1, known2, hidden, ultimate (unlocked by evolution)]. */
 export const LEGEND_MOVESETS: Record<string, Ability[]> = {
+  obito: [
+    mv('obito', 'kamui', 'Kamui', 'debuff', 'enemy', 20, 4, 1.2, 'genjutsu', '#7c3aed', 'His body turns intangible and the target is pulled toward a swirling space-time vortex.', 'Uses Kamui to evade and distort space.', { el: 'SHADOW' }),
+    mv('obito', 'fire_style', 'Fire Style: Bomb Blast Dance', 'attack', 'enemy', 18, 3, 1.7, 'fire', '#ef4444', 'A spiraling torrent of fire sweeps across the field.', 'A powerful Uchiha fire technique.', { el: 'FIRE' }),
+    mv('obito', 'izanagi', 'Izanagi', 'buff', 'self', 18, 6, 0, 'aura', '#7c3aed', 'Reality ripples as a fatal blow is rewritten into an illusion.', 'Briefly bends reality to avoid defeat.', { el: 'SHADOW' }),
+    mv('obito', 'truthseeker', 'Truth-Seeking Orbs', 'ultimate', 'all_enemies', 42, 7, 1.7, 'wave', '#111827', 'Black spheres form behind him and surge forward, erasing what they touch.', 'Ten-Tails power unleashed.', { el: 'DARK', tr: 'hp_below_50' }),
+  ],
+  jiraiya: [
+    mv('jiraiya', 'rasengan_j', 'Rasengan', 'attack', 'enemy', 18, 2, 1.7, 'wave', '#60a5fa', 'A compact sphere of spinning chakra drives into the target.', 'The spiraling chakra technique he taught Naruto.', { el: 'WIND' }),
+    mv('jiraiya', 'toad_oil', 'Toad Oil Bullet', 'attack', 'enemy', 16, 3, 1.5, 'projectile', '#a16207', 'A heavy stream of oil splashes across the target.', 'Fires a stream of oil with a toad summon.', { el: 'FIRE' }),
+    mv('jiraiya', 'sage_mode_j', 'Sage Mode', 'buff', 'self', 18, 5, 0, 'aura', '#f97316', 'Orange markings appear around his eyes as natural energy gathers.', 'Combines with the elder toads to enter Sage Mode.', { el: 'SPIRIT' }),
+    mv('jiraiya', 'gamaguchi', 'Toad Mouth Bind', 'ultimate', 'all_enemies', 40, 7, 1.6, 'summon', '#ef4444', 'The arena becomes the living throat of a giant toad, closing around the enemy line.', 'Summons a toad stomach around the battlefield.', { el: 'FIRE', tr: 'hp_below_50' }),
+  ],
+  hashirama: [
+    mv('hashirama', 'wood_dragon', 'Wood Style: Wood Dragon', 'attack', 'enemy', 20, 3, 1.8, 'summon', '#65a30d', 'A wooden dragon erupts from the ground and coils around the target.', 'Wood Release dragon restrains and drains chakra.', { el: 'EARTH' }),
+    mv('hashirama', 'deep_forest', 'Wood Style: Deep Forest Emergence', 'aoe', 'all_enemies', 24, 4, 1.4, 'summon', '#4d7c0f', 'A forest bursts up beneath the enemy line.', 'Fills the battlefield with towering trees.', { el: 'EARTH' }),
+    mv('hashirama', 'sage_hashi', 'Sage Mode', 'buff', 'self', 18, 5, 0, 'aura', '#84cc16', 'Natural energy flows through him; red markings frame his eyes.', 'Enters Sage Mode and sharpens his power.', { el: 'SPIRIT' }),
+    mv('hashirama', 'thousand_hands', 'Sage Art: Wood Release: True Several Thousand Hands', 'ultimate', 'all_enemies', 44, 7, 1.8, 'summon', '#65a30d', 'A colossal wooden statue raises thousands of arms over the battlefield.', 'The First Hokage’s ultimate Wood Style construct.', { el: 'EARTH', tr: 'hp_below_50' }),
+  ],
+  tobirama: [
+    mv('tobirama', 'water_dragon', 'Water Style: Water Dragon Bullet', 'attack', 'enemy', 18, 3, 1.65, 'projectile', '#38bdf8', 'A dragon made of water surges forward.', 'A powerful water-style attack.', { el: 'WATER' }),
+    mv('tobirama', 'flying_raijin', 'Flying Raijin', 'attack', 'enemy', 18, 3, 1.8, 'slash', '#60a5fa', 'He vanishes between marked kunai and appears behind the target with a strike.', 'Space-time teleportation for a sudden attack.', { el: 'LIGHTNING' }),
+    mv('tobirama', 'shadow_clone_t', 'Shadow Clone Jutsu', 'buff', 'self', 16, 5, 0, 'barrage', '#38bdf8', 'Water-mist copies form around him and mirror his stance.', 'Creates a clone to confuse the opponent.', { el: 'WATER' }),
+    mv('tobirama', 'edo_tensei', 'Summoning: Impure World Reincarnation', 'ultimate', 'all_enemies', 40, 7, 1.7, 'summon', '#94a3b8', 'Sealed coffins erupt from the earth as resurrected warriors advance.', 'Uses the forbidden reincarnation technique he created.', { el: 'DARK', tr: 'hp_below_50' }),
+  ],
+  mightguy: [
+    mv('mightguy', 'dynamic_entry', 'Dynamic Entry', 'attack', 'enemy', 15, 2, 1.55, 'punch', '#f97316', 'He rockets into the target with a flying kick.', 'A blazing taijutsu opening kick.', { el: 'WARRIOR' }),
+    mv('mightguy', 'asakujaku', 'Morning Peacock', 'aoe', 'all_enemies', 22, 4, 1.35, 'barrage', '#ef4444', 'A blur of punches ignites into a fan of flame.', 'Rapid strikes from the Sixth Gate.', { el: 'FIRE' }),
+    mv('mightguy', 'gates', 'Eight Gates Released Formation', 'buff', 'self', 18, 5, 0, 'aura', '#ef4444', 'His aura flares red as the gates release the body’s limiters.', 'Opens the gates for a burst of speed and strength.', { el: 'WARRIOR' }),
+    mv('mightguy', 'night_guy', 'Night Guy', 'ultimate', 'enemy', 42, 7, 2.1, 'punch', '#dc2626', 'A red dragon-shaped aura coils around his charging kick as space bends.', 'The Eighth Gate’s devastating final attack.', { el: 'FIRE', tr: 'hp_below_50' }),
+  ],
+  tsunade: [
+    mv('tsunade', 'chakra_punch', 'Heaven Kick of Pain', 'attack', 'enemy', 18, 3, 1.8, 'punch', '#a3e635', 'A chakra-enhanced punch caves the ground in beneath the target.', 'Her immense strength focuses into a single strike.', { el: 'EARTH' }),
+    mv('tsunade', 'creation_rebirth', 'Creation Rebirth', 'heal', 'self', 20, 5, 0.4, 'heal', '#86efac', 'The diamond seal on her forehead opens as wounds rapidly close.', 'Regenerates by releasing stored chakra.', { el: 'HOLY' }),
+    mv('tsunade', 'summoning_slug', 'Summoning: Katsuyu', 'heal', 'self', 18, 5, 0.35, 'summon', '#86efac', 'Katsuyu appears and sprays restorative chakra.', 'Summons Katsuyu for healing support.', { el: 'HOLY' }),
+    mv('tsunade', 'hundra_heal', 'Strength of a Hundred Seal', 'ultimate', 'enemy', 40, 7, 2.0, 'punch', '#f0abfc', 'Violet markings spread over her face before a ground-shattering blow.', 'Releases the Byakugou seal and strikes with full force.', { el: 'EARTH', tr: 'hp_below_50' }),
+  ],
+  sakura: [
+    mv('sakura', 'cherry_blossom', 'Cherry Blossom Impact', 'attack', 'enemy', 17, 3, 1.7, 'punch', '#f472b6', 'She drives a chakra-focused fist into the ground, sending the target flying.', 'A devastating chakra-enhanced punch.', { el: 'EARTH' }),
+    mv('sakura', 'mystical_palm', 'Mystical Palm Technique', 'heal', 'self', 18, 4, 0.3, 'heal', '#86efac', 'Green healing chakra glows around her hands as injuries mend.', 'Medical ninjutsu restores her strength.', { el: 'HOLY' }),
+    mv('sakura', 'inner_strength', 'Inner Strength', 'buff', 'self', 15, 5, 0, 'aura', '#f9a8d4', 'She steadies her breathing and focuses chakra into her fists.', 'Focuses chakra for the next exchange.', { el: 'SPIRIT' }),
+    mv('sakura', 'mitotic_regeneration', 'Mitotic Regeneration', 'ultimate', 'enemy', 40, 7, 1.9, 'punch', '#f472b6', 'The Byakugou seal blooms as she smashes through the ground toward her foe.', 'Combines her seal’s chakra with monstrous strength.', { el: 'EARTH', tr: 'hp_below_50' }),
+  ],
+  hinata: [
+    mv('hinata', 'gentle_fist', 'Gentle Fist', 'attack', 'enemy', 17, 2, 1.6, 'punch', '#a78bfa', 'Her palm strikes land in a precise blur along the chakra network.', 'Targets the opponent’s chakra points.', { el: 'SPIRIT' }),
+    mv('hinata', 'air_palm', 'Eight Trigrams: Vacuum Palm', 'attack', 'enemy', 16, 3, 1.55, 'wave', '#c4b5fd', 'A compressed burst of chakra shoots from her open palm.', 'A long-range Gentle Fist strike.', { el: 'WIND' }),
+    mv('hinata', 'byakugan', 'Byakugan', 'buff', 'self', 14, 5, 0, 'aura', '#e9d5ff', 'Veins rise at her temples as her pale eyes see through the battlefield.', 'Activates her all-seeing dōjutsu.', { el: 'SPIRIT' }),
+    mv('hinata', 'twin_lions', 'Eight Trigrams Twin Lions Crumbling Attack', 'ultimate', 'enemy', 38, 7, 2.0, 'punch', '#a78bfa', 'Two lion-shaped chakra cloaks surge around her hands and crash into the target.', 'Her twin lion chakra technique.', { el: 'SPIRIT', tr: 'hp_below_50' }),
+  ],
+  neji: [
+    mv('neji', 'sixty_four', 'Eight Trigrams: Sixty-Four Palms', 'attack', 'enemy', 18, 3, 1.8, 'barrage', '#93c5fd', 'He strikes a precise sequence of chakra points in a blinding palm barrage.', 'Closes the target’s chakra points with the Gentle Fist.', { el: 'WIND' }),
+    mv('neji', 'rotation', 'Eight Trigrams Palms Revolving Heaven', 'shield', 'self', 16, 4, 0.3, 'shield', '#60a5fa', 'He spins while releasing chakra from every tenketsu, forming a dome.', 'A rotating chakra defense.', { el: 'WIND' }),
+    mv('neji', 'byakugan_n', 'Byakugan', 'buff', 'self', 14, 5, 0, 'aura', '#dbeafe', 'His pale eyes scan every chakra pathway and opening.', 'Reads the opponent’s movements and chakra flow.', { el: 'SPIRIT' }),
+    mv('neji', 'vacuum_wall', 'Eight Trigrams: Vacuum Wall Palm', 'ultimate', 'enemy', 38, 7, 1.9, 'wave', '#60a5fa', 'A focused shockwave of chakra slams into the target from both palms.', 'A forceful long-range Gentle Fist attack.', { el: 'WIND', tr: 'hp_below_50' }),
+  ],
+  shikamaru: [
+    mv('shikamaru', 'shadow_possession', 'Shadow Possession Jutsu', 'debuff', 'enemy', 17, 3, 1.0, 'genjutsu', '#334155', 'His shadow snakes across the ground and locks the target into his pose.', 'Restrains the target by joining their shadow to his.', { el: 'SHADOW' }),
+    mv('shikamaru', 'shadow_stitching', 'Shadow Sewing', 'attack', 'enemy', 18, 3, 1.65, 'wave', '#475569', 'Shadow tendrils rise like spears and pin the target.', 'Weaponizes his shadow to pierce and bind.', { el: 'SHADOW' }),
+    mv('shikamaru', 'strategy', 'Tactical Analysis', 'buff', 'self', 15, 5, 0, 'aura', '#94a3b8', 'He watches the enemy’s habits and calmly maps out the next move.', 'Reads the fight and focuses his next action.', { el: 'SPIRIT' }),
+    mv('shikamaru', 'shadow_neck', 'Shadow Strangle Jutsu', 'ultimate', 'enemy', 38, 7, 1.8, 'genjutsu', '#1e293b', 'A shadow hand reaches up and tightens around the target’s throat.', 'A crushing extension of Shadow Possession.', { el: 'SHADOW', tr: 'hp_below_50' }),
+  ],
+  kisame: [
+    mv('kisame', 'samehada_slash', 'Samehada: Chakra Slash', 'attack', 'enemy', 18, 3, 1.7, 'slash', '#38bdf8', 'Samehada’s scales bristle as its wielder carves through the target.', 'The living blade shreds and absorbs chakra.', { el: 'WATER' }),
+    mv('kisame', 'water_prison', 'Water Style: Great Shark Bullet Technique', 'attack', 'enemy', 20, 3, 1.8, 'projectile', '#0ea5e9', 'A giant shark-shaped torrent races across the arena.', 'A water shark grows stronger against chakra attacks.', { el: 'WATER' }),
+    mv('kisame', 'water_dome', 'Water Style: Water Prison Shark Dance', 'aoe', 'all_enemies', 22, 4, 1.35, 'wave', '#0284c7', 'A vast dome of water floods the battlefield as he swims through it.', 'Floods the field and gives him the advantage in water.', { el: 'WATER' }),
+    mv('kisame', 'shark_fusion', 'Samehada Fused Form', 'ultimate', 'all_enemies', 42, 7, 1.7, 'summon', '#0369a1', 'He fuses with Samehada and a monstrous shark form surges through the flood.', 'Combines with Samehada for a finishing assault.', { el: 'WATER', tr: 'hp_below_50' }),
+  ],
+  deidara: [
+    mv('deidara', 'clay_spiders', 'C1: Clay Spiders', 'attack', 'enemy', 15, 2, 1.5, 'explosion', '#facc15', 'Tiny clay spiders skitter beneath the target before bursting.', 'Small explosive clay traps.', { el: 'EARTH' }),
+    mv('deidara', 'clay_bird', 'C2: Dragon', 'attack', 'enemy', 18, 3, 1.75, 'projectile', '#fbbf24', 'A clay dragon dives from the sky and detonates on impact.', 'Aerial explosive clay assault.', { el: 'EARTH' }),
+    mv('deidara', 'c4', 'C4: Karura', 'aoe', 'all_enemies', 24, 5, 1.4, 'explosion', '#fef08a', 'A giant clay effigy bursts into invisible microscopic bombs across the field.', 'Creates microscopic explosives that attack from within.', { el: 'EARTH' }),
+    mv('deidara', 'c0', 'C0: Self-Destruct', 'ultimate', 'all_enemies', 42, 7, 1.8, 'explosion', '#f97316', 'He swallows explosive clay; a colossal blast consumes the battlefield.', 'His ultimate artistic explosion.', { el: 'FIRE', tr: 'hp_below_50' }),
+  ],
   naruto: [
     mv('naruto', 'clones', 'Shadow Clone Jutsu', 'aoe', 'all_enemies', 22, 3, 0.95, 'barrage', '#f97316', 'A puff of smoke and dozens of orange-clad clones dog-pile every enemy.', 'Floods the field with clones that mob all enemies.', { el: 'WIND' }),
     mv('naruto', 'rasengan', 'Rasengan', 'attack', 'enemy', 18, 2, 1.75, 'projectile', '#60a5fa', 'A spinning sphere of blue chakra forms in his palm and is driven into the target.', 'A compressed spiral of chakra slammed into one enemy.', { el: 'WIND', c2: '#e0f2fe' }),

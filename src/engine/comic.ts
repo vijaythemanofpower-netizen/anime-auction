@@ -81,6 +81,9 @@ const LEGEND_TAGS: Record<string, string> = {
   kaneki: 'kaneki ken, tokyo ghoul', asta: 'asta (black clover), black clover', yuno: 'yuno (black clover), black clover', power: 'power (chainsaw man), chainsaw man',
   yor: 'yor briar, spy x family', gilgamesh: 'gilgamesh (fate), fate/zero', saber: 'artoria pendragon (fate), saber (fate), fate/zero', kirito: 'kirito, sword art online',
   frieren: 'frieren, sousou no frieren', escanor: 'escanor, nanatsu no taizai', rimuru: 'rimuru tempest, tensei shitara slime datta ken', meliodas: 'meliodas, nanatsu no taizai', guts: 'guts (berserk), berserk', gintoki: 'sakata gintoki, gintama', tatsumaki: 'tatsumaki, one-punch man',
+  obito: 'obito uchiha, naruto shippuden, masked man, kamui', jiraiya: 'jiraiya, naruto, toad sage, legendary sannin', hashirama: 'hashirama senju, naruto, first hokage, wood release', tobirama: 'tobirama senju, naruto, second hokage, flying raijin',
+  mightguy: 'might guy, maito gai, naruto, eight gates', tsunade: 'tsunade, naruto, fifth hokage, sannin', sakura: 'sakura haruno, naruto, medical ninja', hinata: 'hinata hyuga, naruto, byakugan, gentle fist', neji: 'neji hyuga, naruto, byakugan, gentle fist',
+  shikamaru: 'shikamaru nara, naruto, shadow possession', kisame: 'kisame hoshigaki, naruto, akatsuki, samehada', deidara: 'deidara, naruto, akatsuki, explosive clay',
 };
 
 const SERIES_TAGS: Record<string, string> = {

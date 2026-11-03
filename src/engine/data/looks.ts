@@ -4,6 +4,18 @@
 // transformation pictures (ui/formPortraits.ts) and the sprite tool (tools/make-sprites.ts).
 
 export const LOOK: Record<string, string> = {
+  obito: 'spiky black hair, scarred right side of face, orange spiral mask, black akatsuki cloak with red clouds',
+  jiraiya: 'long spiky white hair, red face markings, forehead protector with kanji oil, green haori, toad sage',
+  hashirama: 'long dark brown hair, red lamellar armor, green flak jacket, calm face',
+  tobirama: 'spiky silver hair, red markings under eyes, blue armor, fur collar, forehead protector',
+  mightguy: 'bowl cut black hair, thick eyebrows, green jumpsuit, orange leg warmers',
+  tsunade: 'blonde hair in two loose ponytails, violet diamond on forehead, green haori, youthful woman',
+  sakura: 'short pink hair, green eyes, red sleeveless top, black gloves, forehead protector',
+  hinata: 'long dark blue hair with bangs, pale lavender eyes, cream jacket, gentle expression',
+  neji: 'long dark brown hair, pale lavender byakugan eyes, forehead protector, light tan shirt',
+  shikamaru: 'black hair tied in high spiky ponytail, narrow eyes, green flak jacket, bored expression',
+  kisame: 'blue shark-like skin, small round eyes, gill marks, bandaged giant sword samehada, akatsuki cloak',
+  deidara: 'long blond hair covering one eye, blue eyes, akatsuki cloak, mouths in palms, clay bird',
   aizen: 'aizen sousuke, brown hair, slicked back hair, brown eyes, white haori, white robe',
   akaza: 'short pink hair, dark blue line tattoos all over body, yellow eyes, shirtless, white pants',
   asta: 'spiky ash gray hair, green eyes, black bull robe, black sword',
@@ -88,6 +100,18 @@ export const LOOK: Record<string, string> = {
 };
 
 export const LOOK_AVOID: Record<string, string> = {
+  obito: 'madara uchiha, kakashi hatake, uzumaki naruto, blond hair, whisker markings',
+  jiraiya: 'kakashi hatake, long straight white hair, orochimaru, snake features',
+  hashirama: 'madara uchiha, naruto uzumaki, whisker markings',
+  tobirama: 'kakashi hatake, jiraiya, white spiky hair, red akatsuki clouds',
+  mightguy: 'rock lee, bowl cut green hair, eyebrows absent',
+  tsunade: 'sakura haruno, pink hair, hinata hyuga, short hair',
+  sakura: 'tsunade, blonde hair, hinata hyuga',
+  hinata: 'sakura haruno, pink hair, tsunade, red hair',
+  neji: 'hinata hyuga, long indigo hair, sasuke uchiha',
+  shikamaru: 'jiraiya, spiky white hair, akatsuki cloak',
+  kisame: 'samehada as a separate person, shark monster only, blue-haired anime women',
+  deidara: 'naruto uzumaki, blond spiky hair, whisker markings, sasuke uchiha',
   ace: 'monkey d. luffy, straw hat',
   aizen: 'kurosaki ichigo, orange hair',
   akaza: 'kamado tanjirou, checkered haori',

@@ -9,9 +9,12 @@ import { narrate, validateNarration } from '../src/engine/narration';
 import { setup, runAuction, runTournament } from './helpers';
 
 describe('anime legends', () => {
-  it('has 81 real characters with official AniList images and unique ids', () => {
-    expect(LEGEND_CHARACTERS).toHaveLength(81);
-    expect(new Set(LEGEND_CHARACTERS.map((c) => c.id)).size).toBe(81);
+  it('has 93 real characters with official AniList images and unique ids', () => {
+    expect(LEGEND_CHARACTERS).toHaveLength(93);
+    expect(new Set(LEGEND_CHARACTERS.map((c) => c.id)).size).toBe(93);
+    for (const key of ['obito', 'jiraiya', 'hashirama', 'tobirama', 'mightguy', 'tsunade', 'sakura', 'hinata', 'neji', 'shikamaru', 'kisame', 'deidara']) {
+      expect(LEGEND_CHARACTERS.some((c) => c.id === `legend:${key}`), `${key} is missing`).toBe(true);
+    }
     for (const c of LEGEND_CHARACTERS) {
       expect(c.source).toBe('legend');
       expect(c.imageUrl).toMatch(/^https:\/\/s4\.anilist\.co\/file\/anilistcdn\/character\/large\//);
