@@ -146,6 +146,17 @@
  "legend:kakashi": {
   "states": {
    "base": {
+    "hit": {
+     "id": "legend:kakashi",
+     "url": "fighters/kakashi/base/hit.webp",
+     "frames": 17,
+     "fps": 12,
+     "loop": false,
+     "frameW": 202,
+     "frameH": 300,
+     "ax": 0.49,
+     "ay": 0.977
+    },
     "idle": {
      "id": "legend:kakashi",
      "url": "fighters/kakashi/base/idle.webp",
@@ -156,6 +167,17 @@
      "frameH": 300,
      "ax": 0.433,
      "ay": 0.978
+    },
+    "knockdown": {
+     "id": "legend:kakashi",
+     "url": "fighters/kakashi/base/knockdown.webp",
+     "frames": 17,
+     "fps": 12,
+     "loop": false,
+     "frameW": 207,
+     "frameH": 300,
+     "ax": 0.504,
+     "ay": 0.977
     },
     "run": {
      "id": "legend:kakashi",
@@ -405,6 +427,34 @@
      "frameH": 300,
      "ax": 0.582,
      "ay": 0.997
+    }
+   }
+  }
+ },
+ "legend:zoro": {
+  "states": {
+   "base": {
+    "idle": {
+     "id": "legend:zoro",
+     "url": "fighters/zoro/base/idle.webp",
+     "frames": 17,
+     "fps": 12,
+     "loop": true,
+     "frameW": 214,
+     "frameH": 300,
+     "ax": 0.382,
+     "ay": 0.986
+    },
+    "run": {
+     "id": "legend:zoro",
+     "url": "fighters/zoro/base/run.webp",
+     "frames": 17,
+     "fps": 12,
+     "loop": true,
+     "frameW": 208,
+     "frameH": 300,
+     "ax": 0.5,
+     "ay": 0.986
     }
    }
   }
