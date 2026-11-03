@@ -61,3 +61,5 @@ Known limits:
 3. One drawing holds at most two fighters.
 4. Website and localhost keep separate sign-ins.
 5. Characters outside the built-ins and raid villains have no kit (they keep type-based moves and the generic awakening).
+
+Nov 3, 2026 (rig injuries): RigStage now draws bone-following wound decals, replay-driven pooled blood sprays and persistent floor pools, and low-HP hurt breathing/tint/stagger. Remaining weakness: wound placement is approximate per body region, and blood impact direction/visual style can be refined.

@@ -128,6 +128,18 @@ export function FightStage({ input, fighters, live, done, clips, melee, speed, r
     if (marks.current.list.length > 14) marks.current.list.splice(0, marks.current.list.length - 14);
   }
 
+  const bloodSeen = useRef({ battle: input.battleId, seq: -1 });
+  useEffect(() => {
+    if (bloodSeen.current.battle !== input.battleId) bloodSeen.current = { battle: input.battleId, seq: -1 };
+    if (!live || done || live.seq === bloodSeen.current.seq || !live.target || (live.damage ?? 0) <= 0) return;
+    bloodSeen.current.seq = live.seq;
+    const target = fighters.get(live.target), home = homes.get(live.target);
+    if (!target || !home || !rigBase(rigs, live.target, target.stage ?? 0)) return;
+    const cutting = /slash|cut|sword|blade|scissor|slice/i.test(`${live.action ?? ''} ${live.context?.kind ?? ''}`);
+    const severe = cutting || !!live.crit || live.context?.impact === 'heavy' || live.context?.impact === 'devastating' || (live.damage ?? 0) / Math.max(1, target.maxHp) > .12;
+    if (severe) rigStage.current?.impact(live.target, home.side === 0 ? -1 : 1, Math.min(4, 1 + Math.floor((live.damage ?? 0) / Math.max(1, target.maxHp) * 12)));
+  }, [live?.seq, input.battleId, done]);
+
   return (
     <div className="fstage" ref={host} style={{ ['--ground' as string]: `${ground}px` } as CSSProperties}>
       <svg className="fs-floor" width={box.w} height={box.h} aria-hidden="true">
@@ -145,7 +157,7 @@ export function FightStage({ input, fighters, live, done, clips, melee, speed, r
             cmd={cmds.get(id) ?? { k: 'idle' }} seq={live?.seq ?? 0} win={win} speed={speed} reduced={reduced} done={done} register={register} />
         );
       })}
-      <RigStage handle={rigStage} fighters={[...homes.entries()].flatMap(([id, home]) => { const f = fighters.get(id)!; const base = rigBase(rigs, id, f.stage ?? 0); return base ? [{ id, base, x: home.x, ground, height: tall * home.scale, flip: home.side === 1, form: f.stage, tint: f.formColor }] : []; })} />
+      <RigStage handle={rigStage} fighters={[...homes.entries()].flatMap(([id, home]) => { const f = fighters.get(id)!; const base = rigBase(rigs, id, f.stage ?? 0); return base ? [{ id, base, x: home.x, ground, height: tall * home.scale, flip: home.side === 1, form: f.stage, tint: f.formColor, wounds: f.injuries, hurt: f.hp > 0 ? Math.max(0, Math.min(1, (0.32 - f.hp / Math.max(1, f.maxHp)) / 0.2)) : 1 }] : []; })} />
       {done && <div className="fs-ko-call" role="status">K.O.</div>}
     </div>
   );
