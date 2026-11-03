@@ -14,6 +14,7 @@ import { RigFighter } from '../rig/RigView';
 import { ANIMS, type AnimName } from '../rig/animations';
 import { rigBase, useRigIndex } from '../rig/rigIndex';
 import { planMove, reactionFor, type MovePlan } from '../rig/moves';
+import './battlefield.css';
 
 type Cmd =
   | { k: 'idle' }
@@ -143,6 +144,7 @@ export function FightStage({ input, fighters, live, done, clips, melee, speed, r
             cmd={cmds.get(id) ?? { k: 'idle' }} seq={live?.seq ?? 0} win={win} speed={speed} reduced={reduced} done={done} register={register} />
         );
       })}
+      {done && <div className="fs-ko-call" role="status">K.O.</div>}
     </div>
   );
 }
@@ -332,6 +334,8 @@ function StageFighter({ id, f, clips, rig, home, targetHome, ground, tall, cmd, 
     <div className={`sf${f.down ? ' down' : ''}${f.stage ? ' formed' : ''}`} ref={root}
       style={{ left: home.x, top: ground, zIndex: home.z, ['--form' as string]: f.formColor ?? '#f5c451' } as CSSProperties}>
       <div className="sf-shadow" style={{ width: tall * 0.5 }} />
+      {f.injuries.map((w, i) => <span key={`${w.part}-${i}`} aria-label={`${w.part} injury: ${w.label}`} className={`sf-wound ${w.part} severity-${w.severity}`} />)}
+      {f.hp > 0 && f.hp / Math.max(1, f.maxHp) < .28 && <span className="sf-hurt-breath" aria-hidden="true" />}
       {rig ? <RigFighter base={rig} anim={ANIMS[rigAnim]} animKey={`${seq}-${rigAnim}`} height={tall} flip={home.side === 1} glow={stage ? (f.formColor ?? '#f5c451') : undefined} handle={rigHandle} style={{ position: 'absolute', left: 0, top: 0 }} onImpact={() => { const wrist = rigHandle.current?.joint('wristF'); if (wrist && root.current) root.current.dataset.castX = String(wrist.x); }} /> : <div className="sf-flip" ref={flip} style={{ transform: home.side === 1 ? 'scaleX(-1)' : undefined }}><div className="sf-sprite" ref={sprite} /></div>}
       {/* The body box: where the effects layer aims hits and auras. */}
       <div className="sf-body" ref={(el) => register(id, el)} style={{ width: tall * 0.42, height: tall * 0.9, left: -tall * 0.21, top: -tall * 0.9 }} />

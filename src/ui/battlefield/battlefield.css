@@ -1,0 +1,23 @@
+.sf-wound {
+  position: absolute;
+  z-index: 28;
+  display: block;
+  width: 18px;
+  height: 5px;
+  border-radius: 50%;
+  background: #8f101b;
+  box-shadow: 0 0 3px #e11d2e, 0 0 0 1px rgba(28, 0, 0, .7);
+  transform: rotate(-28deg);
+  pointer-events: none;
+}
+.sf-wound.severity-2 { width: 29px; height: 8px; background: #b20e20; box-shadow: 0 0 5px #ef233c, 0 0 0 2px rgba(28,0,0,.7); }
+.sf-wound.head { left: -10px; top: -88%; }
+.sf-wound.torso { left: -13px; top: -59%; }
+.sf-wound.arm { left: 9px; top: -53%; transform: rotate(38deg); }
+.sf-wound.leg { left: -11px; top: -24%; transform: rotate(14deg); }
+.sf-ko-call { position: absolute; z-index: 80; top: 12%; left: 50%; transform: translateX(-50%) rotate(-5deg); color: #fff; font: 1000 clamp(42px, 11vw, 104px)/.9 Impact, system-ui, sans-serif; letter-spacing: .08em; -webkit-text-stroke: 2px #790d18; text-shadow: 0 5px 0 #4b0910, 0 0 24px #e11d48; animation: fs-ko .65s cubic-bezier(.15,1.7,.35,1) both; }
+.sf-hurt-breath { position: absolute; left: -19px; top: -66%; width: 38px; height: 80px; border-radius: 50%; background: rgba(130, 12, 27, .16); filter: blur(8px); animation: fs-hurt 1.2s ease-in-out infinite; }
+@keyframes fs-ko { from { opacity: 0; scale: 2.2; } 65% { opacity: 1; scale: .9; } to { opacity: 1; scale: 1; } }
+@keyframes fs-hurt { 50% { opacity: .35; transform: scale(1.12, .94); } }
+@media (max-width: 430px) { .sf-ko-call { top: 10%; } }
+@media (prefers-reduced-motion: reduce) { .sf-ko-call, .sf-hurt-breath { animation: none; } }

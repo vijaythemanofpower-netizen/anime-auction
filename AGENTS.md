@@ -33,6 +33,8 @@ Automatic failover (Nov 2 2026): start Claude with `claude-failover` (any repo) 
 
 ## Open work (Nov 1 2026, end of Claude session)
 
+Progress (Nov 3, 2026, fight presentation): updated rig knockdown/defeated poses with stronger launch, bounce, and horizontal resting keys; FightStage now displays persistent injury markers from fighter injury state, low-HP hurt breathing, and a prominent K.O. call. Added phone-sized/reduced-motion styling in `src/ui/battlefield/battlefield.css`. Still weak: marks are stage-space approximations rather than decals skinned to bones, and RigFighter still owns a separate Pixi Application per fighter; the shared full-stage renderer, blood effects, move-specific anime effects, and impact camera choreography remain open.
+
 NEXT (owner's requests, Nov 2 2026, not started yet; do these next, in order):
 1. Crashes: the owner saw "some crashing". Check the browser console on home (StrictMode double-mount of CinematicVfx; an "Uncaught (in promise)" was seen after Assets.load on a destroyed instance) and the battle screen; guard Assets.load/show() after destroy.
 2. Music: add auction music (online and vs NPC) and better fight music. Only CC0/royalty-free tracks with a licence note in public/bgm (see music.ts); no copyrighted songs.
