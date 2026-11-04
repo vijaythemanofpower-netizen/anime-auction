@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { RAID_LEVELS, bossCount, bossTiers, legendVillains, levelBosses, nextRaidLevel, runRaid } from '../src/engine/raid';
+import { RAID_LEVELS, bossCount, bossTiers, buildRaidInput, legendVillains, levelBosses, nextRaidLevel, runRaid } from '../src/engine/raid';
 import { VILLAINS } from '../src/engine/data/villains';
 import { canonFor } from '../src/engine/data/canonByName';
 import { generateHidden, truePower } from '../src/engine/hidden';
@@ -37,6 +37,28 @@ describe('boss climb, levels 1 to 5', () => {
     expect([1, 2, 3, 4, 5].map((lv) => bossCount(lv, 4))).toEqual([1, 1, 1, 1, 2]);
     expect([1, 2, 3, 4, 5].map((lv) => bossCount(lv, 8))).toEqual([1, 1, 2, 2, 2]);
     expect(levelBosses(pool, 7, 3, 1, [], 8)).toHaveLength(2);
+  });
+
+  it('makes every level tougher, raids only', () => {
+    const { g, vault } = makeGame(2, 3, 'live', 99) as never as { g: GameState; vault: Vault };
+    runAuction(g);
+    const boss = (lv?: number) => buildRaidInput(g, vault, pool[0], 5, lv).sides[1].fighters[0].boss!;
+    for (let lv = 2; lv <= RAID_LEVELS; lv++) {
+      expect(boss(lv).hpScale).toBeGreaterThan(boss(lv - 1).hpScale);
+      expect(boss(lv).power).toBeGreaterThan(boss(lv - 1).power);
+    }
+    expect(boss(1).hpScale).toBeGreaterThan(boss().hpScale);
+  });
+
+  it('limits a healer to three mends a fight', () => {
+    const { g, vault } = makeGame(4, 3, 'live', 321) as never as { g: GameState; vault: Vault };
+    runAuction(g);
+    for (let seed = 1; seed < 12; seed++) {
+      const { record } = runRaid(g, vault, pool.slice(0, 2), seed, 5);
+      const mends = new Map<string, number>();
+      for (const e of record.result.events) if (e.type === 'heal' && e.context?.mend && e.actor) mends.set(e.actor, (mends.get(e.actor) ?? 0) + 1);
+      for (const n of mends.values()) expect(n).toBeLessThanOrEqual(3);
+    }
   });
 
   it('never repeats a villain at a level until the whole tier has been fought', () => {

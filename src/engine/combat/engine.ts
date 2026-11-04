@@ -16,6 +16,10 @@ import { truePower } from '../hidden';
 import { writeTaunt, type TauntContext, type TauntKind } from '../data/flavor';
 import { ARCHETYPES, TEMPERAMENTS } from '../data/archetypes';
 import { healerKind } from '../data/roles';
+
+/** Team healing limits (a healer used to win 72% of even 2v2 fights). */
+const MAX_MENDS = 3;
+const MEND_STAMINA = 18;
 import { ABILITIES, BASIC_ATTACK, getAbility } from '../data/abilities';
 import { elementMultiplier, getEnvironment, getSynergy, type Environment } from '../data/world';
 import { type CombatFighter, INJURY_LIMIT, createFighter, hasStatus, hpPct, injuryLoad, injuryPenalty } from './fighter';
@@ -713,20 +717,24 @@ export class BattleSim {
       ally.guard = 60;
       ally.knockdowns = 0;
       const before = ally.hp;
-      ally.hp = Math.max(1, Math.round(ally.maxHp * 0.25 * skill));
+      ally.hp = Math.max(1, Math.round(ally.maxHp * 0.18 * skill));
       this.twist(`revive:${ally.id}`, 'BACK ON THEIR FEET!', `${this.name(f)} pours everything into ${this.name(ally)}, who stands up and rejoins the fight!`, f, ally);
       this.emit('heal', `${this.name(f)} revives ${this.name(ally)}.`, { actor: f.id, target: ally.id, heal: ally.hp - before, hpBefore: before, hpAfter: ally.hp, context: { revive: true } });
       this.shiftMomentum(f.side, 20, `${this.name(ally)}'s return`);
       return true;
     }
-    if (f.mendCd > 0) return false;
+    // Healing is a limited resource: each mend costs the healer stamina and they run dry.
+    if (f.mendCd > 0 || f.mends >= MAX_MENDS || f.st < MEND_STAMINA) return false;
     // The teammate who needs it most: badly hurt, or carrying a serious wound.
     const need = (x: CombatFighter) => (1 - hpPct(x)) + injuryLoad(x) * 0.12;
-    const hurt = this.alive(f.side).filter((x) => x !== f && (hpPct(x) < 0.45 || x.injuries.length > 0)).sort((a, b) => need(b) - need(a))[0];
-    if (!hurt || !this.plotRng.chance(0.55)) return false;
+    const hurt = this.alive(f.side).filter((x) => x !== f && (hpPct(x) < 0.4 || x.injuries.some((i) => i.severity === 2))).sort((a, b) => need(b) - need(a))[0];
+    if (!hurt || !this.plotRng.chance(0.4)) return false;
     const before = hurt.hp;
-    hurt.hp = Math.min(hurt.maxHp, hurt.hp + Math.round(hurt.maxHp * 0.16 * skill * this.sideFx[f.side].healMult));
-    f.mendCd = 3;
+    // Every mend in a fight heals less than the one before.
+    hurt.hp = Math.min(hurt.maxHp, hurt.hp + Math.round(hurt.maxHp * 0.08 * Math.pow(0.8, f.mends) * skill * this.sideFx[f.side].healMult));
+    f.mends++;
+    f.st = Math.max(0, f.st - MEND_STAMINA);
+    f.mendCd = 5;
     // Treat the worst wound: a serious one becomes minor, a minor one heals completely.
     const worst = hurt.injuries.slice().sort((a, b) => b.severity - a.severity)[0];
     let cure: { cure_part: string; cure_severity: number; cure_label: string; cure_was: string } | undefined;
@@ -1108,7 +1116,7 @@ export class BattleSim {
       if (a.kind === 'heal' && targets.every((t) => t === f)) f.selfHeals++;
       for (const t of targets) {
         if (a.kind === 'heal') {
-          const amt = Math.round(t.maxHp * a.power * this.sideFx[f.side].healMult * (1 + f.eff.technique / 300));
+          const amt = Math.round(t.maxHp * a.power * 0.7 * this.sideFx[f.side].healMult * (1 + f.eff.technique / 300));
           const before = t.hp;
           t.hp = Math.min(t.maxHp, t.hp + amt);
           this.emit('heal', `${this.name(t)} gets a second wind.`, { actor: f.id, target: t.id, heal: t.hp - before, hpBefore: before, hpAfter: t.hp, ability: a.id });

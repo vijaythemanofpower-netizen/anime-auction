@@ -37,6 +37,8 @@ export interface CombatFighter {
   ironWillUsed: boolean;
   /** Healers: turns until they can mend again, and whether their one revive is used. */
   mendCd: number;
+  /** Teammates mended so far this fight. */
+  mends: number;
   reviveUsed: boolean;
   /** How many times this fighter has healed only themselves. */
   selfHeals: number;
@@ -111,6 +113,7 @@ export function createFighter(snap: FighterSnapshot): CombatFighter {
     awakened: false,
     ironWillUsed: false,
     mendCd: 0,
+    mends: 0,
     reviveUsed: false,
     selfHeals: 0,
     stage: 0,

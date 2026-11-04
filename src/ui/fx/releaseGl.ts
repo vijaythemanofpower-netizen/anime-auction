@@ -9,6 +9,9 @@ import type { Application, DestroyOptions } from 'pixi.js';
 export function destroyApp(app: Application | null | undefined, opts?: DestroyOptions): void {
   if (!app) return;
   const gl = (app.renderer as unknown as { gl?: WebGLRenderingContext } | undefined)?.gl;
+  // Stop drawing first: if destroy fails part-way, a still-running ticker would render with a
+  // destroyed renderer ("Cannot read properties of null (reading 'clear')").
+  try { app.stop(); app.ticker?.stop(); } catch { /* not started */ }
   try { app.destroy(true, opts); } catch { /* already gone */ }
   try { if (gl && !gl.isContextLost()) gl.getExtension('WEBGL_lose_context')?.loseContext(); } catch { /* nothing to release */ }
 }

@@ -402,7 +402,7 @@ export class CinematicVfx {
   takeStats() { const s = { ...this.stats }; this.stats = { frames: 0, slow: 0 }; return s; }
 
   setQuality(q: Quality) { this.quality = q; }
-  pause(on: boolean) { for (const a of [this.app, this.fxApp]) { if (!a.ticker) continue; if (on) a.ticker.stop(); else a.ticker.start(); } }
+  pause(on: boolean) { if (this.dead) return; for (const a of [this.app, this.fxApp]) { if (!a.ticker) continue; if (on) a.ticker.stop(); else a.ticker.start(); } }
   /** The canvas, once the renderer has started (null before). */
   get canvas(): HTMLCanvasElement | null { return this.app.renderer ? this.app.canvas : null; }
   get fxCanvas(): HTMLCanvasElement | null { return this.fxApp.renderer ? this.fxApp.canvas : null; }

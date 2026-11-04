@@ -73,8 +73,13 @@ export const RAID_MAX_BOSSES = 4;
 
 /** Raid runs climb five levels: each level is a random villain from a stronger fifth of all villains. */
 export const RAID_LEVELS = 5;
-/** On top of the party scaling: early levels are gentler, level 5 brings two of the strongest. */
-const LEVEL_SCALE = [0.7, 0.82, 0.93, 1, 1];
+/**
+ * On top of the party scaling, raids only. Tuned with tools/tune-balance.ts against rosters of
+ * built-in characters (the old scale let those win 90-100% at every level).
+ */
+const LEVEL_SCALE = [
+  { hp: 1.6, power: 1.45 }, { hp: 1.9, power: 1.75 }, { hp: 2.3, power: 2.05 }, { hp: 2.7, power: 2.4 }, { hp: 3.3, power: 2.9 },
+];
 
 /** Villains ranked weakest to strongest (canon sheet, else hidden stats) and cut into five tiers. */
 export function bossTiers(pool: PublicCharacter[], secret: number): PublicCharacter[][] {
@@ -163,13 +168,15 @@ function bossSnapshot(boss: PublicCharacter, secret: number, teamSize: number, b
   return {
     charId: boss.id, name: boss.name, playerId: 'raid-boss', side: 1, archetype: boss.archetype, temperament: boss.temperament, reach: boss.reach,
     tags: boss.tags, stats, traits: h.traits, abilities: [...boss.knownAbilities, h.hiddenAbility], position: 'front', fatigue: 0, injuries: [],
-    price: 0, vulnerability: null, boss: levelScaled(multiBoss(bossScaling(teamSize), bossCount), level),
+    price: 0, vulnerability: null, boss: levelScaled(multiBoss(bossScaling(teamSize), bossCount), level, teamSize),
   };
 }
 
-function levelScaled(s: { hpScale: number; power: number }, level?: number) {
-  const k = level ? LEVEL_SCALE[Math.min(RAID_LEVELS, level) - 1] : 1;
-  return { hpScale: s.hpScale * k, power: s.power * k };
+function levelScaled(s: { hpScale: number; power: number }, level?: number, teamSize = 4) {
+  if (!level) return s;
+  const k = LEVEL_SCALE[Math.min(RAID_LEVELS, level) - 1];
+  const big = teamSize >= 6 ? 1 + (teamSize - 4) ** 2 * 0.045 : 1; // big parties overrun the party scaling
+  return { hpScale: s.hpScale * k.hp * big, power: s.power * k.power * big };
 }
 
 export function buildRaidInput(g: GameState, vault: Vault, boss: PublicCharacter | PublicCharacter[], seed: number, level?: number): BattleInput {
