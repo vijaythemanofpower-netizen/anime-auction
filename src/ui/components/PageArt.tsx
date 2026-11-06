@@ -12,12 +12,12 @@ import { sceneSrcSet, sceneUrl } from '../home/HomeStory';
 
 const KANA: Record<Screen, string> = {
   home: 'アニメオークション', explorer: 'キャラクター', setup: 'ゲーム作成', game: 'バトル', hall: '殿堂',
-  howto: '遊び方', settings: '設定', saves: 'セーブ', online: 'オンライン', versus: '2Dアリーナ',
+  howto: '遊び方', settings: '設定', saves: 'セーブ', online: 'オンライン', versus: '2Dアリーナ', ranks: 'ランキング',
 };
 
 const LABEL: Record<Screen, string> = {
   home: 'HOME', explorer: 'CHARACTER DATABASE', setup: 'NEW GAME', game: 'GAME', hall: 'HALL OF LEGENDS',
-  howto: 'HOW TO PLAY', settings: 'SETTINGS', saves: 'SAVED GAMES', online: 'ONLINE ROOMS', versus: '2D ARENA',
+  howto: 'HOW TO PLAY', settings: 'SETTINGS', saves: 'SAVED GAMES', online: 'ONLINE ROOMS', versus: '2D ARENA', ranks: 'LEADERBOARDS',
 };
 
 /** Which characters suit each screen (by world key). */

@@ -3,6 +3,7 @@
 // your seat in an online room, or the only human player in a local game.
 import { useSyncExternalStore } from 'react';
 import type { GameState } from '../engine/types';
+import { addAuction, addMatch, emptyLab, factsFor, mergeLab, type Lab, type PlayerRecord } from '../engine/stats';
 import { playerBadges } from '../engine/badges';
 import { store } from './store';
 import { auth } from '../online/auth';
@@ -17,11 +18,13 @@ export interface Career {
   mvps: number;
   badges: Record<string, { icon: string; name: string; count: number }>;
   rivals: Record<string, { w: number; l: number }>;
+  /** The detail behind the leaderboards and player reports (engine/stats.ts). */
+  lab: Lab;
   /** Results already counted, so nothing is counted twice (even across devices). */
   seen: string[];
 }
 
-export const EMPTY_CAREER: Career = { tournaments: 0, titles: 0, fights: 0, fightsWon: 0, raids: 0, raidsWon: 0, teamBattles: 0, teamWins: 0, mvps: 0, badges: {}, rivals: {}, seen: [] };
+export const EMPTY_CAREER: Career = { tournaments: 0, titles: 0, fights: 0, fightsWon: 0, raids: 0, raidsWon: 0, teamBattles: 0, teamWins: 0, mvps: 0, badges: {}, lab: emptyLab(), rivals: {}, seen: [] };
 
 let career: Career = { ...EMPTY_CAREER };
 let owner = '';
@@ -43,7 +46,7 @@ function merge(a: Career, b: Career): Career {
   for (const [n, x] of Object.entries(b.rivals ?? {})) rivals[n] = { w: Math.max(x.w, rivals[n]?.w ?? 0), l: Math.max(x.l, rivals[n]?.l ?? 0) };
   return {
     tournaments: max('tournaments'), titles: max('titles'), fights: max('fights'), fightsWon: max('fightsWon'), raids: max('raids'), raidsWon: max('raidsWon'),
-    teamBattles: max('teamBattles'), teamWins: max('teamWins'), mvps: max('mvps'), badges, rivals, seen: [...new Set([...(a.seen ?? []), ...(b.seen ?? [])])].slice(-800),
+    teamBattles: max('teamBattles'), teamWins: max('teamWins'), mvps: max('mvps'), badges, rivals, lab: mergeLab(a.lab ?? emptyLab(), b.lab ?? emptyLab()), seen: [...new Set([...(a.seen ?? []), ...(b.seen ?? [])])].slice(-1500),
   };
 }
 
@@ -70,6 +73,13 @@ async function load(uid: string) {
   } catch { /* offline: this device's copy */ }
 }
 
+/** One career as the leaderboards read it. */
+export function toRecord(c: Partial<Career>): PlayerRecord {
+  const b = { ...EMPTY_CAREER, ...c };
+  return { tournaments: b.tournaments, titles: b.titles, fights: b.fights, fightsWon: b.fightsWon, raids: b.raids, raidsWon: b.raidsWon, teamBattles: b.teamBattles, teamWins: b.teamWins, mvps: b.mvps,
+    badges: Object.values(b.badges ?? {}).reduce((s, x) => s + x.count, 0), rivals: b.rivals ?? {}, lab: { ...emptyLab(), ...b.lab } };
+}
+
 /** Who "you" are in this game: your online seat, or the only human in a local game. */
 function myPlayer(g: GameState): string | null {
   const r = rooms.get();
@@ -88,9 +98,21 @@ function track() {
   let changed = false;
   const once = (id: string, fn: () => void) => { if (seen.has(id)) return; seen.add(id); fn(); changed = true; };
   const name = (pid: string) => g.players.find((p) => p.id === pid)?.name ?? 'Someone';
+  const lab = (fn: (l: Lab) => Lab) => { career = { ...career, lab: fn({ ...emptyLab(), ...career.lab }) }; };
+  const battles = store.getState().battles;
+
+  // The auction: who you bought, once it's over.
+  if (g.auction?.complete) once(`a:${g.id}`, () => {
+    const roster = g.players.find((p) => p.id === me)?.roster ?? [];
+    lab((l) => addAuction(l, roster.map((id) => ({ name: g.characters[id]?.name ?? id, price: g.prices[id] ?? 0 }))));
+  });
 
   for (const st of g.tournament?.stages ?? []) for (const m of st.matches) {
     if (!m.winner || !m.players.includes(me)) continue;
+    // Guests get the battle record a moment after the result, so this waits for it.
+    const rec = m.battleId ? battles[m.battleId] : null;
+    const facts = rec ? factsFor(g, rec, me) : null;
+    if (facts) once(`f:${g.id}:${m.id}`, () => lab((l) => addMatch(l, facts)));
     once(`m:${g.id}:${m.id}`, () => {
       const won = m.winner === me;
       const foe = name(m.players.find((p) => p !== me)!);
@@ -102,6 +124,8 @@ function track() {
   if (g.phase === 'champion' && g.tournament?.championId) {
     once(`t:${g.id}`, () => {
       career.tournaments++;
+      const p = g.players.find((x) => x.id === me);
+      lab((l) => ({ ...l, bounties: l.bounties + (p?.bounties ?? 0), betsWon: l.betsWon + (p?.betsWon ?? 0), betsLost: l.betsLost + (p?.betsLost ?? 0) }));
       if (g.tournament!.championId === me) career.titles++;
       for (const b of playerBadges(g)[me] ?? []) career.badges = { ...career.badges, [b.id]: { icon: b.icon, name: b.name, count: (career.badges[b.id]?.count ?? 0) + 1 } };
     });
@@ -121,7 +145,7 @@ function track() {
       if (mine(t.contributions.find((c) => c.charId === t.mvp)?.playerId)) career.mvps++;
     });
   }
-  if (changed) { career = { ...career, seen: [...seen].slice(-800) }; save(); }
+  if (changed) { career = { ...career, seen: [...seen].slice(-1500) }; save(); }
 }
 
 if (typeof window !== 'undefined') {

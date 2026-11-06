@@ -3,7 +3,7 @@
 // read hidden game data by accident.
 
 export const SCHEMA_VERSION = 1;
-export const ENGINE_VERSION = '2.15.0';
+export const ENGINE_VERSION = '2.16.0';
 export const STARTING_COINS = 10_000;
 
 export type Archetype =
@@ -173,6 +173,12 @@ export interface Player {
   prepPoints: number;
   /** Extra prep points bought by coins left after the auction, one spent per match (sets.ts). */
   warChest?: number;
+  /** Lost their last match: the next one starts with a bonus preparation point (momentum.ts). */
+  comeback?: boolean;
+  /** This game's tallies, for the career record. */
+  bounties?: number;
+  betsWon?: number;
+  betsLost?: number;
 }
 
 // ---------------------------------------------------------------- Auction
@@ -566,6 +572,10 @@ export interface GameState {
   /** The arena for the match being prepared, announced before players pick fighters. */
   matchArena?: string | null;
   prep: Record<string, PrepChoice>;
+  /** Fight Bets on the match being prepared: bettor's playerId -> who they backed. */
+  bets?: Record<string, string>;
+  /** What the last match paid out, for the results screen. */
+  matchNews?: string[];
   battleIds: string[];
   /** Who each player sends into the next raid (their own fighters); missing means "pick my best". */
   raidPicks?: Record<string, string[]>;

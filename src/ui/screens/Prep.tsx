@@ -1,4 +1,5 @@
 import { seriesSets } from '../../engine/sets';
+import { canBet } from '../../engine/momentum';
 import { useState } from 'react';
 import type { GameState, JumpInRule, MentalApproach, Player, StatKey, Strategy } from '../../engine/types';
 import * as G from '../../engine/game';
@@ -29,6 +30,25 @@ export const MENTALS: Array<{ v: MentalApproach; label: string; desc: string }> 
   { v: 'composure', label: 'Maintain Composure', desc: 'Immune to intimidation, taunts and provocation; +3% defense.' },
 ];
 
+/** Players sitting this match out back a side. A right call earns a War Chest point. */
+function BetPanel({ g }: { g: GameState }) {
+  const m = G.currentMatch(g)!;
+  const bettors = g.players.filter((p) => p.kind === 'human' && store.isLocalPlayer(p) && canBet(g, m, p.id));
+  if (!bettors.length) return null;
+  const sides = m.players.map((id) => g.players.find((p) => p.id === id)!);
+  return (
+    <div className="panel col" style={{ gap: 8 }}>
+      <div className="panel-title"><h3 style={{ margin: 0 }}>Fight Bets</h3><span className="faint">Call the winner for +1 War Chest point</span></div>
+      {bettors.map((b) => (
+        <div key={b.id} className="row" style={{ gap: 8 }}>
+          <PlayerChip p={b} />
+          {sides.map((s) => <button key={s.id} className={`btn sm ${g.bets?.[b.id] === s.id ? 'active' : ''}`} aria-pressed={g.bets?.[b.id] === s.id} onClick={() => store.move(b.id, { t: 'bet', winnerId: s.id })}>{s.name}</button>)}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export function PrepPhase() {
   const g = useApp((s) => s.game)!;
   const viewer = useApp((s) => s.viewer);
@@ -52,6 +72,7 @@ export function PrepPhase() {
           {players.map((p) => <PlayerChip key={p.id} p={p} suffix={<span className="faint">{g.prep[p.id]?.locked ? '· ready ✓' : '· preparing'}</span>} />)}
         </div>
       </div>
+      <BetPanel g={g} />
       {pending ? (
         <PrivacyGate player={pending} enabled={g.config.privacyScreens && humans.length > 1} viewer={viewer} reason="Battle preparation is secret. Your opponent should look away.">
           <PrepPanel g={g} player={pending} key={pending.id} />
@@ -209,6 +230,7 @@ function PrepPanel({ g, player }: { g: GameState; player: Player }) {
           <div className="panel-title"><h3 style={{ margin: 0 }}>Preparation actions</h3><span className="tag" style={{ color: 'var(--gold)' }}>{player.prepPoints} point{player.prepPoints === 1 ? '' : 's'}</span></div>
           {(player.warChest ?? 0) > 0 && <div className="faint">War Chest: {player.warChest} more bonus point{player.warChest === 1 ? '' : 's'} from your unspent coins, one per match.</div>}
           {seriesSets(g, player.id).map((x) => <div key={x.series} className="faint">Series Set: {x.series} ×{x.count}, +{Math.round(x.bonus * 100)}% to those fighters.</div>)}
+          <button className="btn sm" onClick={() => store.move(player.id, { t: 'autoPrep' })} title="Treats and rests whoever needs it, picks a lineup, then spends what's left on training. Nothing is locked in.">Auto-prepare</button>
           <select className="input" value={actChar} onChange={(e) => setActChar(e.target.value)} aria-label="Character for preparation action">
             {player.roster.map((id) => <option key={id} value={id}>{g.characters[id].name}</option>)}
           </select>

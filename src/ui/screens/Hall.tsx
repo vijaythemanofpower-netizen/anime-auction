@@ -17,7 +17,7 @@ export function Hall() {
     <div className="col" style={{ gap: 20 }}>
       <div className="section-head">
         <div><div className="eyebrow">Records from finished tournaments</div><h1>Hall of Legends</h1></div>
-        <button className="btn primary" onClick={() => store.go('setup')}>Start a new legend</button>
+        <div className="row"><button className="btn" onClick={() => store.go('ranks')}>Leaderboards</button><button className="btn primary" onClick={() => store.go('setup')}>Start a new legend</button></div>
       </div>
       {!hall.length && <div className="panel empty">No legends yet. Finish a tournament and its champions, upsets and record purchases will be enshrined here.</div>}
       {groups.map((g) => (

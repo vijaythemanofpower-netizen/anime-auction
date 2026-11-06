@@ -244,6 +244,18 @@ function BidderCard({ g, p, onAdvice, big }: { g: GameState; p: Player; onAdvice
   const full = p.roster.length >= g.config.rosterSize;
   const bid = (amt: number) => store.move(p.id, { t: 'bid', amount: amt });
   const steps = [min, min + 250, min + 1000].filter((v, i, arr) => v <= max && arr.indexOf(v) === i);
+  // One person at this device: B bids the minimum, P passes.
+  const keys = store.isLocalPlayer(p) && g.players.filter((x) => store.isLocalPlayer(x)).length === 1 && lot.status === 'open' && !passed && !full;
+  useEffect(() => {
+    if (!keys) return;
+    const k = (e: KeyboardEvent) => {
+      if (e.repeat || e.ctrlKey || e.metaKey || e.altKey || e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement || e.target instanceof HTMLSelectElement) return;
+      if (e.key.toLowerCase() === 'b' && can && min <= max) store.move(p.id, { t: 'bid', amount: min });
+      if (e.key.toLowerCase() === 'p' && !leading && (a.config.mode !== 'turns' || lot.activePlayerId === p.id)) store.move(p.id, { t: 'pass' });
+    };
+    window.addEventListener('keydown', k);
+    return () => window.removeEventListener('keydown', k);
+  }, [keys, can, min, max, leading, a.config.mode, lot.activePlayerId, p.id]);
   return (
     <div data-testid={store.isLocalPlayer(p) ? 'local-bidder' : undefined} className={`bidder${store.isLocalPlayer(p) ? ' mine' : ''}${leading ? ' leading' : ''}${passed && !leading ? ' passed' : ''}${lot.activePlayerId === p.id ? ' active' : ''}`} style={{ borderLeft: `3px solid ${p.color}` }}>
       <div className="row" style={{ justifyContent: 'space-between' }}>
@@ -256,6 +268,7 @@ function BidderCard({ g, p, onAdvice, big }: { g: GameState; p: Player; onAdvice
         <div className="faint">{passed ? 'Out on this lot.' : leading ? 'Holding the lead.' : p.kind === 'npc' ? 'Watching the bidding…' : 'Bidding from their own device…'}</div>
       ) : lot.status === 'open' && !passed && !full ? (
         <>
+          {keys && <div className="faint hide-phone">Keys: B bids {min.toLocaleString()}, P passes</div>}
           <div className="row" style={{ gap: 6 }}>
             {steps.map((v) => <button key={v} className={`btn sm ${v === min ? 'gold' : ''}`} disabled={!can} onClick={() => bid(v)}>{v.toLocaleString()}</button>)}
           </div>

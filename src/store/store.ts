@@ -10,12 +10,13 @@ import type { BattleRecord, CoachCall, GameState, HallEntry, HiddenProfile, Play
 import { applyMove, type PlayerMove } from '../engine/actions';
 import { Vault } from '../engine/hidden';
 import * as G from '../engine/game';
+import { LEGEND_CHARACTERS } from '../engine/data/legends';
 import * as A from '../engine/auction';
 import { registerCharacterMoves } from '../engine/data/abilities';
 import { buildHallEntries } from '../engine/hall';
 import { Persistence, type SaveSummary, type Settings, DEFAULT_SETTINGS } from './persistence';
 
-export type Screen = 'home' | 'explorer' | 'setup' | 'game' | 'hall' | 'howto' | 'settings' | 'saves' | 'online' | 'versus';
+export type Screen = 'home' | 'explorer' | 'setup' | 'game' | 'hall' | 'howto' | 'settings' | 'saves' | 'online' | 'versus' | 'ranks';
 
 export interface AppState {
   screen: Screen;
@@ -221,6 +222,17 @@ class Store {
       this.toast((e as Error).message, 'error');
       return false;
     }
+  }
+
+  /** Same players and rules, a fresh auction pool: one click from the champion screen. */
+  playAgain() {
+    const g = this.state.game;
+    if (!g) return;
+    const { name, rosterSize, fightView, auction, tournament, privacyScreens, focus } = g.config;
+    const setup: G.GameSetup = { name, rosterSize, fightView, auction, tournament, privacyScreens, focus, players: g.players.map(({ name: n, color, emblem, kind }) => ({ name: n, color, emblem, kind })) };
+    this.flushSave();
+    if (!this.createGame(setup)) return;
+    this.act((d, v) => G.autoFillPool(d, v, LEGEND_CHARACTERS));
   }
 
   async loadGame(id: string) {

@@ -114,7 +114,8 @@ export function Film({ beats, motionOk, pause, onScene }: { beats: Beat[]; motio
         const was = shown[i]; shown[i] = p;
         b.style.opacity = String(p);
         b.style.transform = `translate3d(0, ${((1 - p) * (u < at ? 26 : -26)).toFixed(1)}px, 0)`;
-        if ((p > 0.5) !== (was > 0.5)) { b.toggleAttribute('inert', p <= 0.5); b.classList.toggle('on', p > 0.5); }
+        // was < 0 is the first frame: hidden scenes start out of reach of the keyboard too.
+        if (was < 0 || (p > 0.5) !== (was > 0.5)) { b.toggleAttribute('inert', p <= 0.5); b.classList.toggle('on', p > 0.5); }
       });
     };
 

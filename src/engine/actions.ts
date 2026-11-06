@@ -7,6 +7,7 @@ import type { GameState, PrepChoice } from './types';
 import type { Vault } from './hidden';
 import * as A from './auction';
 import * as G from './game';
+import { placeBet } from './momentum';
 
 export type PlayerMove =
   | { t: 'bid'; amount: number }
@@ -16,10 +17,12 @@ export type PlayerMove =
   | { t: 'prep'; patch: Partial<Pick<PrepChoice, 'fighters' | 'front' | 'strategy' | 'mental' | 'jumpIn'>> }
   | { t: 'prepAction'; act: G.PrepAction }
   | { t: 'lock' }
+  | { t: 'autoPrep' }
+  | { t: 'bet'; winnerId: string }
   | { t: 'raidPick'; ids: string[] }
   | { t: 'teamPick'; ids: string[]; front?: string[] };
 
-const KINDS = new Set(['bid', 'pass', 'scout', 'revealed', 'prep', 'prepAction', 'lock', 'raidPick', 'teamPick']);
+const KINDS = new Set(['bid', 'pass', 'scout', 'revealed', 'prep', 'prepAction', 'lock', 'autoPrep', 'bet', 'raidPick', 'teamPick']);
 
 /** Rejects anything that is not a well-formed move (messages from the network are untrusted). */
 export function isPlayerMove(x: unknown): x is PlayerMove {
@@ -27,6 +30,7 @@ export function isPlayerMove(x: unknown): x is PlayerMove {
   const m = x as Record<string, unknown>;
   if (typeof m.t !== 'string' || !KINDS.has(m.t)) return false;
   if (m.t === 'bid') return typeof m.amount === 'number' && Number.isFinite(m.amount);
+  if (m.t === 'bet') return typeof m.winnerId === 'string';
   if (m.t === 'prep') return !!m.patch && typeof m.patch === 'object';
   if (m.t === 'teamPick') return Array.isArray(m.ids) && m.ids.length <= 3 && m.ids.every((x) => typeof x === 'string') && (m.front === undefined || (Array.isArray(m.front) && m.front.length <= 3 && m.front.every((x) => typeof x === 'string')));
   if (m.t === 'raidPick') return Array.isArray(m.ids) && m.ids.length <= 6 && m.ids.every((x) => typeof x === 'string');
@@ -45,6 +49,8 @@ export function applyMove(g: GameState, vault: Vault, playerId: string, move: Pl
     case 'prep': return G.setPrep(g, playerId, move.patch);
     case 'prepAction': return G.prepAction(g, playerId, move.act);
     case 'lock': return G.lockPrep(g, playerId);
+    case 'autoPrep': return G.autoPrep(g, vault, playerId);
+    case 'bet': return placeBet(g, G.currentMatch(g), playerId, move.winnerId);
     case 'raidPick': return setRaidPick(g, playerId, move.ids);
     case 'teamPick': return setTeamPick(g, playerId, move.ids, move.front);
   }

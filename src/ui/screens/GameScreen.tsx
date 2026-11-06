@@ -72,7 +72,7 @@ function Phase({ g }: { g: GameState }) {
     case 'hub': return <HubPhase g={g} />;
     case 'prep': return <PrepPhase />;
     case 'battle':
-    case 'results': return <CurrentBattle g={g} />;
+    case 'results': return <><MatchNews g={g} /><CurrentBattle g={g} /></>;
     case 'champion': return <ChampionPhase g={g} />;
   }
 }
@@ -337,6 +337,12 @@ export function Bracket({ g }: { g: GameState }) {
   );
 }
 
+/** What the last match paid out: bounties, comebacks and bets. */
+function MatchNews({ g }: { g: GameState }) {
+  if (!g.matchNews?.length) return null;
+  return <div className="panel col" role="status" style={{ gap: 4, marginBottom: 16 }}>{g.matchNews.map((n) => <div key={n} className="faint">{n}</div>)}</div>;
+}
+
 function RosterTabs({ g, viewer, privacy }: { g: GameState; viewer: string | null; privacy: boolean }) {
   const [pid, setPid] = useState(g.players[0].id);
   const player = g.players.find((p) => p.id === pid)!;
@@ -439,6 +445,7 @@ function ChampionPhase({ g }: { g: GameState }) {
       )}
       <div className="row" style={{ justifyContent: 'center' }}>
         <button className="btn" onClick={() => store.go('hall')}>Hall of Legends</button>
+        {!store.getState().online && <button className="btn gold lg" onClick={() => store.playAgain()}>Play again</button>}
         <button className="btn primary lg" onClick={() => { store.closeGame(); store.go('setup'); }}>New game</button>
         <button className="btn" onClick={() => store.closeGame()}>Home</button>
       </div>

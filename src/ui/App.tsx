@@ -10,6 +10,7 @@ import { Setup } from './screens/Setup';
 import { GameScreen } from './screens/GameScreen';
 import { Hall } from './screens/Hall';
 import { HowTo, SettingsScreen } from './screens/Info';
+import { Leaderboards } from './screens/Leaderboards';
 import { Saves } from './screens/Saves';
 import { OnlineScreen } from './screens/Online';
 import { RoomChat } from './components/RoomChat';
@@ -59,6 +60,7 @@ export function App() {
           )}
           {TWO_D_READY && <button className={`btn sm ghost${screen === 'versus' ? ' active' : ''}`} onClick={() => store.go('versus')}>🥊 2D Arena</button>}
           <button className={`btn sm ghost hide-phone${screen === 'explorer' ? ' active' : ''}`} onClick={() => store.go('explorer')}>Characters</button>
+          <button className={`btn sm ghost hide-phone${screen === 'ranks' ? ' active' : ''}`} onClick={() => store.go('ranks')}>Ranks</button>
           <button className={`btn sm ghost hide-phone${screen === 'hall' ? ' active' : ''}`} onClick={() => store.go('hall')}>Hall</button>
           <button className={`btn sm ghost${screen === 'settings' ? ' active' : ''}`} onClick={() => store.go('settings')} aria-label="Settings">⚙</button>
           <AccountMenu />
@@ -72,6 +74,7 @@ export function App() {
             {screen === 'setup' && <Setup />}
             {screen === 'game' && (game ? <GameScreen /> : <Home />)}
             {screen === 'hall' && <Hall />}
+            {screen === 'ranks' && <Leaderboards />}
             {screen === 'howto' && <HowTo />}
             {screen === 'settings' && <SettingsScreen />}
             {screen === 'saves' && <Saves />}

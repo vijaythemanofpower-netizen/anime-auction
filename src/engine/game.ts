@@ -14,6 +14,7 @@ import { roleOf } from './data/roles';
 import { npcDecide } from './npc';
 import { simulateBattle } from './combat/engine';
 import { applySetBonus, ownedInSeries, setBonus, warChestFrom } from './sets';
+import { npcBets, settleMatch } from './momentum';
 import { narrate } from './narration';
 import { createTournament, findMatch, modeSize, nextPendingMatch, recordResult } from './tournament';
 import { activeSynergies } from './data/world';
@@ -328,8 +329,11 @@ export function startMatch(g: GameState, vault: Vault): R {
     // One extra point from the War Chest each match until it runs dry.
     const extra = (pl.warChest ?? 0) > 0 ? 1 : 0;
     if (extra) pl.warChest = (pl.warChest ?? 0) - 1;
-    pl.prepPoints = PREP_POINTS_PER_MATCH + extra;
+    pl.prepPoints = PREP_POINTS_PER_MATCH + extra + (pl.comeback ? 1 : 0);
+    pl.comeback = false;
   }
+  g.bets = {};
+  npcBets(g, m);
   g.phase = 'prep';
   for (const pid of m.players) if (g.players.find((p) => p.id === pid)!.kind === 'npc') npcPrep(g, vault, pid);
   return OK;
@@ -428,6 +432,25 @@ export const allLocked = (g: GameState) => {
   const m = currentMatch(g);
   return !!m && m.players.every((pid) => g.prep[pid]?.locked);
 };
+
+/** The "Auto-prepare" button: heals and rests first, then trains the lead fighter. Nothing is locked,
+ *  so the player can still change anything. */
+export function autoPrep(g: GameState, vault: Vault, playerId: string): R {
+  const p = g.players.find((x) => x.id === playerId);
+  const prep = g.prep[playerId];
+  if (g.phase !== 'prep' || !p || !prep || prep.locked) return fail('Not preparing.');
+  for (const id of p.roster) {
+    const c = g.conditions[id];
+    if (p.prepPoints > 0 && c.injuries.length) prepAction(g, playerId, { kind: 'treat', charId: id });
+    if (p.prepPoints > 0 && c.fatigue > 30) prepAction(g, playerId, { kind: 'recover', charId: id });
+  }
+  g.prep[playerId] = { ...defaultPrep(g, vault, playerId, prep.fighters.length), strategy: prep.strategy, mental: prep.mental, locked: false };
+  const lead = g.prep[playerId].fighters[0];
+  for (const stat of ['attack', 'speed', 'defense', 'technique'] as StatKey[]) {
+    while (p.prepPoints > 0 && prepAction(g, playerId, { kind: 'train', charId: lead, stat }).ok);
+  }
+  return OK;
+}
 
 function npcPrep(g: GameState, vault: Vault, playerId: string) {
   const p = g.players.find((x) => x.id === playerId)!;
@@ -541,6 +564,7 @@ export function completeBattle(g: GameState, record: BattleRecord): R {
   const winHp = result.fighters.filter((f) => f.side === result.winnerSide).reduce((s, f) => s + f.hp / f.maxHp, 0) / input.sides[result.winnerSide].fighters.length;
   recordResult(g.tournament!, m.id, winnerId, record.battleId, winHp, g.players.map((p) => p.id));
   for (const pid of m.players) g.prep[pid].locked = true;
+  g.matchNews = settleMatch(g, input, winnerId);
   g.phase = 'results';
   return OK;
 }
@@ -549,6 +573,7 @@ export function continueAfterResults(g: GameState): R {
   if (g.phase !== 'results') return fail('Not viewing results.');
   g.currentMatchId = null;
   g.prep = {};
+  g.matchNews = [];
   g.phase = g.tournament?.championId ? 'champion' : 'hub';
   return OK;
 }

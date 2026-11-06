@@ -148,6 +148,7 @@ function Links() {
     <div className="film-links">
       <button onClick={() => store.go('howto')}>How to Play</button>
       <button onClick={() => store.go('explorer')}>Characters</button>
+      <button onClick={() => store.go('ranks')}>Leaderboards</button>
       <button onClick={() => store.go('hall')}>Hall of Legends</button>
     </div>
   );

@@ -9,7 +9,7 @@ import { useMotionOk } from './useMotionOk';
 
 const PLACES: Record<string, [kana: string, label: string]> = {
   home: ['ホーム', 'Home'], explorer: ['キャラクター', 'Characters'], setup: ['新しい対戦', 'New game'], hall: ['殿堂', 'Hall of Legends'],
-  howto: ['遊び方', 'How to play'], settings: ['設定', 'Settings'], saves: ['セーブ', 'Saved games'], online: ['オンライン', 'Online'],
+  howto: ['遊び方', 'How to play'], settings: ['設定', 'Settings'], saves: ['セーブ', 'Saved games'], online: ['オンライン', 'Online'], ranks: ['ランキング', 'Leaderboards'],
   pool: ['選手名簿', 'The pool'], auction: ['オークション', 'Auction'], reveal: ['開示', 'The reveal'], tournament: ['トーナメント', 'Tournament'],
   prep: ['作戦', 'Preparation'], battle: ['決戦', 'Battle'], results: ['結果', 'Results'], champion: ['優勝', 'Champion'],
 };
