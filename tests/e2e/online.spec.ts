@@ -256,7 +256,7 @@ test('single player vs NPC watches 1v1 and 2v2 battles without a blank arena', a
       if (await skipOpening.isVisible().catch(() => false)) await skipOpening.click();
       await expect(opening).toHaveCount(0, { timeout: 15_000 });
     }
-    await page.locator('.hpanel').first().getByRole('button', { name: /create new game/i }).click();
+    await page.locator('.film-beat.on').first().getByRole('button', { name: /create new game/i }).click();
     await expect(page.getByRole('heading', { name: /create new game/i })).toBeVisible();
     await setSegment(page, 'Number of players', /^2$/);
     await page.getByRole('group', { name: 'Human or NPC' }).nth(1).getByRole('button', { name: 'NPC' }).click();

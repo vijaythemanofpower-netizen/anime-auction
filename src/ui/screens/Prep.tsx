@@ -1,3 +1,4 @@
+import { seriesSets } from '../../engine/sets';
 import { useState } from 'react';
 import type { GameState, JumpInRule, MentalApproach, Player, StatKey, Strategy } from '../../engine/types';
 import * as G from '../../engine/game';
@@ -206,6 +207,8 @@ function PrepPanel({ g, player }: { g: GameState; player: Player }) {
       <div className="col" style={{ gap: 16, minWidth: 0 }}>
         <div className="panel col">
           <div className="panel-title"><h3 style={{ margin: 0 }}>Preparation actions</h3><span className="tag" style={{ color: 'var(--gold)' }}>{player.prepPoints} point{player.prepPoints === 1 ? '' : 's'}</span></div>
+          {(player.warChest ?? 0) > 0 && <div className="faint">War Chest: {player.warChest} more bonus point{player.warChest === 1 ? '' : 's'} from your unspent coins, one per match.</div>}
+          {seriesSets(g, player.id).map((x) => <div key={x.series} className="faint">Series Set: {x.series} ×{x.count}, +{Math.round(x.bonus * 100)}% to those fighters.</div>)}
           <select className="input" value={actChar} onChange={(e) => setActChar(e.target.value)} aria-label="Character for preparation action">
             {player.roster.map((id) => <option key={id} value={id}>{g.characters[id].name}</option>)}
           </select>

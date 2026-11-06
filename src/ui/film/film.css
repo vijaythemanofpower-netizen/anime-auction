@@ -1,0 +1,89 @@
+/* The home page film (Film.tsx). The picture and the giant words are drawn in WebGL; this file
+   places the small copy, the floating top bar, and the stills used with reduced motion. */
+
+html[data-film] body { background: #030305; }
+html[data-film] .topbar { position: fixed; left: 0; right: 0; top: 0; background: linear-gradient(180deg, rgba(3, 3, 5, 0.6), transparent) !important; border-bottom: 0 !important; box-shadow: none !important; }
+html[data-film] .topbar::after { display: none; }
+html[data-film] .main { max-width: none; padding: 0; }
+html[data-film] .scroll-speedlines { display: none; }
+
+.home-film { --paper: #f4f0e8; width: 100%; color: var(--paper); background: #030305; overflow-x: clip; }
+.film { position: relative; }
+.film-stage { position: sticky; top: 0; height: 100vh; height: 100svh; overflow: hidden; background: #030305; isolation: isolate; }
+.film-poster, .film-canvas { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.film-poster { filter: brightness(0.75); }
+.film-canvas { opacity: 0; transition: opacity 0.5s linear; }
+.film.ready .film-canvas { opacity: 1; }
+.film.ready .film-poster { visibility: hidden; transition: visibility 0s 0.6s; }
+
+/* The scroll runway. Its length sets how slowly the take plays. */
+.film-track { position: relative; margin-top: -100vh; margin-top: -100svh; pointer-events: none; }
+.film-run.a { height: 700vh; }
+.film-run.b { height: 150vh; }
+.film-pause { position: relative; z-index: 3; pointer-events: auto; }
+
+/* Copy. */
+.film-beat { position: absolute; z-index: 2; max-width: min(440px, 88vw); will-change: transform, opacity; }
+.film-beat:not(.on) { pointer-events: none; }
+/* A soft pool of shadow behind the copy, so it reads over bright frames. */
+.film-beat::before { content: ''; position: absolute; inset: -56px -96px; z-index: -1; background: radial-gradient(closest-side, rgba(3, 3, 5, 0.62), rgba(3, 3, 5, 0.34) 60%, transparent); pointer-events: none; }
+.film-kicker { font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase; color: color-mix(in srgb, var(--paper) 72%, transparent); margin-bottom: 10px; }
+.film-title { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.film-body p { margin: 0; font-size: 15px; line-height: 1.6; color: color-mix(in srgb, var(--paper) 88%, transparent); text-shadow: 0 1px 12px rgba(0, 0, 0, 0.8); }
+.film-body b { color: var(--paper); }
+.film-facts { list-style: none; margin: 14px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: color-mix(in srgb, var(--paper) 72%, transparent); }
+
+.at-hero { left: clamp(20px, 5vw, 96px); bottom: clamp(24px, 6vh, 64px); max-width: min(560px, 90vw); }
+.at-left { left: clamp(20px, 5vw, 96px); top: 50%; translate: 0 -50%; }
+.at-right { right: clamp(20px, 5vw, 96px); top: 50%; translate: 0 -50%; text-align: right; }
+.at-low-left { left: clamp(20px, 5vw, 96px); bottom: clamp(28px, 9vh, 96px); }
+.at-low-right { right: clamp(20px, 5vw, 96px); bottom: clamp(28px, 9vh, 96px); text-align: right; }
+.at-low-center { left: 50%; bottom: clamp(24px, 7vh, 80px); translate: -50% 0; text-align: center; max-width: min(1040px, 92vw); width: 100%; }
+.at-final { left: clamp(20px, 5vw, 96px); bottom: clamp(24px, 6vh, 64px); max-width: min(620px, 90vw); }
+.at-hero .film-body p { font-size: 18px; max-width: 460px; }
+
+.film-beat .menu { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 18px; }
+.film-beat .account-card { margin-top: 14px; max-width: 540px; }
+.film-links { display: flex; flex-wrap: wrap; gap: 4px 20px; margin-top: 14px; }
+.film-links button { position: relative; background: none; border: 0; padding: 10px 0; min-height: 40px; font: inherit; font-size: 13px; letter-spacing: 0.04em; color: color-mix(in srgb, var(--paper) 78%, transparent); cursor: pointer; }
+.film-links button::after { content: ''; position: absolute; left: 0; right: 0; bottom: 6px; height: 1px; background: currentColor; transform: scaleX(0); transform-origin: left; transition: transform 0.25s var(--ease-out, ease-out); }
+.film-links button:hover { color: var(--paper); }
+.film-links button:hover::after { transform: scaleX(1); }
+
+.film-modes { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 20px; text-align: left; }
+.film-modes h3 { margin: 0 0 6px; font-family: var(--font-display); font-weight: 400; font-size: 22px; letter-spacing: 0.02em; text-transform: uppercase; }
+.film-modes p { font-size: 13px; line-height: 1.5; }
+
+/* The reel scrolls over the paused film. */
+.film-reelstart { display: flex; align-items: center; justify-content: center; width: 100%; border: 0; padding: 0; cursor: pointer; }
+.film-reelstart span { font-family: var(--font-display); font-size: 22px; text-transform: uppercase; padding: 12px 28px; background: #030305; color: var(--paper); transition: background 0.2s, color 0.2s; }
+.film-reelstart:hover span { background: var(--paper); color: #030305; }
+.film-reelwrap { background: #050507; padding: 72px max(16px, calc((100vw - 1100px) / 2)); }
+.film-reelhead { margin: 0; font-family: var(--font-display); font-weight: 400; font-size: clamp(36px, 6vw, 72px); line-height: 1; text-transform: uppercase; }
+.film-reelnote { margin: 10px 0 24px; font-size: 15px; color: color-mix(in srgb, var(--paper) 72%, transparent); }
+
+.film-foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 32px; padding: 20px clamp(20px, 5vw, 96px); background: #030305; border-top: 1px solid rgba(255, 255, 255, 0.1); }
+.film-foot-brand { font-family: var(--font-display); font-size: 18px; text-transform: uppercase; }
+.film-foot .film-links { margin: 0; }
+.film-foot-note { font-size: 12px; color: color-mix(in srgb, var(--paper) 58%, transparent); }
+
+/* Reduced motion or no WebGL2: the key poses as stills, the words as ordinary headings. */
+.film.stills .film-still { position: relative; min-height: 100svh; display: flex; align-items: flex-end; padding: 96px clamp(20px, 5vw, 96px) 48px; overflow: hidden; }
+.film.stills .film-still > img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.film.stills .film-still::after { content: ''; position: absolute; inset: 0; background: linear-gradient(0deg, rgba(3, 3, 5, 0.9), transparent 62%); }
+.film.stills .film-beat { position: relative; z-index: 1; left: auto; right: auto; bottom: auto; top: auto; translate: none; opacity: 1 !important; text-align: left; width: 100%; }
+.film.stills .film-beat::before { display: none; }
+.film.stills .film-title { position: static; width: auto; height: auto; overflow: visible; clip-path: none; white-space: normal; margin: 0 0 12px; font-family: var(--font-display); font-weight: 400; font-size: clamp(44px, 9vw, 110px); line-height: 1; text-transform: uppercase; }
+
+@media (max-width: 760px) {
+  .film-run.a { height: 560vh; }
+  .film-run.b { height: 130vh; }
+  .film-beat { max-width: calc(100vw - 40px); }
+  .at-hero .film-body p { font-size: 15px; }
+  .at-right, .at-low-right { left: 20px; right: 20px; bottom: 28px; top: auto; translate: none; text-align: left; }
+  .at-low-center { left: 20px; right: 20px; translate: none; width: auto; max-width: none; bottom: 20px; text-align: left; }
+  .film-modes { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+  .film-modes h3 { font-size: 18px; margin-bottom: 2px; }
+  .film-modes p { font-size: 11px; line-height: 1.4; }
+  .film-beat .btn.lg { min-height: 46px; padding: 0 16px; font-size: 14px; }
+}

@@ -75,6 +75,7 @@ describe('full game flow', () => {
     const { g, vault } = makeGame(2, 3, 'live', 3);
     runAuction(g);
     G.startTournament(g);
+    for (const pl of g.players) pl.warChest = 0;
     G.startMatch(g, vault);
     const [a, b] = G.currentMatch(g)!.players;
     G.lockPrep(g, b);

@@ -3,7 +3,7 @@
 // read hidden game data by accident.
 
 export const SCHEMA_VERSION = 1;
-export const ENGINE_VERSION = '2.14.0';
+export const ENGINE_VERSION = '2.15.0';
 export const STARTING_COINS = 10_000;
 
 export type Archetype =
@@ -171,6 +171,8 @@ export interface Player {
   scoutTokens: number;
   /** Prep action points available during the tournament. */
   prepPoints: number;
+  /** Extra prep points bought by coins left after the auction, one spent per match (sets.ts). */
+  warChest?: number;
 }
 
 // ---------------------------------------------------------------- Auction

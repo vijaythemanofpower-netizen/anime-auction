@@ -1,10 +1,9 @@
-import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { store, useApp } from '../../store/store';
 import { ONLINE_AVAILABLE } from '../../online/client';
 import { signInAsGuest, useAuth } from '../../online/auth';
 import { openAccountDialog } from '../components/AccountMenu';
-import { Panel, sceneUrl, usePanelMotion, type PanelSpec } from '../home/HomeStory';
-import { pickWorlds, type World } from '../home/worlds';
+import { Film, type Beat } from '../film/Film';
 import { useMotionOk } from '../motion/useMotionOk';
 
 /** Sign in right from the start, so your record follows you; or a welcome back with your record. */
@@ -122,115 +121,94 @@ function FightReel() {
 }
 
 
-const MODES: Array<[title: string, text: string, wide?: boolean]> = [
-  ['Tournament', 'Everyone drafts a team, then a bracket runs to one champion. Prep each match, make corner calls, and watch it play out as a comic or in the arena.', true],
+const MODES: Array<[title: string, text: string]> = [
+  ['Tournament', 'Everyone drafts a team, then a bracket runs to one champion. Prep each match, make corner calls, and watch it play out as a comic or in the arena.'],
   ['Boss Raid', 'Pool your fighters against one to four of 47 anime villains. Bosses usually win, and every fighter’s share of the fight is scored with an MVP.'],
   ['Team Battle', '2v2, 3v3, or two against one. Each player picks their own fighters on their own device.'],
   ['Online rooms', 'Share a six-character code. Chat, react, invite friends, and everyone sees the same fight at the same moment.'],
 ];
 
-/** The game's actions, shown on the story's last scene. */
-function Actions({ account = true }: { account?: boolean }) {
+/** The way in: a saved game first if there is one, then a new game, online, saved games. */
+function Actions() {
   const game = useApp((s) => s.game);
   const saves = useApp((s) => s.saves);
   const resumable = saves.filter((s) => !s.archived && s.phase !== 'champion');
   return (
-    <>
-      <div className="menu">
-        {game && <button className="btn primary lg" onClick={() => store.go('game')}>▶ Return to “{game.config.name}”</button>}
-        <button className={`btn lg ${game ? '' : 'primary'}`} onClick={() => store.go('setup')}>✦ Create New Game</button>
-        {ONLINE_AVAILABLE && <button className="btn lg" onClick={() => store.go('online')}>🌐 Play Online with Friends</button>}
-        {saves.length > 0 && <button className="btn" onClick={() => store.go('saves')}>⟲ Continue Saved Game {resumable.length ? <span className="tag">{resumable.length}</span> : null}</button>}
-      </div>
-      {account && <AccountCard />}
-      <div className="home-links">
-        <button className="btn sm ghost" onClick={() => store.go('howto')}>? How to Play</button>
-        <button className="btn sm ghost" onClick={() => store.go('explorer')}>◎ Characters</button>
-        <button className="btn sm ghost" onClick={() => store.go('hall')}>♛ Hall of Legends</button>
-      </div>
-    </>
-  );
-}
-
-/** Six panels, six different characters: the pitch, how a game goes, the modes, and the way in. */
-export function Home() {
-  const motionOk = useMotionOk();
-  const [worlds, setWorlds] = useState<World[]>(() => pickWorlds(6));
-  const lead = worlds[0];
-  const rootRef = useRef<HTMLDivElement>(null);
-  usePanelMotion(rootRef, motionOk, worlds.map((w) => w.key).join());
-  // Fetch and decode the first scene before anything else, and the next panel's soon after,
-  // so no panel ever arrives blank or sharpens in front of you.
-  useEffect(() => {
-    const px = window.innerWidth * (window.devicePixelRatio || 1);
-    const size = px <= 1280 ? 1280 : px <= 1920 ? 1920 : 2560;
-    worlds.forEach((w, i) => {
-      const img = new Image();
-      img.decoding = 'async';
-      img.src = sceneUrl(w, SCENES[i], size);
-      void img.decode().catch(() => undefined);
-    });
-  }, [worlds]);
-  // The top bar and buttons take the opening world's accent while the home page is open.
-  useEffect(() => {
-    const root = document.documentElement.style;
-    const vars: Array<[string, string]> = [['--violet', lead.accent], ['--violet-2', lead.tone], ['--crimson', lead.accent], ['--crimson-2', lead.tone]];
-    for (const [k, v] of vars) root.setProperty(k, v);
-    document.documentElement.dataset.world = lead.key;
-    return () => { for (const [k] of vars) root.removeProperty(k); delete document.documentElement.dataset.world; };
-  }, [lead]);
-  // The panels sit right under the top bar, whatever its height on this screen.
-  const [tb, setTb] = useState(62);
-  useEffect(() => {
-    const bar = document.querySelector<HTMLElement>('.topbar');
-    if (!bar) return;
-    const measure = () => setTb(bar.offsetHeight);
-    measure();
-    const ro = new ResizeObserver(measure);
-    ro.observe(bar);
-    return () => ro.disconnect();
-  }, []);
-  const reshuffle = () => {
-    setWorlds(pickWorlds(6));
-    window.scrollTo({ top: 0, behavior: 'auto' });
-  };
-
-  const panels: PanelSpec[] = [
-    { world: worlds[0], scene: 3, layout: 'hero', label: 'ANIME AUCTION', title: 'Bid on [legends.]', body: <p>Anime fighters go under the hammer with their true power hidden. Spend <b className="coins">10,000</b> coins wisely, build a team, and survive a tournament settled by a real combat simulation. 2–6 players, on one screen or online.</p>, extra: <div className="story-actions"><Actions account={false} /></div> },
-    { world: worlds[1], scene: 1, layout: 'right', label: 'BID', title: 'Every fighter goes [under the hammer.]', body: <p>Fighters come up one at a time. You see who they are and hints about their power, never the numbers. Outbid your friends, or let a lot go cheap and pounce later.</p>, extra: <ul className="hpanel-facts"><li><b>10,000</b> coins each</li><li><b>Hidden</b> stats until you win</li><li><b>Live</b> bids against friends or NPCs</li></ul> },
-    { world: worlds[2], scene: 2, layout: 'left', label: 'BUILD', title: 'Hidden power. [Real stats.]', body: <p>A fighter&apos;s real stats unlock the moment you win them. Choose who fights, set tactics, and read the arena: fighters whose element or style suits it hit harder.</p> },
-    { world: worlds[3], scene: 3, layout: 'center', label: 'BATTLE', title: 'Transform. [Fight.] Win.', body: <p>A seeded combat engine settles every match: Sage Mode, Bankai and Gear Fifth mid-fight, secret moves when a teammate falls, plot twists, and up to five corner calls from you.</p> },
-    { world: worlds[4], scene: 2, layout: 'split', label: 'WAYS TO FIGHT', title: 'Pick your [war.]', body: <p>Same draft, four ways to settle it.</p>, extra: <div className="hpanel-modes">{MODES.map(([title, text]) => <div key={title}><h3>{title}</h3><p>{text}</p></div>)}</div> },
-    { world: worlds[5], scene: 1, layout: 'finale', label: 'YOUR MOVE', title: 'Your friends are [waiting.]', body: <p>Make a room, share the code or invite friends straight in, and everyone watches the same fight at the same moment.</p>,
-      extra: <div className="story-actions"><div className="menu"><button className="btn primary lg" onClick={() => store.go('setup')}>✦ Create New Game</button>{ONLINE_AVAILABLE && <button className="btn lg" onClick={() => store.go('online')}>🌐 Play Online with Friends</button>}</div><AccountCard /><button className="story-switch inline" onClick={reshuffle}>⟳ Show me other worlds</button></div> },
-  ];
-
-  return (
-    <div ref={rootRef} className="home-world" style={{ '--tb': `${tb}px`, '--acc': lead.accent, '--tone': lead.tone, '--ink2': lead.ink } as CSSProperties}>
-      {panels.map((p, i) => <Panel key={`${p.world.key}-${i}`} p={p} index={i} total={panels.length} motionOk={motionOk} eager={i < 2} />)}
-      <section className="world-section">
-        <h2 className="world-h"><span className="no">06</span>Watch the real fights</h2>
-        <p className="home-note" style={{ marginTop: 0 }}>Official clips from the studios&apos; own channels, playing muted. Turn the sound on or skip to the next.</p>
-        <LazyReel />
-      </section>
+    <div className="menu">
+      {game && <button className="btn primary lg" onClick={() => store.go('game')}>Return to “{game.config.name}”</button>}
+      <button className={`btn lg ${game ? '' : 'primary'}`} onClick={() => store.go('setup')}>Create New Game</button>
+      {ONLINE_AVAILABLE && <button className="btn lg" onClick={() => store.go('online')}>Play Online with Friends</button>}
+      {saves.length > 0 && <button className="btn" onClick={() => store.go('saves')}>Continue Saved Game {resumable.length ? <span className="tag">{resumable.length}</span> : null}</button>}
     </div>
   );
 }
 
-/** The YouTube player is heavy (its script keeps the main thread busy), so it loads only
- *  when the reel is near the screen and unloads again once you scroll well away. */
-function LazyReel() {
-  const ref = useRef<HTMLDivElement>(null);
-  const [near, setNear] = useState(false);
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const io = new IntersectionObserver(([e]) => setNear(e.isIntersecting), { rootMargin: '300px 0px' });
-    io.observe(el);
-    return () => io.disconnect();
-  }, []);
-  return <div ref={ref} className="reel-slot">{near ? <FightReel /> : <div className="fight-reel" style={{ backgroundImage: `url(${import.meta.env.BASE_URL}scenes/${POSTERS[0]}.jpg)` }} />}</div>;
+function Links() {
+  return (
+    <div className="film-links">
+      <button onClick={() => store.go('howto')}>How to Play</button>
+      <button onClick={() => store.go('explorer')}>Characters</button>
+      <button onClick={() => store.go('hall')}>Hall of Legends</button>
+    </div>
+  );
 }
 
-/** Which scene each panel uses (the hero opens on the strongest one). */
-const SCENES: Array<1 | 2 | 3> = [3, 1, 2, 3, 2, 1];
+/** One unbroken shot, scrubbed by scrolling: the words change, he never cuts away. */
+export function Home() {
+  const motionOk = useMotionOk();
+  // The top bar floats over the film while this page is open.
+  useEffect(() => {
+    document.documentElement.dataset.film = '1';
+    return () => { delete document.documentElement.dataset.film; };
+  }, []);
+
+  const beats: Beat[] = [
+    { at: 0, title: 'Anime Auction', place: 'hero', interactive: true, kicker: 'A party game for 2 to 6 players',
+      body: <><p>Bid on anime fighters with their true power hidden. Build a team. Survive the tournament.</p><Actions /><Links /></> },
+    { at: 1, title: 'True power stays hidden', place: 'low-right',
+      body: <p>Fighters come up one at a time. You see who they are and hints about their power, never the numbers.</p> },
+    { at: 2, title: 'Bid', place: 'low-left', kicker: '01 / The auction',
+      body: <><p>Everyone starts with <b>10,000</b> coins. Outbid your friends, or let a lot go cheap and pounce later.</p><ul className="film-facts"><li>Live bids</li><li>Friends or NPCs</li><li>One mystery lot</li></ul></> },
+    { at: 3, title: 'Build', place: 'low-center', kicker: '02 / Your team',
+      body: <p>A fighter&apos;s real stats unlock the moment you win them. Choose who fights, set tactics, and read the arena: the right element hits harder.</p> },
+    { at: 4, title: 'Battle', place: 'low-left', kicker: '03 / The tournament',
+      body: <p>A seeded combat engine settles every match: transformations mid-fight, secret moves when a teammate falls, plot twists, and up to five corner calls from you.</p> },
+    { at: 5, title: 'One champion', place: 'low-center', kicker: 'Same draft, four ways to settle it',
+      body: <ul className="film-modes">{MODES.map(([title, text]) => <li key={title}><h3>{title}</h3><p>{text}</p></li>)}</ul> },
+    { at: 6, title: 'Your friends are waiting', place: 'right', kicker: 'Online rooms',
+      body: <p>Make a room, share the six-character code, and everyone watches the same fight at the same moment.</p> },
+    { at: 7, title: 'Your move', place: 'final', interactive: true,
+      body: <><Actions /><AccountCard /><Links /></> },
+  ];
+
+  return (
+    <div className="home-film">
+      <Film beats={beats} motionOk={motionOk} pause={(
+        <section className="film-reelwrap">
+          <h2 className="film-reelhead">Watch the real fights</h2>
+          <p className="film-reelnote">Official clips from the studios&apos; own channels, playing muted.</p>
+          <LazyReel />
+        </section>
+      )} />
+      <footer className="film-foot">
+        <span className="film-foot-brand">Anime Auction</span>
+        <Links />
+        <span className="film-foot-note">A fan-made party game. Characters belong to their creators.</span>
+      </footer>
+    </div>
+  );
+}
+
+/** The YouTube player is heavy (its script stalls the page for up to a second), so nothing of it
+ *  loads until someone asks for it: scrolling past the reel never pays for it. */
+function LazyReel() {
+  const [playing, setPlaying] = useState(false);
+  if (playing) return <div className="reel-slot"><FightReel /></div>;
+  return (
+    <div className="reel-slot">
+      <button className="fight-reel film-reelstart" style={{ backgroundImage: `url(${import.meta.env.BASE_URL}scenes/${POSTERS[0]}.jpg)` }} onClick={() => setPlaying(true)} aria-label="Play the fight reel">
+        <span>Play the reel</span>
+      </button>
+    </div>
+  );
+}

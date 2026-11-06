@@ -200,7 +200,7 @@ export class CinematicVfx {
     for (let i = 0; i < 60; i++) this.frame(0.1, 16);
   }
 
-  /** Places the art exactly where the page's own image sits (story.css .hpanel-art: a box
+  /** Places the art exactly where the page's own image sits (the page banner image: a box
    *  112% tall starting at -6%, object-fit cover at 60% 28%, settled scale 1.06 about the
    *  centre), so handing a panel over from the image to the canvas never jumps. */
   private fitArt() {

@@ -1,4 +1,5 @@
 import { BadgeChips, useBadges } from '../components/Badges';
+import { setInterest } from '../../engine/sets';
 import { useEffect, useState } from 'react';
 import type { GameState, Player } from '../../engine/types';
 import * as A from '../../engine/auction';
@@ -120,6 +121,7 @@ export function AuctionPhase() {
             <div className="panel tight col" style={{ gap: 6 }}>
               <div className="row" style={{ justifyContent: 'space-between' }}><h3 style={{ margin: 0 }}>{c.name}</h3><SourceBadge c={c} /></div>
               <div className="faint">{c.archetype} · {c.series} · {c.weapon}{a.setOf ? ` · ${ROLES[roleOf(c)].icon} ${ROLES[roleOf(c)].name}` : ''}</div>
+              {setInterest(g, c.seriesId).map((x) => <div key={x.id} className="faint">{x.name} owns {x.count} from {c.series}: this {x.count >= 2 ? 'keeps' : 'starts'} a Series Set</div>)}
               <div className="row" style={{ gap: 4 }}>{c.tags.map((t) => <TagChip key={t} t={t} />)}</div>
               <button className="btn sm" onClick={() => setProfile(true)}>Full public profile</button>
             </div>

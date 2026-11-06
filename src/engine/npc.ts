@@ -13,11 +13,13 @@ export function npcStyle(playerId: string): number {
 
 export function npcDecide(
   playerId: string, advice: ScoutAdvice, minBid: number, maxBid: number, isLeader: boolean, mustBuy: boolean, rng: Rng,
+  /** How much more this lot is worth to them because it builds a series set. */
+  setFactor = 1,
 ): NpcDecision {
   if (isLeader) return { kind: 'wait' };
   if (maxBid < minBid) return { kind: 'pass' };
   const mult = advice.label === 'TAKE' ? 1.35 : advice.label === 'MIGHT TAKE' ? 1.0 : 0.55;
-  const valuation = advice.fairPrice * mult * npcStyle(playerId) * rng.range(0.85, 1.15);
+  const valuation = advice.fairPrice * mult * npcStyle(playerId) * setFactor * rng.range(0.85, 1.15);
   if (minBid <= valuation || (mustBuy && minBid <= maxBid * 0.6)) {
     // Occasionally jump-bid to pressure rivals.
     const jump = rng.chance(0.2) ? Math.round((valuation - minBid) * 0.4 / 50) * 50 : 0;

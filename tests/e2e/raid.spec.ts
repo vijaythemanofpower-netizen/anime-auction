@@ -26,7 +26,7 @@ test('offline raid plays without a black screen', async ({ browser }, info) => {
   await page.goto('/');
   const opening = page.getByRole('dialog', { name: 'Opening' });
   if (await opening.isVisible().catch(() => false)) await opening.getByRole('button', { name: /skip/i }).click().catch(() => {});
-  await page.locator('.hpanel').first().getByRole('button', { name: /create new game/i }).evaluate((b) => (b as HTMLButtonElement).click()); // a home-page video can cover it
+  await page.locator('.film-beat.on').first().getByRole('button', { name: /create new game/i }).evaluate((b) => (b as HTMLButtonElement).click()); // a home-page video can cover it
   await page.getByRole('group', { name: 'Number of players' }).getByRole('button', { name: /^2$/ }).click();
   await page.getByRole('group', { name: 'Human or NPC' }).nth(1).getByRole('button', { name: 'NPC' }).click();
   await page.getByRole('button', { name: /^Create game$/i }).click();

@@ -13,6 +13,7 @@ import { publicAppeal, scoutAdvice, type ScoutAdvice } from './scout';
 import { roleOf } from './data/roles';
 import { npcDecide } from './npc';
 import { simulateBattle } from './combat/engine';
+import { applySetBonus, ownedInSeries, setBonus, warChestFrom } from './sets';
 import { narrate } from './narration';
 import { createTournament, findMatch, modeSize, nextPendingMatch, recordResult } from './tournament';
 import { activeSynergies } from './data/world';
@@ -215,7 +216,10 @@ export function advanceLot(g: GameState, now: number): R {
 
 function finishAuction(g: GameState) {
   g.phase = 'reveal';
-  for (const p of g.players) for (const id of p.roster) g.conditions[id] ??= emptyCondition(id);
+  for (const p of g.players) {
+    p.warChest = warChestFrom(p.coins);
+    for (const id of p.roster) g.conditions[id] ??= emptyCondition(id);
+  }
 }
 
 export function useScoutToken(g: GameState, vault: Vault, playerId: string): R {
@@ -267,7 +271,7 @@ export function npcAct(g: GameState, playerId: string, now: number): boolean {
   const advice = scoutFor(g, playerId)!;
   const rng = new Rng(deriveSeed('npc', g.secret, lot.lotNumber, a.bidSeq, playerId));
   const mustBuy = !lot.mystery && a.queue.length + 1 <= A.totalSlotsRemaining(g) + 1;
-  const d = npcDecide(playerId, advice, A.minNextBid(lot, a.config), A.maxBidFor(p, g.config.rosterSize, a.config.openingBid), A.leader(lot)?.playerId === playerId, mustBuy, rng);
+  const d = npcDecide(playerId, advice, A.minNextBid(lot, a.config), A.maxBidFor(p, g.config.rosterSize, a.config.openingBid), A.leader(lot)?.playerId === playerId, mustBuy, rng, setFactorFor(g, playerId, lot.charId, !!lot.mystery));
   if (d.kind === 'bid') return A.placeBid(g, playerId, d.amount, now).ok;
   if (d.kind === 'pass') return A.passLot(g, playerId, now).ok;
   return false;
@@ -320,11 +324,22 @@ export function startMatch(g: GameState, vault: Vault): R {
   g.prep = {};
   for (const pid of m.players) {
     g.prep[pid] = defaultPrep(g, vault, pid, size);
-    g.players.find((p) => p.id === pid)!.prepPoints = PREP_POINTS_PER_MATCH;
+    const pl = g.players.find((p) => p.id === pid)!;
+    // One extra point from the War Chest each match until it runs dry.
+    const extra = (pl.warChest ?? 0) > 0 ? 1 : 0;
+    if (extra) pl.warChest = (pl.warChest ?? 0) - 1;
+    pl.prepPoints = PREP_POINTS_PER_MATCH + extra;
   }
   g.phase = 'prep';
   for (const pid of m.players) if (g.players.find((p) => p.id === pid)!.kind === 'npc') npcPrep(g, vault, pid);
   return OK;
+}
+
+/** NPCs chase sets too: a lot that builds one is worth more to them. */
+function setFactorFor(g: GameState, playerId: string, charId: string, mystery: boolean): number {
+  if (mystery) return 1;
+  const have = ownedInSeries(g, playerId, g.characters[charId]?.seriesId ?? '');
+  return have >= 2 ? 1.3 : have === 1 ? 1.2 : 1;
 }
 
 export function currentMatch(g: GameState) {
@@ -440,7 +455,7 @@ export function buildSnapshot(g: GameState, vault: Vault, charId: string, side: 
   return {
     charId, name: c.evolved ? h.evolution.formName : pc.name, playerId: g.owners[charId], side,
     archetype: pc.archetype, temperament: pc.temperament, reach: pc.reach, tags: pc.tags,
-    stats: progressedStats(h, c), traits: h.traits,
+    stats: applySetBonus(progressedStats(h, c), setBonus(ownedInSeries(g, g.owners[charId], pc.seriesId))), traits: h.traits,
     abilities: [...pc.knownAbilities, h.hiddenAbility, ...c.unlockedAbilities],
     position, fatigue: c.fatigue, injuries: structuredClone(c.injuries), price: g.prices[charId] ?? 0,
     vulnerability: h.vulnerability,
