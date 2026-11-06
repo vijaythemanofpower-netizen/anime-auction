@@ -2,8 +2,8 @@
 // see who carried the fight. The host starts raids; everyone in the room can watch
 // them and see the results (engine/raid.ts).
 import { useMemo } from 'react';
-import type { GameState, RaidResult } from '../../engine/types';
-import { RAID_LEVELS, RAID_MAX_TEAM, bossCount, foughtBosses, legendVillains, levelBosses, nextRaidLevel, raidSlots } from '../../engine/raid';
+import type { BossTrick, GameState, RaidResult } from '../../engine/types';
+import { BOSS_TRICKS, RAID_LEVELS, RAID_MAX_TEAM, bossCount, foughtBosses, tricksAtLevel, legendVillains, levelBosses, nextRaidLevel, raidSlots } from '../../engine/raid';
 import { VILLAINS } from '../../engine/data/villains';
 import { store, useApp } from '../../store/store';
 import { CharArt } from './Portrait';
@@ -54,6 +54,10 @@ export function RaidHub({ g }: { g: GameState }) {
             ? (lastRun?.won ? 'Your party cleared all five levels!' : `The run ended at Level ${lastRun?.level ?? 1}. Start a new run to climb again.`)
             : `Level ${level}: ${bossCount(level, party) === 2 ? (level === RAID_LEVELS ? 'two random villains from the very top' : 'two random villains (your party is big)') : level === 1 ? 'a random villain from the weakest fifth' : 'a random villain'}. Who you face stays secret until the fight starts. Win to unlock the next level; lose and the run ends.`}
         </p>
+        <details className="boss-tricks">
+          <summary>Boss tricks{level ? `: ${tricksAtLevel(level)} random at Level ${level}` : ''}</summary>
+          <ul>{(Object.keys(BOSS_TRICKS) as BossTrick[]).map((k) => <li key={k}><b>{BOSS_TRICKS[k].name}.</b> {BOSS_TRICKS[k].text}</li>)}</ul>
+        </details>
         {guest ? <div className="faint">The host starts each level. You'll watch it here.</div> : (
           <>
             {waiting.length > 0 && <div className="faint">Still choosing: {waiting.map((p) => p.name).join(', ')}. Anyone who hasn't picked sends their strongest fighters.</div>}
@@ -122,6 +126,7 @@ export function RaidCard({ r, g, canWatch, again }: { r: RaidResult & { title?: 
           {canWatch && <button className="btn sm" onClick={() => store.watch(r.battleId)}>Watch</button>}
         </span>
       </div>
+      {!!r.tricks?.length && <div className="row" style={{ gap: 6, flexWrap: 'wrap' }}>{r.tricks.map((k) => <span key={k} className="tag" title={BOSS_TRICKS[k].text}>{BOSS_TRICKS[k].name}</span>)}</div>}
       {mvp && (
         <div className="raid-mvp">
           <span className="mvp-art">{g.characters[mvp.charId] && <CharArt c={g.characters[mvp.charId]} />}</span>

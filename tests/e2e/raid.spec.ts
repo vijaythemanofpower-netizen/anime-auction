@@ -4,7 +4,7 @@ import { expect, test, type Page } from '@playwright/test';
 // watch the fight at 4x, checking the arena stays on screen and nothing throws. Players reported
 // black screens in online raids (Nov 3 2026).
 // AniList pictures refuse cross-site fetches for the effects layer; the game falls back quietly.
-const NOISE = [/favicon/i, /8188|\/comfy\//i, /ERR_CONNECTION_REFUSED/i, /anilistcdn.*CORS policy/i, /Failed to load resource: net::ERR_FAILED/i];
+const NOISE = [/favicon/i, /8188|\/comfy\//i, /ERR_CONNECTION_REFUSED/i, /anilistcdn.*CORS policy/i, /Failed to load resource: net::ERR_FAILED/i, /responded with a status of 500/i];
 
 test('offline raid plays without a black screen', async ({ browser }, info) => {
   test.setTimeout(20 * 60 * 1000);

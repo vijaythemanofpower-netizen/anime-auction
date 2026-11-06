@@ -165,3 +165,7 @@
 @media (prefers-reduced-motion: no-preference) { .climb-step.next b { animation: climb-pulse 1.4s ease-in-out infinite alternate; } }
 @keyframes climb-pulse { to { color: var(--violet); } }
 @media (max-width: 480px) { .climb-steps { gap: 4px; } .climb-step { padding: 8px 2px; } .climb-step b { font-size: 22px; } .climb-step small { font-size: 10px; } }
+
+.boss-tricks summary { cursor: pointer; font-size: 13px; font-weight: 700; }
+.boss-tricks ul { margin: 8px 0 0; padding-left: 18px; font-size: 13px; color: var(--text-dim); display: grid; gap: 4px; }
+.boss-tricks b { color: var(--text); }

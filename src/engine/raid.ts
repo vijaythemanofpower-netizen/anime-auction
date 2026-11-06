@@ -2,7 +2,7 @@
 // villain, scaled to be hard for the size of the team. The fight runs on the same
 // engine; afterwards each fighter's contribution is scored and an MVP is crowned.
 // A raid never changes the tournament (no injuries, fatigue or money).
-import type { BattleInput, BattleRecord, FighterSnapshot, GameState, PublicCharacter, RaidContribution, RaidResult, Stats } from './types';
+import type { BattleInput, BattleRecord, BossTrick, FighterSnapshot, GameState, PublicCharacter, RaidContribution, RaidResult, Stats } from './types';
 import { ENGINE_VERSION, STAT_KEYS } from './types';
 import { simulateBattle } from './combat/engine';
 import { narrate } from './narration';
@@ -78,8 +78,21 @@ export const RAID_LEVELS = 5;
  * built-in characters (the old scale let those win 90-100% at every level).
  */
 const LEVEL_SCALE = [
-  { hp: 1.6, power: 1.45 }, { hp: 1.9, power: 1.75 }, { hp: 2.3, power: 2.05 }, { hp: 2.7, power: 2.4 }, { hp: 3.3, power: 2.9 },
+  { hp: 1.6, power: 1.45 }, { hp: 1.9, power: 1.75 }, { hp: 2.3, power: 2.05 }, { hp: 2.7, power: 2.4 }, { hp: 3.0, power: 2.7 },
 ];
+
+/** Boss tricks with what the Raid tab says about them. Shuffled per fight, more of them each level. */
+export const BOSS_TRICKS: Record<BossTrick, { name: string; text: string }> = {
+  sweep: { name: 'Crushing Sweep', text: 'Charges up, then hits the whole party. A stun breaks the charge; a solid guard halves it.' },
+  secondwind: { name: 'Second Wind', text: 'Below half health, recovers once.' },
+  barrier: { name: 'Barrier', text: 'Below 70% health, raises a shield that has to be broken.' },
+  enrage: { name: 'Enrage', text: 'Below a quarter health, hits far harder until it falls.' },
+};
+const TRICKS_PER_LEVEL = [1, 2, 2, 3, 4];
+export const tricksAtLevel = (level: number) => TRICKS_PER_LEVEL[Math.min(RAID_LEVELS, Math.max(1, level)) - 1];
+function tricksFor(level: number, seed: number): BossTrick[] {
+  return new Rng(seed ^ (level * 0x51d7)).shuffle(Object.keys(BOSS_TRICKS) as BossTrick[]).slice(0, tricksAtLevel(level));
+}
 
 /** Villains ranked weakest to strongest (canon sheet, else hidden stats) and cut into five tiers. */
 export function bossTiers(pool: PublicCharacter[], secret: number): PublicCharacter[][] {
@@ -159,7 +172,7 @@ function power(g: GameState, vault: Vault, id: string) {
 }
 
 /** The boss as a fighter: canon stats (or its profile) pushed up, health and damage scaled. */
-function bossSnapshot(boss: PublicCharacter, secret: number, teamSize: number, bossCount = 1, level?: number): FighterSnapshot {
+function bossSnapshot(boss: PublicCharacter, secret: number, teamSize: number, bossCount = 1, level?: number, tricks: BossTrick[] = []): FighterSnapshot {
   registerCharacterMoves(boss);
   const h = generateHidden(boss, secret);
   const canon = canonFor(boss);
@@ -168,7 +181,7 @@ function bossSnapshot(boss: PublicCharacter, secret: number, teamSize: number, b
   return {
     charId: boss.id, name: boss.name, playerId: 'raid-boss', side: 1, archetype: boss.archetype, temperament: boss.temperament, reach: boss.reach,
     tags: boss.tags, stats, traits: h.traits, abilities: [...boss.knownAbilities, h.hiddenAbility], position: 'front', fatigue: 0, injuries: [],
-    price: 0, vulnerability: null, boss: levelScaled(multiBoss(bossScaling(teamSize), bossCount), level, teamSize),
+    price: 0, vulnerability: null, boss: { ...levelScaled(multiBoss(bossScaling(teamSize), bossCount), level, teamSize), ...(tricks.length ? { tricks } : {}) },
   };
 }
 
@@ -188,7 +201,7 @@ export function buildRaidInput(g: GameState, vault: Vault, boss: PublicCharacter
     battleId: uid('raid'), engineVersion: ENGINE_VERSION, seed, mode: 'squad', environmentId: env, rivalry: null,
     sides: [
       { playerId: 'raid-team', strategy: 'balanced', mental: 'composure', fighters, synergies: [], coach: 'auto' },
-      { playerId: 'raid-boss', strategy: 'aggressive', mental: 'intimidate', fighters: bosses.map((b) => bossSnapshot(b, g.secret, fighters.length, bosses.length, level)), synergies: [], coach: 'auto' },
+      { playerId: 'raid-boss', strategy: 'aggressive', mental: 'intimidate', fighters: bosses.map((b, i) => bossSnapshot(b, g.secret, fighters.length, bosses.length, level, level ? tricksFor(level, seed + i) : [])), synergies: [], coach: 'auto' },
     ],
   };
 }
@@ -230,7 +243,7 @@ export function runRaid(g: GameState, vault: Vault, bossOrBosses: PublicCharacte
   const contributions = raidContributions(record);
   const raid: RaidResult = {
     id: input.battleId, battleId: input.battleId, bossId: boss.id, bossName: boss.name, bossIds: bosses.map((b) => b.id), won: result.winnerSide === 0,
-    mvp: contributions[0]?.charId ?? null, contributions, at: Date.now(), ...(level ? { level } : {}),
+    mvp: contributions[0]?.charId ?? null, contributions, at: Date.now(), ...(level ? { level, tricks: [...new Set(input.sides[1].fighters.flatMap((f) => f.boss?.tricks ?? []))] } : {}),
   };
   g.raids = [...(g.raids ?? []), raid];
   return { record, result: raid };

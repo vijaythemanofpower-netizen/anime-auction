@@ -6,7 +6,7 @@ import type {
   Tag,
 } from '../types';
 import { CALLS_PER_BATTLE, ENGINE_VERSION } from '../types';
-import type { FighterSnapshot } from '../types';
+import type { BossTrick, FighterSnapshot } from '../types';
 import { arenaFit, fitEdge } from '../arenaFit';
 import type { KitTrigger } from '../data/kits';
 import { Rng, deriveSeed, hashString } from '../rng';
@@ -344,6 +344,7 @@ export class BattleSim {
       }
     }
     if (f.mendCd > 0) f.mendCd--;
+    if (f.snap.boss?.tricks?.length && this.bossTrick(f, f.snap.boss.tricks)) return;
     if (this.healerTurn(f)) return;
     const stunned = hasStatus(f, 'stun') || (hasStatus(f, 'freeze') && this.rng.chance(0.5));
     for (const s of f.statuses) if (s.type !== 'shield') s.duration--;
@@ -750,6 +751,51 @@ export class BattleSim {
       : `${this.name(f)} patches up ${this.name(hurt)}.`;
     this.emit('heal', text, { actor: f.id, target: hurt.id, heal: hurt.hp - before, hpBefore: before, hpAfter: hurt.hp, context: { mend: true, ...(cure ?? {}) } });
     return true;
+  }
+
+  /**
+   * Raid boss tricks, announced as twists so the booth and the arena call them out. Stunning a
+   * boss while it charges its sweep breaks the attack; a solid guard halves it. Returns true when
+   * the trick was the boss's whole turn. Only raid bosses have tricks: normal fights never get here.
+   */
+  private bossTrick(f: CombatFighter, tricks: BossTrick[]): boolean {
+    const stunned = !!hasStatus(f, 'stun');
+    if (f.bossCharging) {
+      f.bossCharging = false;
+      if (stunned) {
+        this.twist(`break:${f.id}:${f.actionsTaken}`, 'THE CHARGE IS BROKEN!', `${this.name(f)} is stunned and the attack fizzles out!`, f);
+        return false;
+      }
+      this.twist(`sweep:${f.id}:${f.actionsTaken}`, 'CRUSHING SWEEP!', `${this.name(f)} lets it go and the blast tears through the whole party!`, f);
+      for (const t of this.alive(f.side === 0 ? 1 : 0)) {
+        const dmg = Math.max(1, Math.round(t.maxHp * (t.guard >= 60 ? 0.08 : 0.16)));
+        const before = t.hp;
+        this.applyDamage(t, dmg);
+        t.guard = clamp(t.guard - 20, 0, 100);
+        this.emit('status_tick', `${this.name(t)} is caught in the blast.`, { actor: f.id, target: t.id, damage: dmg, hpBefore: before, hpAfter: t.hp });
+        if (t.defeated) this.onDefeat(t, f, 'knockout');
+      }
+      return true;
+    }
+    if (stunned) return false;
+    const hp = hpPct(f);
+    if (tricks.includes('enrage') && hp < 0.25 && this.twist(`enrage:${f.id}`, 'ENRAGED!', `${this.name(f)} stops holding back. Every blow hits far harder now!`, f)) f.mods.dmg += 0.35;
+    if (tricks.includes('barrier') && hp < 0.7 && this.twist(`barrier:${f.id}`, 'BARRIER UP!', `${this.name(f)} throws up a barrier. It has to be broken before they can be hurt again!`, f)) {
+      f.statuses.push({ type: 'shield', duration: 99, magnitude: Math.round(f.maxHp * 0.1) });
+    }
+    if (tricks.includes('secondwind') && hp < 0.5 && this.twist(`bosswind:${f.id}`, 'SECOND WIND!', `${this.name(f)} refuses to fall and surges back!`, f)) {
+      const before = f.hp;
+      f.hp = Math.min(f.maxHp, f.hp + Math.round(f.maxHp * 0.15));
+      this.emit('heal', `${this.name(f)} recovers.`, { actor: f.id, target: f.id, heal: f.hp - before, hpBefore: before, hpAfter: f.hp });
+      return true;
+    }
+    if (tricks.includes('sweep') && f.actionsTaken - f.bossLastSweep >= 6) {
+      f.bossLastSweep = f.actionsTaken;
+      f.bossCharging = true;
+      this.twist(`charge:${f.id}:${f.actionsTaken}`, 'SOMETHING HUGE IS COMING!', `${this.name(f)} starts charging. Stun them now or brace for it!`, f);
+      return true;
+    }
+    return false;
   }
 
   /** Arena-wide twists and crowd rallies, checked between actions. */

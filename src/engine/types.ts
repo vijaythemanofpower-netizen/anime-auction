@@ -3,7 +3,7 @@
 // read hidden game data by accident.
 
 export const SCHEMA_VERSION = 1;
-export const ENGINE_VERSION = '2.13.0';
+export const ENGINE_VERSION = '2.14.0';
 export const STARTING_COINS = 10_000;
 
 export type Archetype =
@@ -318,7 +318,7 @@ export interface FighterSnapshot {
   price: number;
   vulnerability: Tag | null;
   /** Raid bosses: health multiplied and damage boosted to take on a whole team. */
-  boss?: { hpScale: number; power: number };
+  boss?: { hpScale: number; power: number; tricks?: BossTrick[] };
 }
 
 export interface BattleInput {
@@ -591,5 +591,7 @@ export interface HallEntry {
 }
 
 export interface RaidContribution { charId: string; name: string; playerId: string; dealt: number; tanked: number; healed: number; finalBlow: boolean; score: number; role: string }
-export interface RaidResult { id: string; battleId: string; bossId: string; bossName: string; /** Every boss in a multi-boss raid (bossId is the first). */ bossIds?: string[]; won: boolean; mvp: string | null; contributions: RaidContribution[]; at: number; /** Level of the 1-5 climb (raids before the climb have none). */ level?: number }
+/** What a raid boss can do besides hitting hard (engine bossTrick). */
+export type BossTrick = 'sweep' | 'secondwind' | 'barrier' | 'enrage';
+export interface RaidResult { /** The tricks the bosses used in this raid. */ tricks?: BossTrick[]; id: string; battleId: string; bossId: string; bossName: string; /** Every boss in a multi-boss raid (bossId is the first). */ bossIds?: string[]; won: boolean; mvp: string | null; contributions: RaidContribution[]; at: number; /** Level of the 1-5 climb (raids before the climb have none). */ level?: number }
 export interface TeamBattleResult { id: string; battleId: string; teamA: string[]; teamB: string[]; winner: 'A' | 'B'; mvp: string | null; contributions: RaidContribution[]; at: number }

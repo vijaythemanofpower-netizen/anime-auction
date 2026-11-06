@@ -46,6 +46,12 @@ const STILL = ['WAIT — STILL STANDING!', 'REFUSING TO FALL!', 'NOT. GOING. DOW
 
 /** The commentators' reaction to each plot twist ({a} = the fighter it is about, {t} = the one it hits). */
 const TWIST_REACT: Record<string, string[]> = {
+  charge: ['Get a stun on them, now!', 'Everybody brace! That power is off the charts!'],
+  sweep: ['Nobody gets away from that one!', 'The whole party just got flattened!'],
+  break: ['Perfect timing! That could have ended the raid!', 'What a save! The whole attack is gone!'],
+  enrage: ['{a} has lost it! Finish this fast!', 'Now it gets truly dangerous.'],
+  bosswind: ['{a} just will not go down!', 'All that work, and {a} is back on their feet!'],
+  barrier: ['They have to break through that first!', 'Every hit is going into the wall now.'],
   'plot-intruder': ['Security! Is there any security in this arena?!', 'Nobody invited them, and nobody can stop them!'],
   'plot-shift': ['The arena itself just picked a side!', 'Throw the game plan away. This is a different fight now.'],
   'plot-sealed': ['Their trump card, gone! What do they have left?', 'That is the move they built this whole fight around!'],

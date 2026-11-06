@@ -50,6 +50,22 @@ describe('boss climb, levels 1 to 5', () => {
     expect(boss(1).hpScale).toBeGreaterThan(boss().hpScale);
   });
 
+  it('gives bosses more shuffled tricks each level, and they really fire', () => {
+    const { g, vault } = makeGame(4, 3, 'live', 77) as never as { g: GameState; vault: Vault };
+    runAuction(g);
+    const tricks = (lv: number, seed: number) => buildRaidInput(g, vault, pool[0], seed, lv).sides[1].fighters[0].boss!.tricks ?? [];
+    expect([1, 2, 3, 4, 5].map((lv) => tricks(lv, 3).length)).toEqual([1, 2, 2, 3, 4]);
+    expect(new Set([1, 2, 3, 4, 5, 6, 7, 8].map((s) => tricks(1, s)[0])).size).toBeGreaterThan(1); // a different trick from raid to raid
+    expect(buildRaidInput(g, vault, pool[0], 3).sides[1].fighters[0].boss!.tricks).toBeUndefined(); // only the climb has them
+    const seen = new Set<string>();
+    for (let seed = 1; seed < 8; seed++) {
+      const { record, result } = runRaid(g, vault, pool.slice(0, 2), seed, 5);
+      expect(result.tricks).toHaveLength(4);
+      for (const e of record.result.events) if (e.type === 'twist') seen.add(String(e.context?.twist));
+    }
+    for (const k of ['charge', 'sweep', 'barrier', 'bosswind']) expect(seen).toContain(k);
+  });
+
   it('limits a healer to three mends a fight', () => {
     const { g, vault } = makeGame(4, 3, 'live', 321) as never as { g: GameState; vault: Vault };
     runAuction(g);
