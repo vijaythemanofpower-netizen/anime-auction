@@ -49,6 +49,9 @@ export function App() {
           <Logo />
           <span className="brand-name">Anime <em>Auction</em><small className="brand-kana">アニメ・オークション</small></span>
         </button>
+        <a className="btn sm ghost game-switch" href={import.meta.env.DEV ? 'http://localhost:5174/' : `${import.meta.env.BASE_URL}cricket/`} aria-label="Switch to Cricket Auction">
+          🏏<span className="game-switch-label"> Cricket Auction</span>
+        </a>
         <div className="spacer" />
         {game && screen !== 'game' && <button className="btn sm primary" onClick={() => store.go('game')}>Return to game</button>}
         {game && !online && <span className="save-indicator" aria-live="polite">{saving ? 'Saving…' : lastSaved ? `Saved ${new Date(lastSaved).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : ''}{!durable && ' (memory only)'}</span>}

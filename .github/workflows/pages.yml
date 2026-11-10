@@ -24,11 +24,23 @@ jobs:
         with:
           node-version: 22
           cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            cricket/package-lock.json
       - run: npm ci
       - run: npm test
       - run: npm run build
         env:
           BASE_PATH: /${{ github.event.repository.name }}/
+      - run: npm ci
+        working-directory: cricket
+      - run: npm test
+        working-directory: cricket
+      - run: npm run build
+        working-directory: cricket
+        env:
+          BASE_PATH: /${{ github.event.repository.name }}/cricket/
+      - run: cp -r cricket/dist dist/cricket
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist

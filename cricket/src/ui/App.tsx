@@ -100,6 +100,9 @@ export function App() {
           <svg width="26" height="26" viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="13" fill="#f05252" /><path d="M7 9 Q16 16 7 23 M25 9 Q16 16 25 23" stroke="#fff" strokeWidth="1.6" fill="none" strokeDasharray="2 2" /></svg>
           <span className="brand-name">Cricket <em>Auction</em></span>
         </button>
+        <a className="btn sm ghost" href={import.meta.env.DEV ? 'http://localhost:5173/' : `${import.meta.env.BASE_URL}../`} aria-label="Switch to Anime Auction">
+          ⚔️<span className="hide-sm"> Anime Auction</span>
+        </a>
         <span className="spacer" />
         <label className="check" style={{ alignItems: 'center', fontSize: 13, whiteSpace: 'nowrap' }}><input type="checkbox" checked={settings.realNames} onChange={(e) => store.settings({ realNames: e.target.checked })} />Real<span className="hide-sm">&nbsp;names</span></label>
         {online.code && <span className="chip" title={online.error ?? 'Online room code'}>{online.error ? '⚠ ' : '🌐 '}Room {online.code}</span>}

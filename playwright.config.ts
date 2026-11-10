@@ -2,6 +2,7 @@ import { defineConfig, devices } from '@playwright/test';
 
 export default defineConfig({
   testDir: './tests/e2e',
+  testIgnore: ['**/cricket/**'],
   fullyParallel: false,
   timeout: 12 * 60 * 1000,
   expect: { timeout: 30_000 },

@@ -113,6 +113,7 @@
 @media (max-width: 1150px) { .brand-kana { display: none; } }
 @media (max-width: 1000px) { .save-indicator { display: none; } .account-chip .hide-phone { display: none; } }
 @media (max-width: 760px) { .topbar nav .btn.hide-phone { display: none; } }
+@media (max-width: 480px) { .game-switch-label { display: none; } }
 
 /* Phones: the hub's six views scroll sideways as one row of tabs (instead of
    squeezing into three-line labels), and fighter and boss picks fit three a row. */
