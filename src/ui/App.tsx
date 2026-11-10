@@ -6,6 +6,7 @@ import { Setup } from './screens/Setup';
 import { Auction } from './screens/Auction';
 import { Prep, Reveal } from './screens/Squads';
 import { Match } from './screens/Match';
+import { Champion } from './components/Season';
 import { Bars } from './components/common';
 import { Chips, Portrait, ROLE_NAME, skillRows } from './components/Player';
 import { fmtL } from '../engine/squad';
@@ -17,6 +18,8 @@ function GameScreen() {
   if (g.phase === 'auction') return <Auction g={g} />;
   if (g.phase === 'reveal') return <Reveal g={g} />;
   if (g.phase === 'prep') return <Prep g={g} />;
+  if (g.phase === 'done' && g.season?.champion) return <Champion g={g} />;
+  if (!g.match) return <Prep g={g} />;
   return <Match g={g} />;
 }
 

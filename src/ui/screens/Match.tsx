@@ -386,8 +386,7 @@ export function Match({ g }: { g: GameState }) {
             {rec.highlights.map((i) => { const e = rec.events[i]; return <div key={i} className="comm"><span className="ov">{e.bowler ? `${e.over}.${e.ball}` : ''}</span><div>{e.text}{e.notes.map((n, k) => <div key={k} className="extra">{n}</div>)}</div></div>; })}
           </div>
           <div className="row" style={{ justifyContent: 'center' }}>
-            <button className="btn" onClick={() => { sessionStorage.removeItem(storageKey); store.rematch(); }}>Play another match</button>
-            <button className="btn primary" onClick={() => { sessionStorage.removeItem(storageKey); store.quit(); }}>Finish the game</button>
+            <button className="btn primary" onClick={() => { sessionStorage.removeItem(storageKey); store.endMatch(); }}>{g.season ? 'Back to the season' : 'Done'}</button>
           </div>
         </section>
       )}

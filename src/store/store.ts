@@ -5,8 +5,9 @@ import { PLAYERS } from '../engine/data/players';
 import type { Cricketer } from '../engine/types';
 import { autoLineup, createGame, ctxOf, matchSetup, type GameConfig, type GameState, type Lineup } from '../engine/game';
 import { closeIfDue, finishAuction, npcStep, openNext, placeBid, scout } from '../engine/auction';
-import { playMatch, type Answers, type MatchRecord } from '../engine/match';
-import { freshSeed } from '../engine/rng';
+import { autoPlay, playMatch, type Answers, type MatchRecord } from '../engine/match';
+import { deriveSeed, freshSeed } from '../engine/rng';
+import { makeSeason, nextFixture, record, resultOf } from '../engine/season';
 
 export type Screen = 'home' | 'setup' | 'game' | 'howto' | 'roster';
 
@@ -117,7 +118,7 @@ export const store = {
     if (!g) return;
     const lineups: Record<string, Lineup> = { ...g.lineups };
     for (const f of g.franchises) lineups[f.id] ??= autoLineup(f.squad.map((id) => PLAYER_MAP[id]), g.form);
-    setGame({ ...g, phase: 'prep', lineups });
+    setGame({ ...g, phase: 'prep', lineups, season: g.season ?? makeSeason(g.franchises.map((f) => f.id)) });
   },
   setLineup(fid: string, l: Lineup) {
     const g = state.game;
@@ -129,15 +130,44 @@ export const store = {
     if (!g) return;
     setGame({ ...g, phase: 'match', match: { home, away, seed: freshSeed(), answers: {} } });
   },
+  /** Season: simulate computer-only fixtures, then start the next fixture a human plays in. */
+  playNext() {
+    let g = state.game;
+    if (!g) return;
+    const ids = g.franchises.map((f) => f.id);
+    let s = g.season ?? makeSeason(ids);
+    const human = (id: string) => !g!.franchises.find((f) => f.id === id)!.npc;
+    for (let guard = 0; guard < 200; guard++) {
+      const fx = nextFixture(s);
+      if (!fx) break;
+      if (human(fx.home) || human(fx.away)) {
+        setGame({ ...g, season: s, phase: 'match', match: { home: fx.home, away: fx.away, seed: freshSeed(), answers: {}, fixture: fx.id, final: fx.stage === 'final' } });
+        return;
+      }
+      const seed = deriveSeed(g.config.seed, fx.id);
+      const sim = { ...g, match: { home: fx.home, away: fx.away, seed, answers: {}, final: fx.stage === 'final' } };
+      const rec = autoPlay(matchSetup(sim, PLAYER_MAP, fx.home, fx.away, seed));
+      s = record(s, fx.id, resultOf(rec, fx.home, fx.away), ids);
+    }
+    g = { ...g, season: s };
+    setGame(s.champion ? { ...g, phase: 'done', match: undefined } : g);
+  },
   answer(a: Answers) {
     const g = state.game;
     if (!g?.match) return;
     setGame({ ...g, match: { ...g.match, answers: { ...g.match.answers, ...a } } });
   },
+  /** Record the finished match in the season and go back to the season hub (or the trophy). */
   endMatch() {
     const g = state.game;
-    if (!g) return;
-    setGame({ ...g, phase: 'done' });
+    if (!g?.match) return;
+    const rec = currentMatch(g);
+    let season = g.season;
+    if (season && g.match.fixture && rec?.outcome) {
+      season = record(season, g.match.fixture, resultOf(rec, g.match.home, g.match.away), g.franchises.map((f) => f.id));
+    }
+    matchCache = null;
+    setGame({ ...g, season, match: undefined, phase: season?.champion ? 'done' : 'prep' });
   },
   rematch() {
     const g = state.game;

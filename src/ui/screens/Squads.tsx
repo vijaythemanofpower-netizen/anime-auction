@@ -5,6 +5,8 @@ import { RULES, fmtL } from '../../engine/squad';
 import type { Plan } from '../../engine/match';
 import { PlayerLine } from '../components/Player';
 import { Seg } from '../components/common';
+import { SeasonPanel } from '../components/Season';
+import { STAGE_LABEL, nextFixture } from '../../engine/season';
 
 const ownersOf = (g: GameState, fid: string) => g.franchises.find((f) => f.id === fid)!.owners.map((o) => g.config.humans.find((h) => h.id === o)?.name ?? '');
 
@@ -47,14 +49,14 @@ export function Reveal({ g }: { g: GameState }) {
 export function Prep({ g }: { g: GameState }) {
   const humans = g.franchises.filter((f) => !f.npc);
   const [tab, setTab] = useState(humans[0]?.id ?? g.franchises[0].id);
-  const home = humans[0]?.id ?? g.franchises[0].id;
-  const others = g.franchises.filter((f) => f.id !== home);
-  const [away, setAway] = useState(others[0].id);
+  const next = g.season ? nextFixture(g.season) : undefined;
   const f = g.franchises.find((x) => x.id === tab)!;
   const l = g.lineups[f.id];
   const r = RULES[g.config.mode];
   const problems = l ? lineupProblems(l, PLAYER_MAP, r.maxOverseasXI) : [];
-  const allOk = [home, away].every((id) => lineupProblems(g.lineups[id], PLAYER_MAP, r.maxOverseasXI).length === 0);
+  const allOk = humans.every((h) => lineupProblems(g.lineups[h.id], PLAYER_MAP, r.maxOverseasXI).length === 0);
+  const nextHuman = g.season?.fixtures.find((x) => !x.result && humans.some((h) => h.id === x.home || h.id === x.away));
+  const vs = nextHuman ? g.franchises.find((x) => x.id === (humans.some((h) => h.id === nextHuman.home) ? nextHuman.away : nextHuman.home)) : undefined;
   const set = (next: Partial<Lineup>) => {
     const merged = { ...l, ...next };
     const squad = f.squad;
@@ -76,14 +78,13 @@ export function Prep({ g }: { g: GameState }) {
   return (
     <div className="col">
       <div className="row between">
-        <div><span className="label">Match day</span><h1>Pick your XI</h1></div>
+        <div><span className="label">The season{next && next.stage !== 'league' ? ` · ${STAGE_LABEL[next.stage]}` : ''}</span><h1>Pick your XI</h1></div>
         <div className="row">
-          <span className="dim">Opponent</span>
-          <select aria-label="Opponent" value={away} onChange={(e) => setAway(e.target.value)}>
-            {others.map((o) => <option key={o.id} value={o.id}>{o.name}{o.npc ? ' (computer)' : ''}</option>)}
-          </select>
+          {vs ? <span className="dim">Next: <b style={{ color: vs.color }}>v {vs.name}</b>{nextHuman && nextHuman.stage !== 'league' ? ` (${STAGE_LABEL[nextHuman.stage]})` : ''}</span> : <span className="dim">You are out. Watch the rest of the season.</span>}
+          <button className="btn primary" disabled={!allOk} onClick={() => store.playNext()}>{vs ? 'To the ground' : 'Simulate to the end'}</button>
         </div>
       </div>
+      <SeasonPanel g={g} />
       {humans.length > 1 && <div className="seg" role="tablist" aria-label="Franchise">{humans.map((h) => <button key={h.id} role="tab" aria-pressed={tab === h.id} onClick={() => setTab(h.id)}>{h.name}</button>)}</div>}
 
       {f.owners.length > 1 && <p className="dim" style={{ fontSize: 14 }}>Captain roles: {f.owners.map((o) => `${g.config.humans.find((h) => h.id === o)?.name} (${roles(o)})`).join(' · ')}</p>}
@@ -137,7 +138,7 @@ export function Prep({ g }: { g: GameState }) {
 
       <div className="row between">
         <span className="faint" style={{ fontSize: 13 }}>Pitch, weather and the toss are revealed at the ground.</span>
-        <button className="btn primary lg" disabled={!allOk} onClick={() => store.startMatch(home, away)}>To the ground</button>
+        <button className="btn primary lg" disabled={!allOk} onClick={() => store.playNext()}>{vs ? 'To the ground' : 'Simulate to the end'}</button>
       </div>
     </div>
   );

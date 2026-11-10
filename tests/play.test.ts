@@ -5,6 +5,7 @@ import { playMatch, type MatchRecord, type MatchSetup } from '../src/engine/matc
 import { finishAuction } from '../src/engine/auction';
 import { simulateAuction } from '../src/store/store';
 import type { Cricketer } from '../src/engine/types';
+import { caps, makeSeason, nextFixture, record, table, type Result } from '../src/engine/season';
 
 const P: Record<string, Cricketer> = Object.fromEntries(PLAYERS.map((p) => [p.id, p]));
 
@@ -26,6 +27,30 @@ function playOut(setup: MatchSetup, pick: (kind: string) => string): MatchRecord
   }
   return rec;
 }
+
+describe('season', () => {
+  it('runs a 5-team league, IPL playoffs and a final to a champion', () => {
+    const ids = ['a', 'b', 'c', 'd', 'e'];
+    let s = makeSeason(ids);
+    expect(s.fixtures.filter((f) => f.stage === 'league')).toHaveLength(10);
+    const res = (w: string | null, h: string, a: string): Result => ({ winner: w, margin: '', potm: '', runs: { [h]: 160, [a]: 150 }, balls: { [h]: 120, [a]: 120 }, bat: { x: 30 }, wkts: { y: 2 } });
+    for (let i = 0; i < 20; i++) {
+      const f = nextFixture(s);
+      if (!f) break;
+      // Alphabetical order wins, so the table is a, b, c, d, e.
+      s = record(s, f.id, res([f.home, f.away].sort()[0], f.home, f.away), ids);
+    }
+    expect(s.fixtures.map((f) => f.stage).slice(-4)).toEqual(['q1', 'elim', 'q2', 'final']);
+    expect(table(s, ids).map((r) => r.id)).toEqual(['a', 'b', 'c', 'd', 'e']);
+    expect(s.champion).toBe('a');
+    expect(caps(s).orange[0]).toEqual(['x', 30 * 14]);
+  });
+
+  it('two teams play home and away, then a final', () => {
+    const s = makeSeason(['a', 'b']);
+    expect(s.fixtures).toHaveLength(2);
+  });
+});
 
 describe('play mode', () => {
   const g = game(4242);

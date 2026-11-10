@@ -5,6 +5,7 @@ import { canBowl, isPace, isSpin } from './types';
 import { PURSE, RULES, type SquadMode } from './squad';
 import { buildQueue, newAuction, type AuctionCtx, type AuctionState, type Franchise } from './auction';
 import { batValue, bowlValue, type MatchSetup, type Plan, type TeamSheet } from './match';
+import type { Season } from './season';
 
 /**
  * Team modes:
@@ -57,7 +58,9 @@ export interface GameState {
   roles: Record<string, CaptainRole[]>;
   lineups: Record<string, Lineup>;
   /** The match being played: franchise ids, seed and answers so far. */
-  match?: { home: string; away: string; seed: number; answers: Record<string, string> };
+  match?: { home: string; away: string; seed: number; answers: Record<string, string>; fixture?: string; final?: boolean };
+  /** League, playoffs and final (created when the squads are done). */
+  season?: Season;
 }
 
 export const FRANCHISE_NAMES: Array<{ name: string; short: string; color: string }> = [
@@ -233,6 +236,6 @@ export function matchSetup(g: GameState, players: Record<string, Cricketer>, hom
   const sub: Record<string, Cricketer> = {};
   for (const id of used) sub[id] = players[id];
   return {
-    id: `${g.id}-${homeId}-${awayId}-${seed}`, seed, overs: g.config.overs ?? 20, play: g.config.play ?? true, teams: [sheetFor(home, lh, !home.npc), sheetFor(away, la, !away.npc)], players: sub, form: g.form, reviews: 2,
+    id: `${g.id}-${homeId}-${awayId}-${seed}`, seed, overs: g.config.overs ?? 20, play: g.config.play ?? true, teams: [sheetFor(home, lh, !home.npc), sheetFor(away, la, !away.npc)], players: sub, form: g.form, reviews: 2, final: g.match?.final,
   };
 }
