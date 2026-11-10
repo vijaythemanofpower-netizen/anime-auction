@@ -55,6 +55,10 @@ export function Home() {
             <button className="btn ghost lg" onClick={() => store.go('roster')}>The players</button>
             <button className="btn ghost lg" onClick={() => store.go('howto')}>How to play</button>
           </div>
+          <form className="row" style={{ marginTop: 12 }} onSubmit={(e) => { e.preventDefault(); const c = new FormData(e.currentTarget).get('code'); if (typeof c === 'string' && c.trim().length === 5) void store.joinRoom(c); }}>
+            <input name="code" type="text" placeholder="Room code" aria-label="Room code" maxLength={5} style={{ textTransform: 'uppercase', width: 140 }} />
+            <button className="btn" type="submit">Join a friend's room</button>
+          </form>
         </div>
       </section>
       <div className="feature-strip">

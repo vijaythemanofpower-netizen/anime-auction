@@ -19,6 +19,7 @@ export function Setup() {
   const [partnerSize, setPartnerSize] = useState<2 | 3>(2);
   const [overs, setOvers] = useState<5 | 10 | 20>(5);
   const [play, setPlay] = useState(true);
+  const [online, setOnline] = useState(false);
 
   const n = names.length;
   const modes: Array<{ value: TeamMode; label: string; ok: boolean; why: string }> = [
@@ -33,6 +34,7 @@ export function Setup() {
   const start = () => {
     const humans: Human[] = names.map((name, i) => ({ id: `h${i}`, name: name.trim(), color: COLORS[i % COLORS.length] }));
     store.newGame({ humans, teamMode, partnerSize, npcs: teamMode === 'solo' || teamMode === 'pairs' ? npcs : 0, mode, timer, mystery, realNames: settings.realNames, overs, play });
+    if (online) void store.hostRoom();
   };
 
   return (
@@ -52,7 +54,7 @@ export function Setup() {
           </div>
         ))}
         {n < 6 && <div><button className="btn sm" onClick={() => setNames([...names, `Player ${n + 1}`])}>Add player</button></div>}
-        <p className="faint" style={{ fontSize: 13 }}>Everyone plays on this device for now; online rooms come in a later stage.</p>
+        <label className="check"><input type="checkbox" checked={online} onChange={(e) => setOnline(e.target.checked)} /><span>Online room<br /><small className="faint">You get a 5-letter code. Friends open the game on their own phone or PC, enter the code and pick their name. You are {names[0] || 'Player 1'}.</small></span></label>
       </section>
 
       <section className="panel col">

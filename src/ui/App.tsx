@@ -15,7 +15,15 @@ import type { Role } from '../engine/types';
 
 function GameScreen() {
   const g = useApp((s) => s.game);
+  const online = useApp((s) => s.online);
+  if (online.role === 'guest' && !g) return <div className="col" style={{ alignItems: 'center', padding: 40 }}>{online.error ? <><p>{online.error}</p><button className="btn" onClick={() => store.quit()}>Back</button></> : <p className="dim">Joining room {online.code}… (the host's game must be open)</p>}</div>;
   if (!g) return <Home />;
+  if (online.role === 'guest' && !online.me) return (
+    <div className="col" style={{ maxWidth: 480, margin: '0 auto' }}>
+      <h2>Room {online.code}: who are you?</h2>
+      <div className="options">{g.config.humans.slice(1).map((h) => <button key={h.id} className="option" onClick={() => store.setMe(h.id)}>{h.name}</button>)}</div>
+    </div>
+  );
   if (g.phase === 'auction') return <Auction g={g} />;
   if (g.phase === 'reveal') return <Reveal g={g} />;
   if (g.phase === 'prep') return <Prep g={g} />;
@@ -83,6 +91,7 @@ export function App() {
   const screen = useApp((s) => s.screen);
   const settings = useApp((s) => s.settings);
   const hasGame = useApp((s) => !!s.game);
+  const online = useApp((s) => s.online);
   useEffect(() => { document.documentElement.dataset.reducedMotion = String(settings.reducedMotion); }, [settings.reducedMotion]);
   return (
     <div className="app">
@@ -93,6 +102,7 @@ export function App() {
         </button>
         <span className="spacer" />
         <label className="check" style={{ alignItems: 'center', fontSize: 13, whiteSpace: 'nowrap' }}><input type="checkbox" checked={settings.realNames} onChange={(e) => store.settings({ realNames: e.target.checked })} />Real<span className="hide-sm">&nbsp;names</span></label>
+        {online.code && <span className="chip" title={online.error ?? 'Online room code'}>{online.error ? '⚠ ' : '🌐 '}Room {online.code}</span>}
         {hasGame && screen !== 'game' && <button className="btn sm" onClick={() => store.resume()}>Back to game</button>}
         {screen === 'game' && <button className="btn sm ghost" onClick={() => { if (confirm('Leave this game? It stays saved: use Continue game on the home page.')) store.go('home'); }}>Menu</button>}
       </header>

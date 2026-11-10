@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { PLAYER_MAP, displayName, store } from '../../store/store';
+import { PLAYER_MAP, canAct, displayName, store, useApp } from '../../store/store';
 import type { GameState } from '../../engine/game';
 import { bidBlock, squadOf } from '../../engine/auction';
 import { ctxOf } from '../../engine/game';
@@ -17,6 +17,7 @@ export function Auction({ g }: { g: GameState }) {
   const ctx = ctxOf(g, PLAYER_MAP);
   const r = RULES[g.config.mode];
   const humans = g.franchises.filter((f) => !f.npc);
+  const guest = useApp((s) => s.online.role === 'guest');
   const nameOf = (fid: string | null) => g.franchises.find((f) => f.id === fid)?.name ?? '';
   const owners = (fid: string) => g.franchises.find((f) => f.id === fid)!.owners.map((o) => g.config.humans.find((h) => h.id === o)?.name).join(' & ');
 
@@ -40,8 +41,8 @@ export function Auction({ g }: { g: GameState }) {
           <h1>The auction</h1>
         </div>
         <div className="row">
-          <button className="btn sm" onClick={() => store.hammer()} disabled={!live}>Hammer now</button>
-          <button className="btn sm ghost" onClick={() => { if (confirm('Let the computer bid for everyone and finish the auction now?')) store.simulateRest(); }}>Finish auction automatically</button>
+          {!guest && <button className="btn sm" onClick={() => store.hammer()} disabled={!live}>Hammer now</button>}
+          {!guest && <button className="btn sm ghost" onClick={() => { if (confirm('Let the computer bid for everyone and finish the auction now?')) store.simulateRest(); }}>Finish auction automatically</button>}
         </div>
       </div>
 
@@ -72,7 +73,7 @@ export function Auction({ g }: { g: GameState }) {
               {!mystery && <div style={{ marginTop: 16 }}><Bars rows={skillRows(c)} /></div>}
               {!mystery && <div className="row" style={{ marginTop: 10 }}>
                 <span className="dim" style={{ fontSize: 13 }}>Form this season: {myScouted ? <b>{FORM_LABEL[g.form[c.id]]}</b> : 'hidden'}</span>
-                {humans.some((f) => f.scouts > 0 && !knownForm(f.id, c.id)) && <button className="btn sm ghost" onClick={() => setScoutFor(c.id)}>Use a scout token</button>}
+                {humans.some((f) => canAct(f.id) && f.scouts > 0 && !knownForm(f.id, c.id)) && <button className="btn sm ghost" onClick={() => setScoutFor(c.id)}>Use a scout token</button>}
               </div>}
               <div className="lot-bid">
                 <div>
@@ -85,7 +86,7 @@ export function Auction({ g }: { g: GameState }) {
                 </div>
               </div>
               <div className="bidders">
-                {humans.map((f) => {
+                {humans.filter((f) => canAct(f.id)).map((f) => {
                   const block = bidBlock(ctx, a, f.id);
                   const amt = nextBid(live.bid, live.lot.base);
                   return (
@@ -136,7 +137,7 @@ export function Auction({ g }: { g: GameState }) {
         <Modal title="Scout this player" onClose={() => setScoutFor(null)}>
           <p className="dim">Spend a scout token to see {displayName(PLAYER_MAP[scoutFor])}'s hidden form for this season. Only your franchise learns it.</p>
           <div className="col" style={{ gap: 8 }}>
-            {humans.filter((f) => f.scouts > 0 && !knownForm(f.id, scoutFor)).map((f) => (
+            {humans.filter((f) => canAct(f.id) && f.scouts > 0 && !knownForm(f.id, scoutFor)).map((f) => (
               <button key={f.id} className="btn" onClick={() => { store.scout(f.id, scoutFor); setScoutFor(null); }}>{f.name}: use 1 of {f.scouts}</button>
             ))}
           </div>

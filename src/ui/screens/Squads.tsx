@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { PLAYER_MAP, displayName, store } from '../../store/store';
+import { PLAYER_MAP, canAct, displayName, store } from '../../store/store';
 import { autoLineup, lineupProblems, ROLE_LABEL, type GameState, type Lineup } from '../../engine/game';
 import { RULES, fmtL } from '../../engine/squad';
 import type { Plan } from '../../engine/match';
@@ -48,7 +48,8 @@ export function Reveal({ g }: { g: GameState }) {
 
 export function Prep({ g }: { g: GameState }) {
   const humans = g.franchises.filter((f) => !f.npc);
-  const [tab, setTab] = useState(humans[0]?.id ?? g.franchises[0].id);
+  const mineH = humans.filter((h) => canAct(h.id));
+  const [tab, setTab] = useState(mineH[0]?.id ?? humans[0]?.id ?? g.franchises[0].id);
   const next = g.season ? nextFixture(g.season) : undefined;
   const f = g.franchises.find((x) => x.id === tab)!;
   const l = g.lineups[f.id];
@@ -85,7 +86,7 @@ export function Prep({ g }: { g: GameState }) {
         </div>
       </div>
       <SeasonPanel g={g} />
-      {humans.length > 1 && <div className="seg" role="tablist" aria-label="Franchise">{humans.map((h) => <button key={h.id} role="tab" aria-pressed={tab === h.id} onClick={() => setTab(h.id)}>{h.name}</button>)}</div>}
+      {mineH.length > 1 && <div className="seg" role="tablist" aria-label="Franchise">{mineH.map((h) => <button key={h.id} role="tab" aria-pressed={tab === h.id} onClick={() => setTab(h.id)}>{h.name}</button>)}</div>}
 
       {f.owners.length > 1 && <p className="dim" style={{ fontSize: 14 }}>Captain roles: {f.owners.map((o) => `${g.config.humans.find((h) => h.id === o)?.name} (${roles(o)})`).join(' · ')}</p>}
 

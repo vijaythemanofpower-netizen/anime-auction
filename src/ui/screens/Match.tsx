@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { PLAYER_MAP, currentMatch, displayName, store, useApp } from '../../store/store';
+import { PLAYER_MAP, canAct, currentMatch, displayName, store, useApp } from '../../store/store';
 import type { GameState } from '../../engine/game';
 import type { BallEvent, Decision, MatchRecord } from '../../engine/match';
 import { DELIVERY_LABEL, SHOT_LABEL, oversText } from '../../engine/match';
@@ -291,15 +291,26 @@ export function Match({ g }: { g: GameState }) {
   useEffect(() => { if (!bannerE) return; const t = setTimeout(() => setBannerE(null), 1300); return () => clearTimeout(t); }, [bannerE]);
 
   // Answer pending decisions one at a time; send them together (mind games are revealed at once).
-  const nextCall = pending.find((d) => !(d.id in answers));
+  // Online, each device answers only its own team's decisions (and in partnerships, only its own role's balls).
+  const online = useApp((s) => s.online);
+  const mine = (d: Decision) => {
+    const fid = d.team === 0 ? g.match!.home : g.match!.away;
+    if (!canAct(fid)) return false;
+    if (online.role === 'off' || (d.kind !== 'batBall' && d.kind !== 'bowlBall')) return true;
+    return playerFor(g, d.team, d.kind) === g.config.humans.find((h) => h.id === online.me)?.name;
+  };
+  const nextCall = pending.find((d) => !(d.id in answers) && mine(d));
   const onAnswer = (opt: string) => {
     if (!nextCall) return;
+    // Online: send at once; the engine itself waits for both secret picks before revealing.
+    if (online.role !== 'off') { store.answer({ [nextCall.id]: opt }); setAnswers({ ...answers, [nextCall.id]: opt }); return; }
     const all = { ...answers, [nextCall.id]: opt };
     if (pending.every((d) => d.id in all)) { setAnswers({}); store.answer(Object.fromEntries(pending.map((d) => [d.id, all[d.id]]))); }
     else setAnswers(all);
   };
   const humanTeams = new Set(pending.map((d) => d.team));
-  const secretPair = pending.length > 1 && pending.every((d) => d.secret) && humanTeams.size > 1;
+  const secretPair = online.role === 'off' && pending.length > 1 && pending.every((d) => d.secret) && humanTeams.size > 1;
+  const waitingFor = atEnd && pending.length > 0 && !nextCall;
 
   // Auto-play: let skill decide the rest of this over (6 balls) or this innings.
   const [auto, setAuto] = useState<{ balls: number; inn?: string } | null>(null);
@@ -348,6 +359,7 @@ export function Match({ g }: { g: GameState }) {
       {nextCall && !autoNow && (isPlay(nextCall)
         ? <PlayBall key={nextCall.id} g={g} d={nextCall} onAnswer={onAnswer} passFirst={secretPair} onAuto={startAuto} />
         : <Call key={nextCall.id} g={g} d={nextCall} onAnswer={onAnswer} passFirst={secretPair} />)}
+      {waitingFor && !auto && <div className="auto-pill" role="status">Waiting for the other side's move…</div>}
       {auto && <div className="auto-pill" role="status">Auto-playing {auto.inn ? 'this innings' : 'this over'} <button className="btn sm" onClick={() => setAuto(null)}>Take over</button></div>}
 
       <div className="row between">
