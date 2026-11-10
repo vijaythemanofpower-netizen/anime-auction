@@ -64,6 +64,8 @@ export interface Cricketer {
   tier: 1 | 2 | 3 | 4 | 5;
   /** Auction base price in lakh. */
   basePrice: number;
+  /** 2026 squad index; teams 0-9 follow the alphabetical order of the 2026 squads CSV. */
+  prev?: number;
   /** Uncapped growth potential 0-100 (how much they can improve during a season). */
   potential?: number;
 }
