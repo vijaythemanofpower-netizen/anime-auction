@@ -2,7 +2,7 @@
 import { Rng, deriveSeed } from './rng';
 import type { Cricketer, Form } from './types';
 import { canBowl, isPace, isSpin } from './types';
-import { PURSE, RULES, type SquadMode } from './squad';
+import { PURSE, RULES, toSlab, type SquadMode } from './squad';
 import { buildQueue, newAuction, type AuctionCtx, type AuctionState, type Franchise } from './auction';
 import { batValue, bowlValue, type MatchSetup, type Plan, type TeamSheet } from './match';
 import type { Season } from './season';
@@ -36,7 +36,7 @@ export interface GameConfig {
   play?: boolean;
 }
 
-export type Phase = 'auction' | 'reveal' | 'prep' | 'match' | 'done';
+export type Phase = 'retain' | 'auction' | 'reveal' | 'prep' | 'match' | 'done';
 
 /** Captain roles inside a shared franchise. */
 export type CaptainRole = 'bat' | 'bowl' | 'drs' | 'mind';
@@ -61,6 +61,8 @@ export interface GameState {
   match?: { home: string; away: string; seed: number; answers: Record<string, string>; fixture?: string; final?: boolean };
   /** League, playoffs and final (created when the squads are done). */
   season?: Season;
+  /** IPL mode: franchises that have finished their retentions. */
+  retainDone?: string[];
 }
 
 export const FRANCHISE_NAMES: Array<{ name: string; short: string; color: string }> = [
@@ -72,6 +74,8 @@ export const FRANCHISE_NAMES: Array<{ name: string; short: string; color: string
   { name: 'Thunder Bay Strikers', short: 'STR', color: '#f43f5e' },
   { name: 'Spice Coast Panthers', short: 'PAN', color: '#fb923c' },
   { name: 'Northern Nawabs', short: 'NAW', color: '#34d399' },
+  { name: 'Lakeside Lions', short: 'LIO', color: '#eab308' },
+  { name: 'Harbour Hurricanes', short: 'HUR', color: '#60a5fa' },
 ];
 
 const NPC_NAMES = ['Auction Bot Arjun', 'Scout Sharma', 'Trader Tara', 'Moneyball Mani'];
@@ -127,6 +131,8 @@ export function createGame(cfg: GameConfig, all: Cricketer[], now: number): Game
     return {
       id: `f${franchises.length}`, name, short: boss ? 'BOS' : n.short, color: boss ? '#ef4444' : human?.color ?? n.color, owners, npc, boss,
       purse: Math.round(basePurse * purseX), startPurse: Math.round(basePurse * purseX), squad: [], paid: {}, scouts, scouted: [], penalties: [],
+      // IPL mode: each franchise stands for one previous team (its players can be retained or RTM'd).
+      ...(cfg.mode === 'ipl' ? { prev: FRANCHISE_NAMES.indexOf(n), rtm: { cards: 6, capped: 5, uncapped: 2 } } : {}),
     };
   };
   const ids = cfg.humans.map((h) => h.id);
@@ -155,7 +161,11 @@ export function createGame(cfg: GameConfig, all: Cricketer[], now: number): Game
     if (franchises.length < 2) franchises.push(make([], true));
   }
   franchises.forEach((f, i) => { if (f.npc && !f.boss) f.name = `${f.name}`; void i; });
-  const pool = choosePool(all, franchises.length, cfg.mode, cfg.seed);
+  // IPL mode: computer teams retain before the pool is drawn, so a retained star never comes up.
+  let state0: Pick<GameState, 'franchises' | 'retainDone'> = { franchises, retainDone: [] };
+  if (cfg.mode === 'ipl') for (const f of franchises) if (f.npc) state0 = applyRetention(state0, all, f.id, npcRetain(f, all));
+  const kept = new Set(state0.franchises.flatMap((f) => f.squad));
+  const pool = choosePool(all.filter((c) => !kept.has(c.id)), franchises.length, cfg.mode, cfg.seed);
   const form = rollForm(pool, cfg.seed);
   let mystery: string | null = null;
   if (cfg.mystery) {
@@ -165,9 +175,9 @@ export function createGame(cfg: GameConfig, all: Cricketer[], now: number): Game
     const cands = pool.filter((c) => (star ? c.tier >= 4 && form[c.id] >= 0 : c.tier <= 2 && form[c.id] <= 0) && !c.uncapped && !c.overseas);
     mystery = cands.length ? rng.pick(cands).id : null;
   }
-  const queue = buildQueue(pool, cfg.seed, mystery);
+  const queue = buildQueue(pool, cfg.seed, mystery).map((l) => (cfg.mode === 'ipl' && !l.mystery ? { ...l, base: toSlab(l.base) } : l));
   return {
-    id: `g${cfg.seed.toString(36)}`, version: 1, createdAt: now, config: cfg, phase: 'auction', poolIds: pool.map((c) => c.id), form, franchises,
+    id: `g${cfg.seed.toString(36)}`, version: 1, createdAt: now, config: cfg, phase: cfg.mode === 'ipl' && state0.franchises.some((f) => !f.npc) ? 'retain' : 'auction', poolIds: pool.map((c) => c.id), form, franchises: state0.franchises, retainDone: state0.retainDone,
     auction: newAuction(queue, cfg.timer, Math.max(4, Math.round(cfg.timer * 0.5))), roles, lineups: {},
   };
 }
@@ -238,4 +248,64 @@ export function matchSetup(g: GameState, players: Record<string, Cricketer>, hom
   return {
     id: `${g.id}-${homeId}-${awayId}-${seed}`, seed, overs: g.config.overs ?? 20, play: g.config.play ?? true, teams: [sheetFor(home, lh, !home.npc), sheetFor(away, la, !away.npc)], players: sub, form: g.form, reviews: 2, final: g.match?.final,
   };
+}
+
+// ------------------------------------------------------------------ retentions (IPL mode)
+
+/** Official IPL 2025 retention costs in lakh: capped players in the order retained, uncapped flat. */
+export const RETAIN_CAPPED = [1800, 1400, 1100, 1800, 1400];
+export const RETAIN_UNCAPPED = 400;
+
+/** Players a franchise may retain: last season's squad of the team it stands for. */
+export const retainable = (f: Franchise, all: Cricketer[]) => all.filter((c) => f.prev !== undefined && c.prev === f.prev);
+
+/** Cost of retaining these players, in the order given. */
+export function retentionCost(ids: string[], players: Record<string, Cricketer>): number[] {
+  let capped = 0;
+  return ids.map((id) => (players[id].uncapped ? RETAIN_UNCAPPED : RETAIN_CAPPED[capped++] ?? Infinity));
+}
+
+/** Why a retention list is not allowed (null when fine): at most 6, of which at most 5 capped and 2 uncapped. */
+export function retentionProblem(f: Franchise, ids: string[], all: Cricketer[]): string | null {
+  const ok = new Set(retainable(f, all).map((c) => c.id));
+  if (new Set(ids).size !== ids.length || ids.some((id) => !ok.has(id))) return 'Only your own previous players can be retained.';
+  const players = Object.fromEntries(all.map((c) => [c.id, c]));
+  const unc = ids.filter((id) => players[id].uncapped).length;
+  if (ids.length > 6) return 'At most 6 retentions.';
+  if (ids.length - unc > 5) return 'At most 5 capped players.';
+  if (unc > 2) return 'At most 2 uncapped players.';
+  if (retentionCost(ids, players).reduce((a, b) => a + b, 0) > f.purse) return 'Not enough purse.';
+  return null;
+}
+
+/** Retain players: they join the squad at the official cost; RTM cards are what is left of the 6. */
+export function applyRetention<T extends Pick<GameState, 'franchises' | 'retainDone'>>(g: T, all: Cricketer[], fid: string, ids: string[]): T {
+  const f = g.franchises.find((x) => x.id === fid);
+  if (!f || g.retainDone?.includes(fid) || retentionProblem(f, ids, all)) return g;
+  const players = Object.fromEntries(all.map((c) => [c.id, c]));
+  const cost = retentionCost(ids, players);
+  const unc = ids.filter((id) => players[id].uncapped).length;
+  const paid = { ...f.paid };
+  ids.forEach((id, i) => { paid[id] = cost[i]; });
+  const next: Franchise = {
+    ...f, squad: [...f.squad, ...ids], paid, purse: f.purse - cost.reduce((a, b) => a + b, 0),
+    rtm: { cards: 6 - ids.length, capped: 5 - (ids.length - unc), uncapped: 2 - unc },
+  };
+  return { ...g, franchises: g.franchises.map((x) => (x.id === fid ? next : x)), retainDone: [...(g.retainDone ?? []), fid] };
+}
+
+/** A computer team keeps its proven stars (tier 4+) and one high-potential uncapped player. */
+export function npcRetain(f: Franchise, all: Cricketer[]): string[] {
+  const mine = retainable(f, all);
+  const capped = mine.filter((c) => !c.uncapped && c.tier >= 4).sort((a, b) => b.tier - a.tier || Math.max(batValue(b), bowlValue(b)) - Math.max(batValue(a), bowlValue(a))).slice(0, 4);
+  const unc = mine.filter((c) => c.uncapped && (c.potential ?? 0) >= 80).slice(0, 1);
+  return [...capped, ...unc].map((c) => c.id);
+}
+
+/** Everyone has retained: remove retained players from the auction and start it. */
+export function finishRetention(g: GameState): GameState {
+  if (g.phase !== 'retain' || !g.franchises.every((f) => g.retainDone?.includes(f.id))) return g;
+  const kept = new Set(g.franchises.flatMap((f) => f.squad));
+  const queue = g.auction.queue.filter((l) => !kept.has(l.id));
+  return { ...g, phase: 'auction', poolIds: g.poolIds.filter((id) => !kept.has(id)), auction: { ...g.auction, queue } };
 }

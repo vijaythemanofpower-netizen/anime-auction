@@ -3,11 +3,13 @@
 import type { Cricketer } from './types';
 import { isBatter } from './types';
 
-export type SquadMode = 'quick' | 'standard' | 'full';
+export type SquadMode = 'quick' | 'standard' | 'full' | 'ipl';
 
 export interface SquadRules {
-  /** Players bought in the auction. */
+  /** Players bought in the auction (the maximum squad). */
   size: number;
+  /** IPL: the squad only has to reach this many; up to `size` is allowed. */
+  minSize?: number;
   /** Quick mode: shared average players added after the auction to make 11. */
   autoFill: number;
   minKeeper: number;
@@ -28,10 +30,20 @@ export const RULES: Record<SquadMode, SquadRules> = {
   quick: { size: 6, autoFill: 5, minKeeper: 0, minBatters: 0, minAllrounders: 0, minBowlers: 0, minPace: 0, minSpin: 0, minUncapped: 0, maxOverseas: 4, maxOverseasXI: 4, minPrice: 20 },
   standard: { size: 13, autoFill: 0, minKeeper: 1, minBatters: 4, minAllrounders: 2, minBowlers: 5, minPace: 2, minSpin: 1, minUncapped: 2, maxOverseas: 5, maxOverseasXI: 4, minPrice: 20 },
   full: { size: 15, autoFill: 0, minKeeper: 1, minBatters: 4, minAllrounders: 2, minBowlers: 5, minPace: 2, minSpin: 1, minUncapped: 2, maxOverseas: 6, maxOverseasXI: 4, minPrice: 20 },
+  // IPL mega-auction rules: squad 18-25, at most 8 overseas (4 in the XI), ₹30 L lowest base price.
+  // The role minimums are the game's own (a playable XI), not an IPL rule.
+  ipl: { size: 25, minSize: 18, autoFill: 0, minKeeper: 1, minBatters: 4, minAllrounders: 2, minBowlers: 5, minPace: 2, minSpin: 1, minUncapped: 0, maxOverseas: 8, maxOverseasXI: 4, minPrice: 30 },
 };
 
+/** How many players a squad must end up with. */
+export const target = (r: SquadRules) => r.minSize ?? r.size;
+
+/** IPL base-price slabs, in lakh. */
+export const BASE_SLABS = [30, 50, 75, 100, 125, 150, 200];
+export const toSlab = (lakh: number) => BASE_SLABS.reduce((a, b) => (Math.abs(b - lakh) < Math.abs(a - lakh) ? b : a));
+
 /** Purse in lakh per mode (1 crore = 100 lakh). */
-export const PURSE: Record<SquadMode, number> = { quick: 6000, standard: 10000, full: 11500 };
+export const PURSE: Record<SquadMode, number> = { quick: 6000, standard: 10000, full: 11500, ipl: 12000 };
 
 export interface Counts { total: number; keeper: number; batters: number; allrounders: number; bowlers: number; pace: number; spin: number; uncapped: number; overseas: number }
 
@@ -88,20 +100,21 @@ export function canBuy(squad: Cricketer[], purse: number, player: Cricketer, pri
   const after = [...squad, player];
   if (player.overseas && counts(after).overseas > r.maxOverseas) return { reason: `Overseas limit (${r.maxOverseas}) reached` };
   const slotsLeft = r.size - after.length;
+  const toFill = Math.max(0, target(r) - after.length);
   const needed = slotsNeeded(after, r);
   if (needed > slotsLeft) {
     const left = needs(squad, r).filter((n) => n.key !== 'uncapped').map((n) => n.label.toLowerCase());
     return { reason: `You still need ${left.join(', ') || 'uncapped players'}: no room for this pick` };
   }
-  const reserve = slotsLeft * r.minPrice;
-  if (purse - price < reserve) return { reason: `Keep ${fmtL(reserve)} for your ${slotsLeft} empty slot${slotsLeft === 1 ? '' : 's'}` };
+  const reserve = Math.max(toFill, needed) * r.minPrice;
+  if (purse - price < reserve) return { reason: `Keep ${fmtL(reserve)} for your ${toFill} empty slot${toFill === 1 ? '' : 's'}` };
   return null;
 }
 
 /** Highest bid this squad may legally make on a player (0 = may not bid). */
 export function maxBid(squad: Cricketer[], purse: number, player: Cricketer, r: SquadRules): number {
   if (canBuy(squad, purse, player, Math.min(purse, r.minPrice), r)) return 0;
-  const slotsLeft = r.size - squad.length - 1;
+  const slotsLeft = Math.max(0, target(r) - squad.length - 1, slotsNeeded(squad, r) - 1);
   return Math.max(0, purse - slotsLeft * r.minPrice);
 }
 
@@ -135,7 +148,7 @@ export function penaltyFill(squad: Cricketer[], unsold: Cricketer[], r: SquadRul
     const unc = n.some((x) => x.key === 'uncapped');
     if (!(unc && need.key !== 'uncapped' && take((c) => pred[need.key](c) && c.uncapped, need.label, true)) && !take(pred[need.key], need.label, true)) break;
   }
-  while (cur.length < r.size && take(() => true, 'Empty slot', false)) { /* fill */ }
+  while (cur.length < target(r) && take(() => true, 'Empty slot', false)) { /* fill */ }
   return out;
 }
 

@@ -4,7 +4,7 @@ import { PLAYERS } from '../engine/data/players';
 import { Home } from './screens/Home';
 import { Setup } from './screens/Setup';
 import { Auction } from './screens/Auction';
-import { Prep, Reveal } from './screens/Squads';
+import { Prep, Retain, Reveal } from './screens/Squads';
 import { Match } from './screens/Match';
 import { Champion } from './components/Season';
 import { importPhotos } from '../store/photos';
@@ -24,6 +24,7 @@ function GameScreen() {
       <div className="options">{g.config.humans.slice(1).map((h) => <button key={h.id} className="option" onClick={() => store.setMe(h.id)}>{h.name}</button>)}</div>
     </div>
   );
+  if (g.phase === 'retain') return <Retain g={g} />;
   if (g.phase === 'auction') return <Auction g={g} />;
   if (g.phase === 'reveal') return <Reveal g={g} />;
   if (g.phase === 'prep') return <Prep g={g} />;

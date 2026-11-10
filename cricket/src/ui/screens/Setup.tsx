@@ -12,7 +12,7 @@ export function Setup() {
   const settings = useApp((s) => s.settings);
   const [names, setNames] = useState<string[]>(['Player 1']);
   const [teamMode, setTeamMode] = useState<TeamMode>('solo');
-  const [mode, setMode] = useState<SquadMode>('standard');
+  const [mode, setMode] = useState<SquadMode>('ipl');
   const [npcs, setNpcs] = useState(1);
   const [timer, setTimer] = useState(12);
   const [mystery, setMystery] = useState(true);
@@ -75,9 +75,10 @@ export function Setup() {
 
       <section className="panel col">
         <h3>Squads</h3>
-        <Seg label="Squad size" value={mode} onChange={setMode} options={[{ value: 'quick', label: 'Quick (6 + 5)' }, { value: 'standard', label: 'Standard (13)' }, { value: 'full', label: 'Full (15)' }]} />
+        <Seg label="Squad size" value={mode} onChange={setMode} options={[{ value: 'ipl', label: 'IPL rules (18-25)' }, { value: 'quick', label: 'Quick (6 + 5)' }, { value: 'standard', label: 'Standard (13)' }, { value: 'full', label: 'Full (15)' }]} />
         <p className="dim" style={{ fontSize: 14 }}>
-          {mode === 'quick' ? `Buy 6 stars; 5 average players are added for free to make your XI. Purse ${fmtL(PURSE.quick)}.`
+          {mode === 'ipl' ? `IPL mega-auction rules: retain up to 6 of your previous players (₹18/14/11/18/14 Cr capped, ₹4 Cr uncapped), then the auction with Right to Match cards, official bid steps and an accelerated round. Squad of 18-25, at most 8 overseas, purse ${fmtL(PURSE.ipl)}.`
+            : mode === 'quick' ? `Buy 6 stars; 5 average players are added for free to make your XI. Purse ${fmtL(PURSE.quick)}.`
             : `Buy ${RULES[mode].size}: at least 1 keeper, 4 batters, 2 all-rounders and 5 bowlers (2 pace, 1 spin), 2 uncapped, at most ${RULES[mode].maxOverseas} overseas. Purse ${fmtL(PURSE[mode])}. Empty compulsory slots are filled at double price.`}
         </p>
         <div className="row"><span className="dim">Seconds per lot</span><Seg label="Seconds per lot" value={timer} onChange={setTimer} options={[8, 12, 18].map((v) => ({ value: v, label: `${v}s` }))} /></div>

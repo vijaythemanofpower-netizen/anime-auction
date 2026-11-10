@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { PLAYER_MAP, canAct, displayName, store } from '../../store/store';
-import { autoLineup, lineupProblems, ROLE_LABEL, type GameState, type Lineup } from '../../engine/game';
+import { autoLineup, lineupProblems, retainable, retentionCost, retentionProblem, ROLE_LABEL, type GameState, type Lineup } from '../../engine/game';
+import { PLAYERS } from '../../engine/data/players';
 import { RULES, fmtL } from '../../engine/squad';
 import type { Plan } from '../../engine/match';
 import { PlayerLine } from '../components/Player';
@@ -140,6 +141,48 @@ export function Prep({ g }: { g: GameState }) {
       <div className="row between">
         <span className="faint" style={{ fontSize: 13 }}>Pitch, weather and the toss are revealed at the ground.</span>
         <button className="btn primary lg" disabled={!allOk} onClick={() => store.playNext()}>{vs ? 'To the ground' : 'Simulate to the end'}</button>
+      </div>
+    </div>
+  );
+}
+
+
+/** IPL retentions: keep up to 6 of your previous players at the official costs, before the auction. */
+export function Retain({ g }: { g: GameState }) {
+  const mine = g.franchises.filter((f) => !f.npc && canAct(f.id) && !g.retainDone?.includes(f.id));
+  const [tab, setTab] = useState(mine[0]?.id);
+  const [picked, setPicked] = useState<Record<string, string[]>>({});
+  const f = mine.find((x) => x.id === tab) ?? mine[0];
+  if (!f) return <div className="col"><span className="label">Retentions</span><h1>Waiting for the other teams…</h1><p className="dim">The auction starts when every team has chosen its retentions.</p></div>;
+  const ids = picked[f.id] ?? [];
+  const cost = retentionCost(ids, PLAYER_MAP);
+  const total = cost.reduce((x, y) => x + y, 0);
+  const problem = retentionProblem(f, ids, PLAYERS);
+  const list = retainable(f, PLAYERS).sort((x, y) => y.tier - x.tier);
+  const toggle = (id: string) => setPicked({ ...picked, [f.id]: ids.includes(id) ? ids.filter((x) => x !== id) : [...ids, id] });
+  return (
+    <div className="col">
+      <div><span className="label">Before the auction · Retentions</span><h1>Keep your core</h1>
+        <p className="dim">{f.name} can keep up to 6 of last season's players: at most 5 capped and 2 uncapped. Capped players cost ₹18 Cr, ₹14 Cr, ₹11 Cr, ₹18 Cr and ₹14 Cr in the order you pick them; uncapped ₹4 Cr each. Every slot you don't use becomes a Right to Match card for the auction.</p></div>
+      {mine.length > 1 && <div className="seg" role="tablist" aria-label="Franchise">{mine.map((x) => <button key={x.id} role="tab" aria-pressed={x.id === f.id} onClick={() => setTab(x.id)}>{x.name}</button>)}</div>}
+      <section className="panel col" style={{ gap: 8 }}>
+        <div className="row between"><b>{ids.length}/6 retained · {fmtL(total)}</b><span className="dim">Purse after: <b className="gold">{fmtL(f.purse - total)}</b> · RTM cards: {6 - ids.length}</span></div>
+        {problem && ids.length > 0 && <p style={{ color: 'var(--warn)', margin: 0 }}>{problem}</p>}
+        <div className="squad-list">
+          {list.map((c) => {
+            const at = ids.indexOf(c.id);
+            return (
+              <button key={c.id} className={`squad-item ${at >= 0 ? 'in' : ''}`} style={{ textAlign: 'left', color: 'inherit', cursor: 'pointer' }} onClick={() => toggle(c.id)} aria-pressed={at >= 0}>
+                <PlayerLine c={c} right={<span className="chip">{at >= 0 ? fmtL(cost[at]) : c.uncapped ? 'Uncapped' : 'Capped'}</span>} />
+              </button>
+            );
+          })}
+          {!list.length && <p className="faint">No previous players for this team.</p>}
+        </div>
+      </section>
+      <div className="row between">
+        <span className="dim">Players you don't keep go into the auction.</span>
+        <button className="btn primary lg" disabled={!!problem} onClick={() => store.retain(f.id, ids)}>{ids.length ? `Retain ${ids.length} and continue` : 'Retain nobody'}</button>
       </div>
     </div>
   );

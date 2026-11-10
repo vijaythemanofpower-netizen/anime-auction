@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { PLAYER_MAP, canAct, displayName, store, useApp } from '../../store/store';
 import type { GameState } from '../../engine/game';
-import { bidBlock, squadOf } from '../../engine/auction';
+import { RTM_SECONDS, bidBlock, squadOf } from '../../engine/auction';
 import { ctxOf } from '../../engine/game';
 import { RULES, fmtL, needs, nextBid, counts } from '../../engine/squad';
 import { FORM_LABEL } from '../../engine/types';
@@ -25,8 +25,9 @@ export function Auction({ g }: { g: GameState }) {
   const total = a.queue.length;
   const c = live ? PLAYER_MAP[live.lot.id] : null;
   const mystery = !!live?.lot.mystery;
-  const left = live ? Math.max(0, (live.endsAt - now) / 1000) : 0;
-  const frac = live ? Math.min(1, left / a.timer) : 0;
+  const rtm = live?.rtm;
+  const left = live ? Math.max(0, ((rtm ? rtm.endsAt : live.endsAt) - now) / 1000) : 0;
+  const frac = live ? Math.min(1, left / (rtm ? RTM_SECONDS : a.timer)) : 0;
   const knownForm = (fid: string, id: string) => g.franchises.find((f) => f.id === fid)?.scouted.includes(id);
   const myScouted = c ? humans.find((f) => knownForm(f.id, c.id)) : undefined;
   const last = a.last;
@@ -54,7 +55,7 @@ export function Auction({ g }: { g: GameState }) {
                 <span className="stamp" style={{ color: last.to ? 'var(--gold)' : 'var(--text-faint)' }}>{last.to ? 'Sold!' : 'Unsold'}</span>
                 <div style={{ fontSize: 18 }}>
                   {last.mystery && <div className="label" style={{ color: 'var(--accent)' }}>Mystery lot revealed</div>}
-                  <b>{displayName(lastC)}</b>{last.to ? <> to <b style={{ color: g.franchises.find((f) => f.id === last.to)?.color }}>{nameOf(last.to)}</b> for <b className="gold">{fmtL(last.price)}</b></> : ' — back later at a lower price'}
+                  <b>{displayName(lastC)}</b>{last.to ? <> to <b style={{ color: g.franchises.find((f) => f.id === last.to)?.color }}>{nameOf(last.to)}</b> for <b className="gold">{fmtL(last.price)}</b></> : g.config.mode === 'ipl' ? ' — teams may bring them back in the accelerated round' : ' — back later at a lower price'}
                 </div>
               </div>
             </div>
@@ -85,7 +86,8 @@ export function Auction({ g }: { g: GameState }) {
                   <b>{Math.ceil(left)}</b>
                 </div>
               </div>
-              <div className="bidders">
+              {rtm && <RtmPanel g={g} />}
+              <div className="bidders" hidden={!!rtm}>
                 {humans.filter((f) => canAct(f.id)).map((f) => {
                   const block = bidBlock(ctx, a, f.id);
                   const amt = nextBid(live.bid, live.lot.base);
@@ -99,7 +101,7 @@ export function Auction({ g }: { g: GameState }) {
                 })}
               </div>
             </>
-          ) : !showHammer && <p className="dim">Next lot coming up…</p>}
+          ) : a.accel?.stage === 'nominate' ? <Nominate g={g} now={now} /> : !showHammer && <p className="dim">Next lot coming up…</p>}
         </section>
 
         <aside className="col">
@@ -113,7 +115,7 @@ export function Auction({ g }: { g: GameState }) {
                   <span className="swatch" />
                   <div className="col" style={{ gap: 4, minWidth: 0 }}>
                     <div className="row" style={{ gap: 6 }}><b>{f.name}</b>{f.npc ? <span className="chip">{f.boss ? 'Boss NPC' : 'Computer'}</span> : <span className="faint" style={{ fontSize: 13 }}>{owners(f.id)}</span>}</div>
-                    <div className="faint" style={{ fontSize: 12 }}>{cn.total}/{r.size} players · {cn.overseas} overseas · {f.scouts} scouts</div>
+                    <div className="faint" style={{ fontSize: 12 }}>{cn.total}/{r.minSize ? `${r.minSize}-${r.size}` : r.size} players · {cn.overseas}/{r.maxOverseas} overseas · {f.scouts} scouts{f.rtm ? ` · ${f.rtm.cards} RTM` : ''}</div>
                     {nd.length > 0 && <div className="row" style={{ gap: 4 }}>{nd.slice(0, 4).map((x) => <span key={x.key} className="chip need">{x.missing} {x.label.toLowerCase()}</span>)}</div>}
                   </div>
                   <div className="num gold" style={{ fontSize: 20, fontWeight: 700 }}>{fmtL(f.purse)}</div>
@@ -143,6 +145,62 @@ export function Auction({ g }: { g: GameState }) {
           </div>
         </Modal>
       )}
+    </div>
+  );
+}
+
+
+/** IPL Right to Match: the old team decides, the winning bidder gets one final raise, then the old team may match. */
+function RtmPanel({ g }: { g: GameState }) {
+  const live = g.auction.live!;
+  const r = live.rtm!;
+  const holder = g.franchises.find((f) => f.id === r.fid)!;
+  const bidder = g.franchises.find((f) => f.id === live.bidder)!;
+  const raises = [1, 2, 3].reduce<number[]>((xs) => [...xs, nextBid(xs[xs.length - 1] ?? live.bid, live.lot.base)], []);
+  const text = r.stage === 'ask' ? `${holder.name} can use a Right to Match card.`
+    : r.stage === 'raise' ? `${holder.name} called RTM. ${bidder.name} gets one final raise.`
+      : r.stage === 'match' ? `${holder.name}: match ${fmtL(live.bid)} to take the player back?` : 'Deciding…';
+  return (
+    <div className="rtm-panel col" style={{ ['--team' as string]: holder.color }}>
+      <span className="label" style={{ color: 'var(--accent)' }}>Right to Match</span>
+      <b>{text}</b>
+      {(r.stage === 'ask' || r.stage === 'match') && canAct(holder.id) && (
+        <div className="row">
+          <button className="btn primary" onClick={() => store.rtm(holder.id, true)}>{r.stage === 'ask' ? 'Use RTM' : `Match ${fmtL(live.bid)}`}</button>
+          <button className="btn ghost" onClick={() => store.rtm(holder.id, false)}>{r.stage === 'ask' ? 'No' : 'Let it go'}</button>
+        </div>
+      )}
+      {r.stage === 'raise' && canAct(bidder.id) && (
+        <div className="row">
+          {raises.map((x) => <button key={x} className="btn" onClick={() => store.finalRaise(bidder.id, x)}>Raise to {fmtL(x)}</button>)}
+          <button className="btn ghost" onClick={() => store.finalRaise(bidder.id, live.bid)}>Keep {fmtL(live.bid)}</button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** IPL accelerated round: pick up to 5 unsold players to bring back. */
+function Nominate({ g, now }: { g: GameState; now: number }) {
+  const a = g.auction;
+  const mine = g.franchises.filter((f) => !f.npc && canAct(f.id) && !a.accel!.picks[f.id]);
+  const [picks, setPicks] = useState<string[]>([]);
+  const left = Math.max(0, Math.ceil((a.accel!.endsAt - now) / 1000));
+  const list = a.unsold.map((id) => PLAYER_MAP[id]).sort((x, y) => y.tier - x.tier);
+  if (!mine.length) return <p className="dim">Accelerated round: waiting for the other teams to nominate… ({left} s)</p>;
+  return (
+    <div className="col" style={{ gap: 10 }}>
+      <span className="label" style={{ color: 'var(--accent)' }}>Accelerated round · {left} s</span>
+      <h3>Bring back up to 5 unsold players</h3>
+      <p className="dim" style={{ margin: 0 }}>Every team's picks go up again, faster, at their base price. Players nobody nominates are out.</p>
+      <div className="nominate-list">
+        {list.map((c) => (
+          <label key={c.id} className="check"><input type="checkbox" checked={picks.includes(c.id)} disabled={!picks.includes(c.id) && picks.length >= 5}
+            onChange={(e) => setPicks(e.target.checked ? [...picks, c.id] : picks.filter((x) => x !== c.id))} /><span>{displayName(c)} <small className="faint">{c.role} · {fmtL(c.basePrice)}</small></span></label>
+        ))}
+        {!list.length && <p className="faint">Nobody is left unsold.</p>}
+      </div>
+      <div className="row">{mine.map((f) => <button key={f.id} className="btn primary" onClick={() => store.nominate(f.id, picks)}>Nominate {picks.length} for {f.name}</button>)}</div>
     </div>
   );
 }

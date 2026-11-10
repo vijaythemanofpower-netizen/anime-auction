@@ -303,3 +303,7 @@ input[type='text'], input[type='number'], select {
 @keyframes pop { from { transform: scale(.6); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 .auto-pill { position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%); z-index: 60; display: flex; gap: 10px; align-items: center; padding: 8px 10px 8px 16px; border-radius: 999px; background: rgba(15, 30, 22, .95); border: 1px solid rgba(255,255,255,.2); font-size: 14px; }
 [data-reduced-motion="true"] .meter-result { animation: none; }
+
+/* ---------- IPL: Right to Match and accelerated-round nominations */
+.rtm-panel { margin-top: 14px; padding: 14px 16px; border-radius: 12px; border: 1px solid color-mix(in srgb, var(--team, var(--accent)) 60%, transparent); background: color-mix(in srgb, var(--team, var(--accent)) 12%, transparent); gap: 10px; }
+.nominate-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 6px; max-height: 340px; overflow: auto; }

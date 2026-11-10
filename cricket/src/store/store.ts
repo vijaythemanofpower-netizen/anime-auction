@@ -3,8 +3,8 @@
 import { useSyncExternalStore } from 'react';
 import { PLAYERS } from '../engine/data/players';
 import type { Cricketer } from '../engine/types';
-import { autoLineup, createGame, ctxOf, matchSetup, type GameConfig, type GameState, type Lineup } from '../engine/game';
-import { closeIfDue, finishAuction, npcStep, openNext, placeBid, scout } from '../engine/auction';
+import { applyRetention, autoLineup, createGame, ctxOf, finishRetention, matchSetup, type GameConfig, type GameState, type Lineup } from '../engine/game';
+import { closeIfDue, finishAuction, nominate, npcStep, openNext, placeBid, rtmAnswer, rtmRaise, scout } from '../engine/auction';
 import { autoPlay, playMatch, type Answers, type MatchRecord } from '../engine/match';
 import { deriveSeed, freshSeed } from '../engine/rng';
 import { openRoom, roomCode, sayHello, sendAct, sendState, type Act } from '../online/room';
@@ -121,6 +121,34 @@ export const store = {
     const a = placeBid(ctxOf(g, PLAYER_MAP), g.auction, fid, now);
     if (a !== g.auction) setGame({ ...g, auction: a });
   },
+  /** IPL: keep these previous players (official costs); the auction starts when every team is done. */
+  retain(fid: string, ids: string[]) {
+    if (guest('retain', [fid, ids])) return;
+    const g = state.game;
+    if (!g || g.phase !== 'retain') return;
+    setGame(finishRetention(applyRetention(g, PLAYERS, fid, ids)));
+  },
+  /** IPL Right to Match: the previous team says yes/no (to using RTM, then to matching the final price). */
+  rtm(fid: string, yes: boolean) {
+    if (guest('rtm', [fid, yes])) return;
+    const g = state.game;
+    if (!g?.auction.live?.rtm) return;
+    setGame({ ...g, auction: rtmAnswer(ctxOf(g, PLAYER_MAP), g.auction, fid, yes, Date.now()) });
+  },
+  /** IPL Right to Match: the winning bidder's one final raise (the current bid keeps it). */
+  finalRaise(fid: string, amount: number) {
+    if (guest('finalRaise', [fid, amount])) return;
+    const g = state.game;
+    if (!g?.auction.live?.rtm) return;
+    setGame({ ...g, auction: rtmRaise(ctxOf(g, PLAYER_MAP), g.auction, fid, amount, Date.now()) });
+  },
+  /** IPL accelerated round: up to 5 unsold players this team wants back. */
+  nominate(fid: string, ids: string[]) {
+    if (guest('nominate', [fid, ids])) return;
+    const g = state.game;
+    if (!g?.auction.accel) return;
+    setGame({ ...g, auction: nominate(g.auction, fid, ids) });
+  },
   scout(fid: string, playerId: string) {
     if (guest('scout', [fid, playerId])) return;
     const g = state.game;
@@ -223,7 +251,8 @@ export function simulateAuction(g: GameState, start: number) {
   let franchises = g.franchises;
   for (let guard = 0; guard < 40000 && !a.done; guard++) {
     const ctx = ctxOf({ ...g, franchises }, PLAYER_MAP);
-    if (!a.live) { a = openNext(ctx, { ...a, gapUntil: 0 }, now); continue; }
+    const asNpc = { ...ctx, franchises: franchises.map((f) => ({ ...f, npc: true })) };
+    if (!a.live) { a = openNext(asNpc, { ...a, gapUntil: 0 }, now); now += 700; continue; }
     const cx = { ...ctx, franchises: franchises.map((f) => ({ ...f, npc: true })) };
     a = npcStep(cx, a, now);
     now += 700;
@@ -284,6 +313,10 @@ function applyAct(a: Act) {
   switch (a.name) {
     case 'bid': if (owns(a.me, x)) store.bid(x as string); break;
     case 'scout': if (owns(a.me, x) && typeof y === 'string') store.scout(x as string, y); break;
+    case 'retain': if (owns(a.me, x) && strings(y)) store.retain(x as string, y); break;
+    case 'rtm': if (owns(a.me, x) && typeof y === 'boolean') store.rtm(x as string, y); break;
+    case 'finalRaise': if (owns(a.me, x) && typeof y === 'number') store.finalRaise(x as string, y); break;
+    case 'nominate': if (owns(a.me, x) && strings(y)) store.nominate(x as string, y); break;
     case 'setLineup': if (owns(a.me, x) && g.phase === 'prep' && validLineup(g, x as string, y)) store.setLineup(x as string, y as Lineup); break;
     case 'answer': {
       // Only answers to this guest's own pending decisions.
@@ -331,3 +364,5 @@ function forGuests(g: GameState | null): GameState | null {
   if (!Object.keys(g.match.answers).some(hide)) return g;
   return { ...g, match: { ...g.match, answers: Object.fromEntries(Object.entries(g.match.answers).filter(([k]) => !hide(k))) } };
 }
+
+const strings = (v: unknown): v is string[] => Array.isArray(v) && v.length <= 25 && v.every((x) => typeof x === 'string');
