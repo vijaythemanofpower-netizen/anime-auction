@@ -298,4 +298,4 @@ export function canAct(fid: string): boolean {
 }
 
 // Dev only: inspect the live store from the browser console (dynamic import() would load a second copy).
-if (import.meta.env.DEV && typeof window !== 'undefined') (window as unknown as { __store: typeof store }).__store = store;
+if (import.meta.env.DEV && typeof window !== 'undefined') Object.assign(window, { __store: store, __cur: currentMatch });
