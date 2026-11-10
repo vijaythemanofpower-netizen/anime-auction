@@ -3,7 +3,7 @@ import type { Cricketer } from '../types';
 /** Ratings are the game's own estimates, not real statistics.
  * Names are deliberate, playful name-alikes of the real players.
  * Roster membership follows the supplied 2026 season CSV. */
-export const PLAYERS: Cricketer[] = [
+const RAW: Cricketer[] = [
   // Openers
   {"id": "r-gaikwadd", "name": "R. Gaikwadd", "realName": "Ruturaj Gaikwad", "country": "IND", "overseas": false, "uncapped": false, "age": 29, "role": "opener", "bats": "R", "bowl": "none", "bat": {"vsPace": 83, "vsSpin": 87, "tempo": 78, "power": 75, "consistency": 89}, "fielding": 78, "temper": "calm", "clutch": 81, "captaincy": 88, "tier": 4, "basePrice": 150},
   {"id": "a-mhatra", "name": "A. Mhatra", "realName": "Ayush Mhatre", "country": "IND", "overseas": false, "uncapped": false, "age": 18, "role": "opener", "bats": "R", "bowl": "none", "bat": {"vsPace": 54, "vsSpin": 53, "tempo": 56, "power": 45, "consistency": 59}, "fielding": 59, "temper": "steady", "clutch": 57, "captaincy": 38, "tier": 2, "basePrice": 50},
@@ -274,3 +274,73 @@ export const PLAYERS: Cricketer[] = [
   {"id": "z-ansara", "name": "Z. Ansara", "realName": "Zeeshan Ansari", "country": "IND", "overseas": false, "uncapped": false, "age": 29, "role": "spin", "bats": "R", "bowl": "offspin", "bat": {"vsPace": 38, "vsSpin": 32, "tempo": 34, "power": 29, "consistency": 29}, "bowling": {"attack": 69, "control": 72, "powerplay": 63, "death": 66, "speed": 0}, "fielding": 66, "temper": "steady", "clutch": 66, "captaincy": 52, "tier": 3, "basePrice": 100},
   {"id": "h-dubea", "name": "H. Dubea", "realName": "Harsh Dubey", "country": "IND", "overseas": false, "uncapped": false, "age": 29, "role": "spin", "bats": "R", "bowl": "slaorth", "bat": {"vsPace": 35, "vsSpin": 32, "tempo": 34, "power": 29, "consistency": 29}, "bowling": {"attack": 69, "control": 72, "powerplay": 63, "death": 66, "speed": 0}, "fielding": 66, "temper": "steady", "clutch": 66, "captaincy": 52, "tier": 3, "basePrice": 100},
 ];
+
+// ---- Corrections (game estimates): wrong roles fixed, copy-pasted tier ratings made distinct.
+// bat: [vsPace, vsSpin, tempo, power, consistency]; bw: [attack, control, powerplay, death, speed kph (0 = spin)].
+type Fix = { role?: Cricketer['role']; bowl?: Cricketer['bowl']; bats?: 'L' | 'R'; bat?: number[]; bw?: number[] };
+const FIX: Record<string, Fix> = {
+  // Bowlers that were listed as batters.
+  'Arshdeep Singh': { role: 'pace', bowl: 'fastmed', bats: 'L', bat: [22, 20, 40, 30, 20], bw: [86, 80, 85, 88, 136] },
+  'Pat Cummins': { role: 'pace', bowl: 'fast', bat: [55, 50, 70, 68, 40], bw: [86, 84, 82, 84, 143] },
+  'T. Natarajan': { role: 'pace', bowl: 'fastmed', bats: 'L', bat: [15, 12, 30, 20, 15], bw: [74, 70, 62, 82, 135] },
+  'Luke Wood': { role: 'pace', bowl: 'fastmed', bats: 'L', bat: [25, 22, 40, 35, 20], bw: [70, 66, 72, 66, 140] },
+  'Akeal Hosein': { role: 'spin', bowl: 'slaorth', bats: 'L', bat: [40, 35, 55, 50, 30], bw: [76, 84, 80, 66, 0] },
+  'Digvesh Rathi': { role: 'spin', bowl: 'legspin', bat: [20, 18, 35, 25, 20], bw: [74, 76, 64, 68, 0] },
+  'Allah Ghazanfar': { role: 'spin', bowl: 'offspin', bat: [22, 20, 35, 28, 20], bw: [76, 76, 72, 66, 0] },
+  // All-rounders filed elsewhere.
+  'Romario Shepherd': { role: 'allrounder', bowl: 'fastmed', bat: [72, 66, 88, 90, 58], bw: [62, 58, 52, 66, 136] },
+  'Mitchell Owen': { role: 'allrounder', bowl: 'fastmed', bat: [75, 70, 90, 92, 55], bw: [52, 50, 50, 52, 132] },
+  'Axar Patel': { role: 'allrounder', bat: [72, 76, 78, 72, 68], bw: [80, 86, 76, 72, 0] },
+  'Sunil Narine': { role: 'allrounder', bat: [76, 72, 94, 86, 56], bw: [88, 92, 84, 82, 0] },
+  'Rohit Sharma': { role: 'opener', bat: [86, 84, 86, 88, 72] },
+  // Batters.
+  'Virat Kohli': { bat: [88, 86, 80, 78, 92] }, 'Shubman Gill': { bat: [90, 86, 82, 72, 88] }, 'Yashasvi Jaiswal': { bat: [88, 82, 88, 84, 76] },
+  'Travis Head': { bat: [92, 82, 94, 90, 72] }, 'Abhishek Sharma': { bat: [88, 86, 95, 92, 66] }, 'Suryakumar Yadav': { bat: [90, 92, 92, 88, 74] },
+  'KL Rahul': { bat: [86, 84, 76, 74, 86] }, 'Ruturaj Gaikwad': { bat: [84, 88, 78, 72, 86] }, 'Sai Sudharsan': { bat: [84, 86, 80, 70, 88] },
+  'Finn Allen': { bat: [82, 72, 95, 90, 58] }, 'Rachin Ravindra': { bat: [80, 84, 82, 74, 76] }, 'Aiden Markram': { bat: [82, 80, 78, 74, 78] },
+  'Ben Duckett': { bat: [84, 82, 86, 76, 72] }, 'Pathum Nissanka': { bat: [80, 82, 78, 66, 80] }, 'Tristan Stubbs': { bat: [80, 82, 86, 86, 72] },
+  'Tilak Varma': { bat: [80, 84, 84, 80, 78] }, 'Shreyas Iyer': { bat: [80, 88, 84, 82, 78] }, 'Rajat Patidar': { bat: [78, 86, 86, 86, 68] },
+  'Dewald Brevis': { bat: [80, 78, 92, 92, 62] }, 'David Miller': { bat: [84, 78, 86, 86, 72] }, 'Rinku Singh': { bat: [80, 84, 88, 86, 78] },
+  'Rovman Powell': { bat: [80, 70, 90, 92, 58] }, 'Shimron Hetmyer': { bat: [80, 76, 90, 88, 62] }, 'Tim David': { bat: [80, 74, 94, 94, 60] },
+  // Keepers.
+  'Jos Buttler': { bat: [92, 86, 90, 86, 78] }, 'Rishabh Pant': { bat: [86, 88, 90, 88, 66] }, 'Nicholas Pooran': { bat: [88, 90, 94, 95, 68] },
+  'Heinrich Klaasen': { bat: [84, 95, 94, 94, 74] }, 'MS Dhoni': { bat: [78, 72, 84, 82, 66] }, 'Sanju Samson': { bat: [86, 84, 88, 86, 68] },
+  'Phil Salt': { bat: [90, 78, 95, 88, 64] }, 'Ishan Kishan': { bat: [84, 80, 90, 84, 64] }, 'Jitesh Sharma': { bat: [76, 74, 90, 86, 58] },
+  'Prabhsimran Singh': { bat: [82, 76, 90, 84, 60] },
+  // All-rounders.
+  'Hardik Pandya': { bat: [86, 82, 88, 90, 70], bw: [76, 72, 70, 80, 140] }, 'Ravindra Jadeja': { bat: [76, 78, 80, 74, 72], bw: [76, 88, 72, 70, 0] },
+  'Shivam Dube': { bat: [72, 90, 88, 92, 66], bw: [50, 48, 44, 52, 126] }, 'Washington Sundar': { bat: [74, 76, 72, 66, 72], bw: [76, 84, 82, 64, 0] },
+  'Glenn Phillips': { bat: [84, 80, 88, 86, 66], bw: [58, 62, 52, 54, 0] }, 'Cameron Green': { bat: [84, 78, 84, 86, 70], bw: [66, 62, 64, 62, 140] },
+  'Mitchell Marsh': { bat: [86, 78, 86, 88, 68], bw: [60, 58, 56, 60, 136] }, 'Wanindu Hasaranga': { bat: [62, 64, 80, 76, 52], bw: [86, 78, 74, 82, 0] },
+  'Will Jacks': { bat: [84, 84, 90, 84, 66], bw: [62, 68, 60, 56, 0] }, 'Marcus Stoinis': { bat: [84, 80, 86, 88, 66], bw: [62, 58, 54, 64, 130] },
+  'Marco Jansen': { bat: [70, 66, 80, 82, 56], bw: [80, 74, 82, 72, 142] }, 'Sam Curran': { bat: [74, 72, 80, 74, 64], bw: [74, 72, 76, 74, 132] },
+  'Liam Livingstone': { bat: [80, 86, 92, 94, 58], bw: [58, 62, 54, 54, 0] }, 'Mitchell Santner': { bat: [64, 66, 72, 62, 62], bw: [74, 88, 78, 66, 0] },
+  'Jason Holder': { bat: [68, 66, 78, 80, 56], bw: [76, 78, 74, 74, 134] }, 'Rahul Tewatia': { bat: [72, 74, 84, 80, 62], bw: [56, 62, 52, 54, 0] },
+  'Riyan Parag': { bat: [80, 84, 86, 84, 66], bw: [56, 62, 52, 50, 0] },
+  // Pace.
+  'Jasprit Bumrah': { bw: [96, 95, 92, 96, 145] }, 'Mitchell Starc': { bw: [90, 74, 90, 84, 148] }, 'Kagiso Rabada': { bw: [88, 80, 86, 84, 147] },
+  'Jofra Archer': { bw: [88, 82, 88, 82, 148] }, 'Josh Hazlewood': { bw: [86, 88, 90, 76, 140] }, 'Mohammed Siraj': { bw: [82, 74, 88, 70, 143] },
+  'Mohammed Shami': { bw: [84, 76, 88, 76, 142] }, 'Trent Boult': { bw: [86, 78, 94, 74, 138] }, 'Bhuvneshwar Kumar': { bw: [80, 86, 90, 80, 130] },
+  'Deepak Chahar': { bw: [78, 74, 88, 64, 132] }, 'Harshal Patel': { bw: [80, 70, 64, 86, 128] }, 'Umran Malik': { bw: [80, 58, 70, 70, 152] },
+  'Mayank Yadav': { bw: [82, 66, 74, 74, 153] }, 'Matheesha Pathirana': { bw: [84, 64, 66, 92, 146] }, 'Nathan Ellis': { bw: [80, 74, 72, 86, 138] },
+  'Prasidh Krishna': { bw: [80, 70, 74, 80, 142] }, 'Harshit Rana': { bw: [78, 66, 74, 76, 142] }, 'Avesh Khan': { bw: [76, 66, 70, 78, 140] },
+  'Nandre Burger': { bw: [78, 66, 84, 68, 142] },
+  // Spin.
+  'Rashid Khan': { bw: [92, 92, 82, 88, 0] }, 'Kuldeep Yadav': { bw: [88, 80, 72, 80, 0] }, 'Yuzvendra Chahal': { bw: [86, 74, 70, 80, 0] },
+  'Varun Chakravarthy': { bw: [88, 80, 76, 78, 0] }, 'Noor Ahmad': { bw: [86, 76, 72, 76, 0] }, 'Ravi Bishnoi': { bw: [80, 78, 72, 72, 0] },
+};
+
+/** For tests: every corrected name must exist in the roster (a typo would silently do nothing). */
+export const FIXED_NAMES = Object.keys(FIX);
+
+export const PLAYERS: Cricketer[] = RAW.map((p) => {
+  const f = FIX[p.realName];
+  if (!f) return p;
+  const [vsPace, vsSpin, tempo, power, consistency] = f.bat ?? [];
+  const [attack, control, powerplay, death, speed] = f.bw ?? [];
+  return {
+    ...p, role: f.role ?? p.role, bowl: f.bowl ?? p.bowl, bats: f.bats ?? p.bats,
+    bat: f.bat ? { vsPace, vsSpin, tempo, power, consistency } : p.bat,
+    bowling: f.bw ? { attack, control, powerplay, death, speed } : p.bowling,
+  };
+});

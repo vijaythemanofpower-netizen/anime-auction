@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { PLAYERS } from '../src/engine/data/players';
+import { FIXED_NAMES, PLAYERS } from '../src/engine/data/players';
 import { autoLineup, createGame, ctxOf, matchSetup, type GameState } from '../src/engine/game';
 import { playMatch, type MatchRecord, type MatchSetup } from '../src/engine/match';
 import { finishAuction } from '../src/engine/auction';
@@ -27,6 +27,16 @@ function playOut(setup: MatchSetup, pick: (kind: string) => string): MatchRecord
   }
   return rec;
 }
+
+describe('roster corrections', () => {
+  it('applies every correction and fixes the misfiled bowlers', () => {
+    const names = new Set(PLAYERS.map((p) => p.realName));
+    expect(FIXED_NAMES.filter((n) => !names.has(n))).toEqual([]);
+    const by = (n: string) => PLAYERS.find((p) => p.realName === n)!;
+    for (const n of ['Pat Cummins', 'Arshdeep Singh', 'T. Natarajan']) expect(by(n).role).toBe('pace');
+    expect(by('Jasprit Bumrah').bowling!.death).toBeGreaterThan(by('Kagiso Rabada').bowling!.death);
+  });
+});
 
 describe('season', () => {
   it('runs a 5-team league, IPL playoffs and a final to a champion', () => {
