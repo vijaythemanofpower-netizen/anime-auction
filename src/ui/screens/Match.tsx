@@ -5,6 +5,7 @@ import type { BallEvent, Decision, MatchRecord } from '../../engine/match';
 import { DELIVERY_LABEL, SHOT_LABEL, oversText } from '../../engine/match';
 import { Seg, useNow } from '../components/common';
 import { Portrait } from '../components/Player';
+import { sfx } from '../sfx';
 
 const CALL_SECONDS = 10;
 const pname = (id: string) => displayName(PLAYER_MAP[id]);
@@ -171,6 +172,7 @@ function PlayBall({ g, d, onAnswer, passFirst, onAuto }: { g: GameState; d: Deci
     const off = Math.abs(pos.current - zoneAt);
     const q = off <= meta.zone / 6 ? 3 : off <= meta.zone / 2 ? 2 : off <= meta.zone ? 1 : 0;
     setResult(q);
+    if (store.get().settings.sound) sfx(q >= 2 ? 'crack' : 'tap');
     setTimeout(() => send(`${pick}@${q}`), 650);
   };
   useEffect(() => {
@@ -257,6 +259,7 @@ function Scorecard({ rec, g }: { rec: MatchRecord; g: GameState }) {
 
 export function Match({ g }: { g: GameState }) {
   const speed = useApp((s) => s.settings.speed);
+  const sound = useApp((s) => s.settings.sound);
   const rec = currentMatch(g)!;
   const storageKey = `ca-idx:${g.id}:${g.match!.seed}`;
   const [idx, setIdx] = useState(() => Number(sessionStorage.getItem(storageKey) ?? 0));
@@ -279,6 +282,8 @@ export function Match({ g }: { g: GameState }) {
     const t = setTimeout(() => {
       const e = rec.events[idx];
       setIdx(idx + 1);
+      if (store.get().settings.sound && e.bowler) sfx(e.wicket ? 'wicket' : e.runs === 6 ? 'six' : e.runs === 4 ? 'four' : e.runs > 0 ? 'crack' : 'dot');
+      if (store.get().settings.sound && !e.bowler && e.banners.some((b) => b === 'superover' || b === 'lastover')) sfx('cheer');
       if (e.banners.some((b) => ['wicket', 'six', 'four', 'fifty', 'hundred', 'hattrick', 'superover', 'lastover'].includes(b))) setBannerE(e);
     }, beat(rec.events[idx - 1]) / speed);
     return () => clearTimeout(t);
@@ -351,6 +356,7 @@ export function Match({ g }: { g: GameState }) {
           <h2>{home.name} <span className="faint">v</span> {away.name}</h2>
         </div>
         <div className="row">
+          <button className="btn sm ghost" aria-pressed={sound} onClick={() => store.settings({ sound: !sound })}>{sound ? '🔊 Sound on' : '🔇 Sound off'}</button>
           <Seg label="Speed" value={speed} onChange={(v) => store.settings({ speed: v })} options={[{ value: 1, label: '1x' }, { value: 2, label: '2x' }, { value: 4, label: '4x' }]} />
           {!atEnd && <button className="btn sm ghost" onClick={skip}>Skip to next call</button>}
         </div>
