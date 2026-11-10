@@ -9,11 +9,11 @@ export default defineConfig({
   server: {
     // 5174, so it can run next to the anime game's dev server on 5173.
     port: 5174, strictPort: false,
-    watch: { ignored: ['**/.tasks/**', '**/port/**'] },
+    watch: { ignored: ['**/.tasks/**'] },
   },
   test: {
     environment: 'node',
     include: ['tests/**/*.test.ts'],
-    exclude: ['node_modules/**', 'port/**'],
+    exclude: ['node_modules/**'],
   },
 });
