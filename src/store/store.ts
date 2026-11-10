@@ -42,7 +42,8 @@ let saveTimer: ReturnType<typeof setTimeout> | null = null;
 function set(next: Partial<AppState>) {
   state = { ...state, ...next };
   for (const l of listeners) l();
-  if (state.online.role === 'host' && 'game' in next) sendState(state.game);
+  if (state.online.role === 'host' && 'game' in next) sendState(forGuests(state.game));
+  if (state.online.role === 'guest') return;
   if (saveTimer) clearTimeout(saveTimer);
   saveTimer = setTimeout(() => {
     try { localStorage.setItem(KEY, JSON.stringify({ game: state.game, settings: state.settings })); } catch { /* storage full */ }
@@ -79,8 +80,8 @@ export const store = {
     const code = roomCode();
     set({ online: { role: 'host', code, me: g.config.humans[0]?.id ?? null } });
     try {
-      await openRoom(code, { act: applyAct, hello: () => sendState(state.game) });
-      sendState(state.game);
+      await openRoom(code, { act: applyAct, hello: () => sendState(forGuests(state.game)) });
+      sendState(forGuests(state.game));
     } catch (e) { set({ online: { ...state.online, error: (e as Error).message } }); }
   },
   async joinRoom(code: string) {
@@ -146,6 +147,7 @@ export const store = {
 
   // ----- after the auction
   toPrep() {
+    if (state.game?.phase !== 'reveal') return;
     if (guest('toPrep', [])) return;
     const g = state.game;
     if (!g) return;
@@ -166,6 +168,7 @@ export const store = {
   },
   /** Season: simulate computer-only fixtures, then start the next fixture a human plays in. */
   playNext() {
+    if (state.game?.phase !== 'prep') return;
     if (guest('playNext', [])) return;
     let g = state.game;
     if (!g) return;
@@ -195,6 +198,7 @@ export const store = {
   },
   /** Record the finished match in the season and go back to the season hub (or the trophy). */
   endMatch() {
+    { const g0 = state.game; const r0 = g0?.match ? currentMatch(g0) : null; if (!r0?.outcome || r0.pending?.length) return; }
     if (guest('endMatch', [])) return;
     const g = state.game;
     if (!g?.match) return;
@@ -262,7 +266,7 @@ export function displayName(c: Cricketer | undefined): string {
 /** Guest devices forward moves to the host instead of applying them. */
 function guest(name: string, args: unknown[]): boolean {
   if (state.online.role !== 'guest') return false;
-  if (state.online.me) sendAct({ name, args, me: state.online.me });
+  if (state.online.me) sendAct({ name, args, me: state.online.me, key: DEVICE_KEY });
   return true;
 }
 
@@ -272,12 +276,15 @@ const owns = (me: string, fid: unknown) => !!state.game?.franchises.find((f) => 
 /** Host: check a guest's move and apply it. */
 function applyAct(a: Act) {
   const g = state.game;
-  if (!g || typeof a?.me !== 'string' || !g.config.humans.some((h) => h.id === a.me) || !Array.isArray(a.args)) return;
+  if (!g || typeof a?.me !== 'string' || typeof a.key !== 'string' || !g.config.humans.some((h) => h.id === a.me) || !Array.isArray(a.args)) return;
+  // Nobody may act as the host, and each seat belongs to the first device that used it.
+  if (a.me === state.online.me) return;
+  if ((seatKeys[a.me] ??= a.key) !== a.key) return;
   const [x, y] = a.args;
   switch (a.name) {
     case 'bid': if (owns(a.me, x)) store.bid(x as string); break;
     case 'scout': if (owns(a.me, x) && typeof y === 'string') store.scout(x as string, y); break;
-    case 'setLineup': if (owns(a.me, x) && y && typeof y === 'object') store.setLineup(x as string, y as Lineup); break;
+    case 'setLineup': if (owns(a.me, x) && g.phase === 'prep' && validLineup(g, x as string, y)) store.setLineup(x as string, y as Lineup); break;
     case 'answer': {
       // Only answers to this guest's own pending decisions.
       const rec = currentMatch(g);
@@ -299,3 +306,28 @@ export function canAct(fid: string): boolean {
 
 // Dev only: inspect the live store from the browser console (dynamic import() would load a second copy).
 if (import.meta.env.DEV && typeof window !== 'undefined') Object.assign(window, { __store: store, __cur: currentMatch });
+
+/** Random per-device secret sent with every guest move. */
+const DEVICE_KEY = typeof crypto !== 'undefined' && 'randomUUID' in crypto ? crypto.randomUUID() : String(Math.random());
+/** Host: which device key owns each seat. */
+const seatKeys: Record<string, string> = {};
+
+/** A guest's lineup must use only players from their own squad, with captain and keeper in the XI. */
+function validLineup(g: GameState, fid: string, l: unknown): l is Lineup {
+  const squad = g.franchises.find((f) => f.id === fid)?.squad ?? [];
+  const ids = (v: unknown) => Array.isArray(v) && v.every((x) => typeof x === 'string' && squad.includes(x));
+  const o = l as Lineup;
+  return !!o && typeof o === 'object' && ids(o.xi) && o.xi.length <= 11 && ids(o.bench) && ids(o.bowlers)
+    && o.xi.includes(o.captain) && o.xi.includes(o.keeper) && ['aggressive', 'balanced', 'defensive', 'allout'].includes(o.plan);
+}
+
+/** What guests receive: the game minus answers to decisions still pending (a secret pick must stay secret). */
+function forGuests(g: GameState | null): GameState | null {
+  if (!g?.match) return g;
+  // A secret pair (delivery v shot) shares an id prefix; while either half is pending, hide both halves.
+  const pend = currentMatch(g)?.pending ?? [];
+  const prefixes = pend.filter((d) => d.secret).map((d) => d.id.slice(0, d.id.lastIndexOf('-') + 1));
+  const hide = (k: string) => pend.some((d) => d.id === k) || prefixes.some((p) => k.startsWith(p));
+  if (!Object.keys(g.match.answers).some(hide)) return g;
+  return { ...g, match: { ...g.match, answers: Object.fromEntries(Object.entries(g.match.answers).filter(([k]) => !hide(k))) } };
+}

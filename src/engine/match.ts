@@ -309,7 +309,9 @@ class Sim {
       const a = this.ans[d.id];
       // "auto": the player let the computer decide (timer ran out, or auto-play is on).
       if (a === 'auto') return auto();
-      if (a === undefined || !d.options.some((o) => o.id === a.split('@')[0])) { missing.push(d); return d.def; }
+      // Only play-mode balls carry a "@meter" suffix; every other answer must be an exact option id.
+      const opt = d.meta ? a?.split('@')[0] : a;
+      if (a === undefined || !d.options.some((o) => o.id === opt) || (d.meta && !/^[a-z]+@[0-3]$/.test(a))) { missing.push(d); return d.def; }
       return a;
     });
     if (missing.length) throw new NeedAnswer(missing);
@@ -323,7 +325,8 @@ class Sim {
       this.toss();
       const first = this.rec.toss.choice === 'bat' ? this.rec.toss.winner : (1 - this.rec.toss.winner) as 0 | 1;
       let overs = this.s.overs;
-      if (this.rec.weather === 'rain' && !this.s.final && this.rng.chance(0.4)) {
+      // Short matches (under 10 overs) have no room for rain cuts.
+      if (this.rec.weather === 'rain' && !this.s.final && overs >= 10 && this.rng.chance(0.4)) {
         overs = this.rng.int(Math.max(5, overs - 8), overs - 2);
         this.rec.overs = overs;
         this.note(`Rain delays the start. It's now a ${overs}-over match.`, 'rain');
@@ -333,7 +336,7 @@ class Sim {
       const second = (1 - first) as 0 | 1;
       let target = i1.runs + 1;
       let overs2 = overs;
-      const rainAt = this.rec.weather === 'rain' && !this.s.final && this.rng.chance(0.55) ? this.rng.int(Math.max(3, Math.floor(overs * 0.3)), overs - 3) : -1;
+      const rainAt = this.rec.weather === 'rain' && !this.s.final && overs >= 10 && this.rng.chance(0.55) ? this.rng.int(Math.max(3, Math.floor(overs * 0.3)), overs - 3) : -1;
       const i2 = this.innings(1, second, overs2, target, rainAt);
       target = i2.target ?? target;
       overs2 = i2.overs;

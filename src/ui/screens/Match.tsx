@@ -176,7 +176,7 @@ function PlayBall({ g, d, onAnswer, passFirst, onAuto }: { g: GameState; d: Deci
     setTimeout(() => send(`${pick}@${q}`), 650);
   };
   useEffect(() => {
-    const k = (e: KeyboardEvent) => { if (e.code === 'Space' || e.code === 'Enter') { e.preventDefault(); stop(); } };
+    const k = (e: KeyboardEvent) => { if (pick && result === null && (e.code === 'Space' || e.code === 'Enter')) { e.preventDefault(); stop(); } };
     window.addEventListener('keydown', k);
     return () => window.removeEventListener('keydown', k);
   });
@@ -311,19 +311,27 @@ export function Match({ g }: { g: GameState }) {
   const humanTeams = new Set(pending.map((d) => d.team));
   const secretPair = online.role === 'off' && pending.length > 1 && pending.every((d) => d.secret) && humanTeams.size > 1;
   const waitingFor = atEnd && pending.length > 0 && !nextCall;
+  const pendingKey = pending.map((d) => d.id).join('|');
+  useEffect(() => { setAnswers({}); }, [pendingKey]);
+  useEffect(() => {
+    if (online.role !== 'host' || !waitingFor) return;
+    // shortcut: a guest who is gone or whose move was lost gets skill-based "auto" after the call timer plus a grace period.
+    const t = setTimeout(() => store.answer(Object.fromEntries(pending.filter((d) => !mine(d)).map((d) => [d.id, d.meta ? 'auto' : d.def]))), (CALL_SECONDS + 8) * 1000);
+    return () => clearTimeout(t);
+  }, [pendingKey, waitingFor, online.role]);
 
   // Auto-play: let skill decide the rest of this over (6 balls) or this innings.
-  const [auto, setAuto] = useState<{ balls: number; inn?: string } | null>(null);
+  const [auto, setAuto] = useState<{ balls: number; inn?: string; team: 0 | 1 } | null>(null);
   const isPlay = (x: Decision) => x.kind === 'batBall' || x.kind === 'bowlBall';
   const innOf = (x: Decision) => x.id.split('-')[0];
   useEffect(() => {
-    if (!auto || !nextCall || !isPlay(nextCall)) return;
+    if (!auto || !nextCall || !isPlay(nextCall) || nextCall.team !== auto.team) return;
     if (auto.inn ? innOf(nextCall) !== auto.inn : auto.balls <= 0) { setAuto(null); return; }
-    const t = setTimeout(() => { onAnswer('auto'); if (!auto.inn) setAuto({ balls: auto.balls - 1 }); }, 30);
+    const t = setTimeout(() => { onAnswer('auto'); if (!auto.inn) setAuto({ ...auto, balls: auto.balls - 1 }); }, 30);
     return () => clearTimeout(t);
   });
-  const startAuto = (mode: 'over' | 'innings') => setAuto(mode === 'over' ? { balls: 5 } : { balls: 0, inn: nextCall ? innOf(nextCall) : undefined });
-  const autoNow = !!auto && !!nextCall && isPlay(nextCall);
+  const startAuto = (mode: 'over' | 'innings') => { if (nextCall) setAuto(mode === 'over' ? { balls: 5, team: nextCall.team } : { balls: 0, inn: innOf(nextCall), team: nextCall.team }); };
+  const autoNow = !!auto && !!nextCall && isPlay(nextCall) && nextCall.team === auto.team;
 
   const shown = rec.events.slice(0, idx);
   const last = shown[shown.length - 1];

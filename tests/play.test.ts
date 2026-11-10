@@ -111,6 +111,26 @@ describe('play mode', () => {
     expect(rec.outcome).toBeDefined();
   });
 
+  it('ignores malformed answers instead of crashing (online guests are untrusted)', () => {
+    let rec = playMatch(setup, {});
+    const answers: Record<string, string> = {};
+    for (let i = 0; i < 2000 && rec.pending?.length; i++) {
+      for (const d of rec.pending) answers[d.id] = d.meta ? 'drive@9' : `${d.options[0].id}@x`;
+      rec = playMatch(setup, answers);
+      if (rec.pending?.length) for (const d of rec.pending) answers[d.id] = d.meta ? 'auto' : d.def;
+      rec = playMatch(setup, answers);
+    }
+    expect(rec.outcome).toBeDefined();
+  });
+
+  it('never rain-cuts a 5-over match', () => {
+    for (let seed = 1; seed <= 40; seed++) {
+      const rec = playOut({ ...setup, seed, weather: 'rain' }, () => 'auto');
+      expect(rec.overs).toBe(5);
+      expect(rec.revised).toBeUndefined();
+    }
+  });
+
   it('stays deterministic: same answers, same match', () => {
     const a = playOut(setup, () => 'auto');
     const b = playOut(setup, () => 'auto');

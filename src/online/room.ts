@@ -4,7 +4,8 @@
 import type { RealtimeChannel } from '@supabase/supabase-js';
 import { supabase } from './client';
 
-export interface Act { name: string; args: unknown[]; me: string }
+/** A guest's move. `key` is a random per-device secret: the host locks each seat to the first key it sees. */
+export interface Act { name: string; args: unknown[]; me: string; key: string }
 
 let ch: RealtimeChannel | null = null;
 let timer: ReturnType<typeof setTimeout> | null = null;
