@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { PLAYER_MAP, currentMatch, displayName, store, useApp } from '../../store/store';
 import type { GameState } from '../../engine/game';
 import type { BallEvent, Decision, MatchRecord } from '../../engine/match';
-import { oversText } from '../../engine/match';
+import { DELIVERY_LABEL, SHOT_LABEL, oversText } from '../../engine/match';
 import { Seg, useNow } from '../components/common';
 import { Portrait } from '../components/Player';
 
@@ -118,6 +118,113 @@ function Call({ g, d, onAnswer, passFirst }: { g: GameState; d: Decision; onAnsw
   );
 }
 
+const TIM_WORD = ['missed it', 'early', 'well timed', 'PERFECT'];
+const ACC_WORD = ['sprayed', 'loose', 'on the spot', 'PERFECT'];
+
+/** Who on this team plays this ball: the batting captain bats, the bowling captain bowls. */
+function playerFor(g: GameState, team: 0 | 1, kind: 'batBall' | 'bowlBall'): string {
+  const fid = team === 0 ? g.match!.home : g.match!.away;
+  const f = g.franchises.find((x) => x.id === fid)!;
+  const role = kind === 'batBall' ? 'bat' : 'bowl';
+  const owner = f.owners.find((o) => g.roles[o]?.includes(role)) ?? f.owners[0];
+  return g.config.humans.find((h) => h.id === owner)?.name ?? f.name;
+}
+
+/**
+ * Play mode: pick a delivery or shot, then stop the marker in the green zone.
+ * The answer sent to the engine is "<pick>@<0-3>" (missed .. perfect), or "auto".
+ */
+function PlayBall({ g, d, onAnswer, passFirst, onAuto }: { g: GameState; d: Decision; onAnswer: (opt: string) => void; passFirst: boolean; onAuto: (mode: 'over' | 'innings') => void }) {
+  const [shown, setShown] = useState(!passFirst);
+  const [pick, setPick] = useState<string | null>(null);
+  const [result, setResult] = useState<number | null>(null);
+  const [openedAt, setOpenedAt] = useState(() => (passFirst ? 0 : Date.now()));
+  const now = useNow(200);
+  const answered = useRef(false);
+  const pos = useRef(0);
+  const bar = useRef<HTMLDivElement>(null);
+  const meta = d.meta!;
+  const batting = d.kind === 'batBall';
+  const who = playerFor(g, d.team, d.kind as 'batBall' | 'bowlBall');
+  // Where the sweet spot sits on the bar, fixed for this ball.
+  const [zoneAt] = useState(() => 0.25 + Math.random() * 0.5);
+  const send = (a: string) => { if (!answered.current) { answered.current = true; onAnswer(a); } };
+  const left = openedAt ? Math.max(0, CALL_SECONDS + 2 - (now - openedAt) / 1000) : CALL_SECONDS;
+  useEffect(() => { if (shown && left <= 0 && result === null) send('auto'); });
+
+  // The moving marker (bounces end to end; faster bowlers make it faster).
+  useEffect(() => {
+    if (!pick || result !== null) return;
+    let raf = 0; const t0 = performance.now();
+    const step = (t: number) => {
+      const cycle = ((t - t0) / 1000) * 0.55 * meta.speed;
+      pos.current = 1 - Math.abs((cycle % 2) - 1);
+      if (bar.current) bar.current.style.setProperty('--x', String(pos.current));
+      raf = requestAnimationFrame(step);
+    };
+    raf = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(raf);
+  }, [pick, result, meta.speed]);
+
+  const stop = () => {
+    if (!pick || result !== null) return;
+    const off = Math.abs(pos.current - zoneAt);
+    const q = off <= meta.zone / 6 ? 3 : off <= meta.zone / 2 ? 2 : off <= meta.zone ? 1 : 0;
+    setResult(q);
+    setTimeout(() => send(`${pick}@${q}`), 650);
+  };
+  useEffect(() => {
+    const k = (e: KeyboardEvent) => { if (e.code === 'Space' || e.code === 'Enter') { e.preventDefault(); stop(); } };
+    window.addEventListener('keydown', k);
+    return () => window.removeEventListener('keydown', k);
+  });
+
+  const fid = d.team === 0 ? g.match!.home : g.match!.away;
+  const f = g.franchises.find((x) => x.id === fid)!;
+  return (
+    <div className="modal-back">
+      <div className="modal col call play" role="dialog" aria-modal="true" aria-label={batting ? 'Your shot' : 'Your delivery'} style={{ ['--team' as string]: f.color }}>
+        <div className="row between"><span className="label" style={{ color: 'var(--accent)' }}>{batting ? `🏏 ${who} is batting` : `⚾ ${who} is bowling`}</span><span className="label" style={{ color: f.color }}>{f.name}</span></div>
+        {!shown ? (
+          <>
+            <h2>Pass the device</h2>
+            <p className="dim">This pick is secret. Hand over to {who} ({f.name}).</p>
+            <button className="btn primary lg" onClick={() => { setShown(true); setOpenedAt(Date.now()); }}>I'm {who}: show my ball</button>
+          </>
+        ) : (
+          <>
+            <div className="row" style={{ gap: 12, flexWrap: 'nowrap' }}>
+              <Portrait c={PLAYER_MAP[batting ? meta.batter : meta.bowler]} size="sm" />
+              <h3 style={{ fontSize: 18, margin: 0 }}>{d.prompt}</h3>
+            </div>
+            {!pick ? (
+              <div className="options">
+                {d.options.map((o) => <button key={o.id} className="option" onClick={() => { setPick(o.id); setOpenedAt(Date.now()); }}>{o.label}{o.hint && <small>{o.hint}</small>}</button>)}
+              </div>
+            ) : (
+              <div className="col" style={{ gap: 10 }}>
+                <div className="meter" ref={bar} style={{ ['--zone-at' as string]: zoneAt, ['--zone' as string]: meta.zone }} onPointerDown={stop}>
+                  <i className="zone" /><i className="sweet" /><b className="marker" />
+                </div>
+                {result === null
+                  ? <><button className="btn primary lg" onClick={stop}>{batting ? 'Hit it!' : 'Release!'}</button><small className="faint" style={{ textAlign: 'center' }}>Stop the marker in the green. Tap the bar, the button, Space or Enter.</small></>
+                  : <div className={`meter-result q${result}`}>{(batting ? TIM_WORD : ACC_WORD)[result]}</div>}
+              </div>
+            )}
+            <div className="row between" style={{ fontSize: 13 }}>
+              <span className="faint">{Math.ceil(left)} s · runs out: your player's own skill decides</span>
+              <span className="row" style={{ gap: 6 }}>
+                <button className="btn sm ghost" onClick={() => { onAuto('over'); send('auto'); }}>Auto this over</button>
+                <button className="btn sm ghost" onClick={() => { onAuto('innings'); send('auto'); }}>Auto innings</button>
+              </span>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function Scorecard({ rec, g }: { rec: MatchRecord; g: GameState }) {
   const team = (t: 0 | 1) => g.franchises.find((f) => f.id === (t === 0 ? g.match!.home : g.match!.away))!;
   const outs = new Map<string, BallEvent>();
@@ -189,6 +296,19 @@ export function Match({ g }: { g: GameState }) {
   const humanTeams = new Set(pending.map((d) => d.team));
   const secretPair = pending.length > 1 && pending.every((d) => d.secret) && humanTeams.size > 1;
 
+  // Auto-play: let skill decide the rest of this over (6 balls) or this innings.
+  const [auto, setAuto] = useState<{ balls: number; inn?: string } | null>(null);
+  const isPlay = (x: Decision) => x.kind === 'batBall' || x.kind === 'bowlBall';
+  const innOf = (x: Decision) => x.id.split('-')[0];
+  useEffect(() => {
+    if (!auto || !nextCall || !isPlay(nextCall)) return;
+    if (auto.inn ? innOf(nextCall) !== auto.inn : auto.balls <= 0) { setAuto(null); return; }
+    const t = setTimeout(() => { onAnswer('auto'); if (!auto.inn) setAuto({ balls: auto.balls - 1 }); }, 30);
+    return () => clearTimeout(t);
+  });
+  const startAuto = (mode: 'over' | 'innings') => setAuto(mode === 'over' ? { balls: 5 } : { balls: 0, inn: nextCall ? innOf(nextCall) : undefined });
+  const autoNow = !!auto && !!nextCall && isPlay(nextCall);
+
   const shown = rec.events.slice(0, idx);
   const last = shown[shown.length - 1];
   const inn = last?.inn ?? 0;
@@ -220,7 +340,10 @@ export function Match({ g }: { g: GameState }) {
   return (
     <div className="col">
       {bannerE && <Banner e={bannerE} />}
-      {nextCall && <Call key={nextCall.id} g={g} d={nextCall} onAnswer={onAnswer} passFirst={secretPair} />}
+      {nextCall && !autoNow && (isPlay(nextCall)
+        ? <PlayBall key={nextCall.id} g={g} d={nextCall} onAnswer={onAnswer} passFirst={secretPair} onAuto={startAuto} />
+        : <Call key={nextCall.id} g={g} d={nextCall} onAnswer={onAnswer} passFirst={secretPair} />)}
+      {auto && <div className="auto-pill" role="status">Auto-playing {auto.inn ? 'this innings' : 'this over'} <button className="btn sm" onClick={() => setAuto(null)}>Take over</button></div>}
 
       <div className="row between">
         <div>
@@ -285,7 +408,9 @@ export function Match({ g }: { g: GameState }) {
                     <span className="ov">{e.over}.{e.ball}</span>
                     <div>
                       <div><span className="faint">{pname(e.bowler)} to {pname(e.batter)}: </span>{e.text}</div>
-                      {e.mind && <div className="mind">Mind game: {e.mind.bowl} v {e.mind.bat}</div>}
+                      {e.mind && <div className="mind">{e.mind.tim !== undefined
+                        ? `${DELIVERY_LABEL[e.mind.bowl]?.pace ?? e.mind.bowl} (${ACC_WORD[e.mind.acc ?? 2].toLowerCase()}) v ${SHOT_LABEL[e.mind.bat]?.label ?? e.mind.bat} (${TIM_WORD[e.mind.tim].toLowerCase()})`
+                        : `Mind game: ${e.mind.bowl} v ${e.mind.bat}`}</div>}
                       {e.notes.map((n, j) => <div key={j} className="extra">{n}</div>)}
                     </div>
                   </div>

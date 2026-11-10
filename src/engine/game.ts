@@ -29,6 +29,10 @@ export interface GameConfig {
   mystery: boolean;
   realNames: boolean;
   seed: number;
+  /** Overs per innings (default 20). */
+  overs?: 5 | 10 | 20;
+  /** Play every ball (bat and bowl yourself) instead of only making captain's calls. Default true. */
+  play?: boolean;
 }
 
 export type Phase = 'auction' | 'reveal' | 'prep' | 'match' | 'done';
@@ -229,6 +233,6 @@ export function matchSetup(g: GameState, players: Record<string, Cricketer>, hom
   const sub: Record<string, Cricketer> = {};
   for (const id of used) sub[id] = players[id];
   return {
-    id: `${g.id}-${homeId}-${awayId}-${seed}`, seed, overs: 20, teams: [sheetFor(home, lh, !home.npc), sheetFor(away, la, !away.npc)], players: sub, form: g.form, reviews: 2,
+    id: `${g.id}-${homeId}-${awayId}-${seed}`, seed, overs: g.config.overs ?? 20, play: g.config.play ?? true, teams: [sheetFor(home, lh, !home.npc), sheetFor(away, la, !away.npc)], players: sub, form: g.form, reviews: 2,
   };
 }

@@ -47,11 +47,23 @@ export interface MatchSetup {
   reviews?: number;
   /** Turn on Captain's Calls etc. for human teams (default true). */
   calls?: boolean;
+  /** Play mode: humans pick (and time) every delivery and shot, and choose who bats next. */
+  play?: boolean;
 }
 
-export type DecisionKind = 'toss' | 'plan' | 'bowler' | 'review' | 'mindBowl' | 'mindBat' | 'sledge' | 'taunt' | 'impact';
+export type DecisionKind = 'toss' | 'plan' | 'bowler' | 'review' | 'mindBowl' | 'mindBat' | 'sledge' | 'taunt' | 'impact' | 'bowlBall' | 'batBall' | 'nextBat';
 
 export interface Option { id: string; label: string; hint?: string }
+
+/** Extra info for play-mode balls: how hard the timing/accuracy meter is. */
+export interface PlayMeta {
+  /** Meter speed 0.6 (slow spinner) .. 1.6 (express pace). */
+  speed: number;
+  /** Sweet-spot width 0.08 .. 0.3 of the bar (skill makes it wider). */
+  zone: number;
+  batter: string;
+  bowler: string;
+}
 
 export interface Decision {
   id: string;
@@ -63,9 +75,13 @@ export interface Decision {
   def: string;
   /** Mind-game decisions come in a pair and are revealed together. */
   secret?: boolean;
+  /** Play-mode balls: answer is "<option>@<0-3>" (meter result), or "auto" to let the player's skill decide. */
+  meta?: PlayMeta;
 }
 
 export type Answers = Record<string, string>;
+
+export interface Mind { bowl: string; bat: string; acc?: number; tim?: number }
 
 export type WicketKind = 'bowled' | 'caught' | 'caughtBehind' | 'lbw' | 'runout' | 'stumped';
 export type Banner =
@@ -103,7 +119,8 @@ export interface BallEvent {
   score: number;
   wkts: number;
   momentum: number;
-  mind?: { bowl: string; bat: string };
+  /** Delivery v shot; acc/tim are the meter results 0 (miss) .. 3 (perfect) in play mode. */
+  mind?: Mind;
   /** Non-ball notes shown in the feed (DRS, sledges, rain, referee...). */
   notes: string[];
   /** Importance 0..100, for the highlights reel. */
@@ -287,9 +304,12 @@ class Sim {
   ask(ds: Decision[], cpu: (d: Decision, r: Rng) => string): string[] {
     const missing: Decision[] = [];
     const out = ds.map((d) => {
-      if (!this.human(d.team)) return cpu(d, new Rng(deriveSeed(this.s.seed, d.id)));
+      const auto = () => cpu(d, new Rng(deriveSeed(this.s.seed, d.id)));
+      if (!this.human(d.team)) return auto();
       const a = this.ans[d.id];
-      if (a === undefined || !d.options.some((o) => o.id === a)) { missing.push(d); return d.def; }
+      // "auto": the player let the computer decide (timer ran out, or auto-play is on).
+      if (a === 'auto') return auto();
+      if (a === undefined || !d.options.some((o) => o.id === a.split('@')[0])) { missing.push(d); return d.def; }
       return a;
     });
     if (missing.length) throw new NeedAnswer(missing);
@@ -601,6 +621,7 @@ class Sim {
   // ----- one delivery
 
   ball(inn: Inn, over: number, legalBefore: number, bs: BowlState): boolean {
+    this.resolveIncoming(inn);
     const bowler = this.p[bs.id];
     const batter = this.p[inn.striker];
     const st = inn.bat.get(inn.striker)!;
@@ -612,12 +633,13 @@ class Sim {
     if (legalBefore === 0 && st.balls === 0 && inn.legal > 0 && !inn.superOver) this.sledgeOffer(inn, over, bs, notes, banners);
 
     // Mind-game ball at the biggest moments.
-    let mind: { bowl: string; bat: string } | undefined;
+    let mind: Mind | undefined;
     const isHatTrick = inn.hatTrick.bowler === bs.id && inn.hatTrick.count >= 2;
     const chaseLive = inn.target !== undefined && inn.target - inn.runs <= (inn.overs * 6 - inn.legal) * 3 && inn.target - inn.runs > 0;
     const lastOver = over === inn.overs - 1;
-    if ((isHatTrick || inn.superOver || (lastOver && chaseLive && inn.idx === 1)) && (this.human(inn.team) || this.human(fieldTeam))) {
-      mind = this.mindGame(inn, over, legalBefore, bs, isHatTrick);
+    if (this.s.play && (this.human(inn.team) || this.human(fieldTeam))) {
+      // Play mode: every ball is a delivery v shot duel, with timing and accuracy meters.
+      mind = this.playBall(inn, over, bs, isHatTrick);
     } else if (isHatTrick || inn.superOver || (lastOver && chaseLive)) {
       mind = this.mindGame(inn, over, legalBefore, bs, isHatTrick);
     }
@@ -630,6 +652,8 @@ class Sim {
     let nbP = K.noball + (isPace(bowler) ? 0.002 : -0.002);
     if (mind?.bowl === 'wide') wideP += 0.12;
     if (mind?.bowl === 'yorker') nbP += 0.01;
+    if (mind?.acc === 0) { wideP += 0.12; nbP += 0.02; }
+    if (mind?.acc === 3) { wideP *= 0.4; nbP *= 0.4; }
     const freeHit = inn.freeHit;
     const r = this.rng.next();
     if (r < wideP) {
@@ -722,7 +746,7 @@ class Sim {
     if (mind) {
       const worked = wicket || runs === 0 ? fieldTeam : runs >= 4 ? inn.team : null;
       if (worked !== null && this.human(worked)) this.rec.calls[worked][0]++;
-      weight += 15;
+      if (!this.s.play) weight += 15;
     }
 
     // Milestones.
@@ -762,22 +786,27 @@ class Sim {
     // Taunt after a six (asked once the six is on screen; its notes join that ball).
     if (runs === 6 && !inn.superOver) this.tauntOffer(inn, over, batter, bs, notes);
     // Concussion: a rare blow from a bouncer; like-for-like substitute.
-    if (!wicket && mind?.bowl === 'bouncer' && this.rng.chance(0.02)) this.concussion(inn, batter.id);
+    if (!wicket && mind?.bowl === 'bouncer' && this.rng.chance(this.s.play ? 0.003 : 0.02)) this.concussion(inn, batter.id);
     return legal;
   }
 
-  outcome(inn: Inn, over: number, bat: Cricketer, bowl: Cricketer, mind: { bowl: string; bat: string } | undefined, free: boolean): { runs: number; out?: WicketKind; appeal?: boolean } {
+  outcome(inn: Inn, over: number, bat: Cricketer, bowl: Cricketer, mind: Mind | undefined, free: boolean): { runs: number; out?: WicketKind; appeal?: boolean } {
     const br = this.batRating(bat, bowl, inn); const wr = this.bowlRating(bowl, inn, over);
     const edge = (br - wr) / 25;
     let a = this.aggression(inn, bat, over);
     if (DIAG.on) { DIAG.n++; DIAG.edge += edge; DIAG.agg += a; DIAG.bat += br; DIAG.bowl += wr; }
     const phase = this.phase(inn, over);
     const b = K.base;
-    let m4 = 1, m6 = 1, mOut = 1, mDot = 1;
+    let m4 = 1, m6 = 1, mOut = 1, mDot = 1, m1 = 1;
     if (mind) {
       const t = MIND[mind.bowl]?.[mind.bat];
       if (t) { m4 *= t.four; m6 *= t.six; mOut *= t.out; mDot *= t.dot; }
-      a = mind.bat === 'defend' ? -0.8 : mind.bat === 'slog' ? Math.max(a, 1.1) : mind.bat === 'ramp' ? Math.max(a, 0.6) : a;
+      a = mind.bat === 'defend' ? -0.8 : mind.bat === 'nudge' ? -0.3 : mind.bat === 'slog' ? Math.max(a, 1.1) : mind.bat === 'ramp' ? Math.max(a, 0.6) : a;
+      if (mind.bat === 'nudge') m1 = 1.6;
+      // Meter results: a mistimed shot or a loose ball changes everything.
+      const tm = mind.tim !== undefined ? TIMING[mind.tim] : undefined;
+      const ac = mind.acc !== undefined ? ACCURACY[mind.acc] : undefined;
+      for (const x of [tm, ac]) if (x) { m4 *= x.four; m6 *= x.six; mOut *= x.out; mDot *= x.dot; }
     }
     if (phase === 'pp') { m4 *= K.pp4; m6 *= K.pp6; mOut *= K.ppOut; }
     if (phase === 'death') { m4 *= K.death4; m6 *= K.death6; mOut *= K.deathOut; }
@@ -802,7 +831,7 @@ class Sim {
 
     const w = {
       dot: b.dot * Math.exp(-K.edgeDot * edge - K.aggDot * a) * mDot,
-      one: b.one * Math.exp(K.agg1 * Math.abs(a)),
+      one: b.one * Math.exp(K.agg1 * Math.abs(a)) * m1,
       two: b.two * (0.8 + (bat.bat.tempo - 50) / 150),
       three: b.three,
       four: b.four * Math.exp(K.edge4 * edge + K.agg4 * a) * m4,
@@ -843,6 +872,11 @@ class Sim {
     inn.fow.push({ score: inn.runs, wkts: inn.wkts, over: `${over}.${(inn.legal % 6) || 6}`, id: outId });
     if (inn.pship.runs > inn.best.runs) inn.best = { runs: inn.pship.runs, a: inn.pship.a, b: inn.pship.b };
     if (inn.wkts >= inn.maxWkts) return;
+    // Play mode: a human batting side chooses the next batter at the start of the next ball.
+    if (this.s.play && this.human(inn.team) && !inn.superOver && inn.order.length - inn.next > 1) {
+      if (outId === inn.striker) inn.striker = ''; else inn.non = '';
+      return;
+    }
     const nextId = inn.order[inn.next++];
     if (!nextId) { inn.wkts = inn.maxWkts; return; }
     if (outId === inn.striker) inn.striker = nextId; else inn.non = nextId;
@@ -949,6 +983,69 @@ class Sim {
     if (this.human(fieldTeam)) this.rec.calls[fieldTeam][1]++;
     if (this.human(inn.team)) this.rec.calls[inn.team][1]++;
     return { bowl: b, bat: t };
+  }
+
+  /** Play mode: the bowler picks and aims a delivery, the batter picks and times a shot. CPU sides use skill. */
+  playBall(inn: Inn, over: number, bs: BowlState, hat: boolean): Mind {
+    const fieldTeam = (1 - inn.team) as 0 | 1;
+    const bowler = this.p[bs.id];
+    const batter = this.p[inn.striker];
+    const spin = isSpin(bowler);
+    const base = `p${inn.idx}-n${this.rec.events.length}`;
+    const left = inn.overs * 6 - inn.legal;
+    const need = inn.target !== undefined ? inn.target - inn.runs : undefined;
+    const situation = hat ? 'Hat-trick ball! ' : need !== undefined && left <= 18 ? `Need ${need} off ${left}. ` : '';
+    const speed = spin ? 0.6 + (bowler.bowling?.attack ?? 50) / 400 : clamp(((bowler.bowling?.speed ?? 130) - 110) / 30, 0.7, 1.6);
+    const batR = this.batRating(batter, bowler, inn); const bowlR = this.bowlRating(bowler, inn, over);
+    const both = this.human(inn.team) && this.human(fieldTeam);
+    const bowlD: Decision = {
+      id: `${base}-bowl`, kind: 'bowlBall', team: fieldTeam, secret: both,
+      prompt: `${situation}${bowler.name} to ${batter.name} (${batter.bats === 'L' ? 'left' : 'right'}-hander, ${inn.bat.get(batter.id)?.runs ?? 0} off ${inn.bat.get(batter.id)?.balls ?? 0}). Pick the delivery, then hit the mark.`,
+      options: Object.entries(DELIVERY_LABEL).map(([id, l]) => ({ id, label: spin ? l.spin : l.pace, hint: l.hint })),
+      def: 'auto', meta: { speed: 0.8, zone: clamp(0.1 + ((bowler.bowling?.control ?? 30) - 30) / 300, 0.08, 0.3), batter: batter.id, bowler: bowler.id },
+    };
+    const batD: Decision = {
+      id: `${base}-bat`, kind: 'batBall', team: inn.team, secret: both,
+      prompt: `${situation}${batter.name} faces ${bowler.name} (${bowlTypeLabel(bowler)}). Pick your shot, then time it.`,
+      options: Object.entries(SHOT_LABEL).map(([id, l]) => ({ id, label: l.label, hint: l.hint })),
+      def: 'auto', meta: { speed, zone: clamp(0.1 + (batR - 50) / 260, 0.08, 0.3), batter: batter.id, bowler: bowler.id },
+    };
+    // Meter result from skill, for CPU sides and "auto".
+    const meter = (r: Rng, skill: number) => r.weighted([0, 1, 2, 3], [Math.max(3, 22 - (skill - 50) / 2.5), 30, 40, Math.max(4, 8 + (skill - 50) / 2.5)]);
+    const [b, t] = this.ask([bowlD, batD], (d, r) => {
+      if (d.kind === 'bowlBall') {
+        const death = bowler.bowling?.death ?? 40;
+        const ph = this.phase(inn, over);
+        const pick = r.weighted(['length', 'yorker', 'bouncer', 'slower', 'wide'], spin ? [45, 10, 15, 20, 10] : ph === 'death' ? [15, 25 + death / 4, 15, 25, 20] : [50, 10, 15, 15, 10]);
+        return `${pick}@${meter(r, bowlR)}`;
+      }
+      const a = this.aggression(inn, batter, over);
+      const pick = r.weighted(['defend', 'nudge', 'drive', 'slog', 'ramp'], a > 0.8 ? [3, 12, 30, 45, 10] : a > 0.2 ? [8, 25, 40, 20, 7] : a < -0.3 ? [35, 40, 20, 4, 1] : [15, 35, 35, 12, 3]);
+      return `${pick}@${meter(r, batR)}`;
+    });
+    const [bw, ac] = b.split('@'); const [bt, tm] = t.split('@');
+    const num = (x: string | undefined) => { const n = Number(x); return Number.isInteger(n) && n >= 0 && n <= 3 ? n : 1; };
+    if (this.human(fieldTeam)) this.rec.calls[fieldTeam][1]++;
+    if (this.human(inn.team)) this.rec.calls[inn.team][1]++;
+    return { bowl: bw, bat: bt, acc: num(ac), tim: num(tm) };
+  }
+
+  /** Play mode: after a wicket the batting side picks who walks in (asked before the next ball). */
+  resolveIncoming(inn: Inn) {
+    const slot = inn.striker === '' ? 'striker' : inn.non === '' ? 'non' : null;
+    if (!slot) return;
+    const rest = inn.order.slice(inn.next);
+    const opts: Option[] = rest.slice(0, 6).map((id) => {
+      const c = this.p[id];
+      return { id, label: c.name, hint: `${c.role === 'pace' || c.role === 'spin' ? 'bowler' : c.role} · power ${c.bat.power} · v pace ${c.bat.vsPace} · v spin ${c.bat.vsSpin}` };
+    });
+    const d: Decision = { id: `p${inn.idx}-w${inn.wkts}-next`, kind: 'nextBat', team: inn.team, prompt: `${inn.runs}/${inn.wkts}. Who walks in next?`, options: opts, def: rest[0] };
+    const [pick] = this.ask([d], () => rest[0]);
+    inn.order = [...inn.order.slice(0, inn.next), pick, ...rest.filter((x) => x !== pick)];
+    const nextId = inn.order[inn.next++];
+    inn[slot] = nextId;
+    if (!inn.bat.has(nextId)) inn.bat.set(nextId, { id: nextId, runs: 0, balls: 0, fours: 0, sixes: 0, fired: 0, focused: 0 });
+    inn.pship = { runs: 0, balls: 0, a: inn.striker, b: inn.non };
   }
 
   sledgeOffer(inn: Inn, over: number, bs: BowlState, notes: string[], banners: Banner[]) {
@@ -1188,6 +1285,43 @@ export const MIND: Record<string, Record<string, { four: number; six: number; ou
   bouncer: { defend: { four: 0.5, six: 0.2, out: 0.8, dot: 1.5 }, drive: { four: 0.7, six: 0.6, out: 1.8, dot: 1.2 }, slog: { four: 1.3, six: 1.8, out: 1.4, dot: 0.8 }, ramp: { four: 1.6, six: 1.9, out: 1.2, dot: 0.8 } },
   slower: { defend: { four: 0.6, six: 0.2, out: 0.7, dot: 1.3 }, drive: { four: 0.9, six: 0.8, out: 1.5, dot: 1.1 }, slog: { four: 1.1, six: 1.4, out: 1.9, dot: 0.9 }, ramp: { four: 0.6, six: 0.4, out: 1.9, dot: 1.3 } },
   wide: { defend: { four: 0.5, six: 0.1, out: 0.4, dot: 1.7 }, drive: { four: 1.7, six: 0.9, out: 1.1, dot: 0.8 }, slog: { four: 1.1, six: 0.9, out: 1.8, dot: 1.0 }, ramp: { four: 0.4, six: 0.3, out: 1.4, dot: 1.8 } },
+  // Play mode adds the stock good-length ball and the "nudge for one" shot.
+  length: { defend: { four: 0.5, six: 0.2, out: 0.7, dot: 1.5 }, drive: { four: 1.0, six: 0.8, out: 1.2, dot: 1.0 }, slog: { four: 1.0, six: 1.2, out: 1.6, dot: 1.0 }, ramp: { four: 0.8, six: 0.7, out: 1.6, dot: 1.1 }, nudge: { four: 0.5, six: 0.2, out: 0.8, dot: 0.7 } },
+};
+MIND.yorker.nudge = { four: 0.4, six: 0.1, out: 0.9, dot: 1.0 };
+MIND.bouncer.nudge = { four: 0.5, six: 0.2, out: 1.1, dot: 1.1 };
+MIND.slower.nudge = { four: 0.6, six: 0.2, out: 0.8, dot: 0.8 };
+MIND.wide.nudge = { four: 0.6, six: 0.2, out: 0.7, dot: 1.1 };
+
+/** Batting timing meter: 0 missed, 1 early/late, 2 good, 3 perfect. */
+export const TIMING = [
+  { four: 0.35, six: 0.25, out: 1.7, dot: 1.6 },
+  { four: 0.8, six: 0.7, out: 1.2, dot: 1.15 },
+  { four: 1, six: 1, out: 1, dot: 1 },
+  { four: 1.45, six: 1.6, out: 0.55, dot: 0.75 },
+];
+/** Bowling accuracy meter: 0 sprayed (wides, full tosses), 1 loose, 2 on the spot, 3 perfect. */
+export const ACCURACY = [
+  { four: 1.5, six: 1.5, out: 0.65, dot: 0.75 },
+  { four: 1.15, six: 1.15, out: 0.9, dot: 0.9 },
+  { four: 1, six: 1, out: 1, dot: 1 },
+  { four: 0.8, six: 0.75, out: 1.3, dot: 1.15 },
+];
+
+/** Labels for play-mode deliveries (spinners get spin names for the same ideas). */
+export const DELIVERY_LABEL: Record<string, { pace: string; spin: string; hint: string }> = {
+  length: { pace: 'Good length', spin: 'Stock ball', hint: 'Safe and tight' },
+  yorker: { pace: 'Yorker', spin: 'Quick dart', hint: 'Beats slogs; risky if you miss' },
+  bouncer: { pace: 'Bouncer', spin: 'Flighted', hint: 'Tempts the hook; ramps love it' },
+  slower: { pace: 'Slower ball', spin: 'Mystery ball', hint: 'Fools the drive' },
+  wide: { pace: 'Wide line', spin: 'Wide of off', hint: 'Starves the slog; may be called wide' },
+};
+export const SHOT_LABEL: Record<string, { label: string; hint: string }> = {
+  defend: { label: 'Defend', hint: 'Safe, few runs' },
+  nudge: { label: 'Nudge for one', hint: 'Rotate the strike' },
+  drive: { label: 'Drive', hint: 'Along the ground for four' },
+  slog: { label: 'Slog', hint: 'Big six or out' },
+  ramp: { label: 'Ramp / scoop', hint: 'Great v bouncers' },
 };
 
 const FALLBACK: Record<string, string> = {

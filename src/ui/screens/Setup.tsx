@@ -17,6 +17,8 @@ export function Setup() {
   const [timer, setTimer] = useState(12);
   const [mystery, setMystery] = useState(true);
   const [partnerSize, setPartnerSize] = useState<2 | 3>(2);
+  const [overs, setOvers] = useState<5 | 10 | 20>(5);
+  const [play, setPlay] = useState(true);
 
   const n = names.length;
   const modes: Array<{ value: TeamMode; label: string; ok: boolean; why: string }> = [
@@ -30,7 +32,7 @@ export function Setup() {
 
   const start = () => {
     const humans: Human[] = names.map((name, i) => ({ id: `h${i}`, name: name.trim(), color: COLORS[i % COLORS.length] }));
-    store.newGame({ humans, teamMode, partnerSize, npcs: teamMode === 'solo' || teamMode === 'pairs' ? npcs : 0, mode, timer, mystery, realNames: settings.realNames });
+    store.newGame({ humans, teamMode, partnerSize, npcs: teamMode === 'solo' || teamMode === 'pairs' ? npcs : 0, mode, timer, mystery, realNames: settings.realNames, overs, play });
   };
 
   return (
@@ -79,6 +81,15 @@ export function Setup() {
         <div className="row"><span className="dim">Seconds per lot</span><Seg label="Seconds per lot" value={timer} onChange={setTimer} options={[8, 12, 18].map((v) => ({ value: v, label: `${v}s` }))} /></div>
         <label className="check"><input type="checkbox" checked={mystery} onChange={(e) => setMystery(e.target.checked)} /><span>Mystery lot<br /><small className="faint">One hidden player near the end: a star or a flop.</small></span></label>
         <label className="check"><input type="checkbox" checked={settings.realNames} onChange={(e) => store.settings({ realNames: e.target.checked })} /><span>Show real player names<br /><small className="faint">Off: playful name-alikes. Only changes what this device shows.</small></span></label>
+      </section>
+
+      <section className="panel col">
+        <h3>Matches</h3>
+        <div className="row"><span className="dim">Overs per side</span><Seg label="Overs per side" value={overs} onChange={setOvers} options={[{ value: 5, label: '5 (quick)' }, { value: 10, label: '10' }, { value: 20, label: '20 (full T20)' }]} /></div>
+        <div className="options">
+          <button type="button" className="option" aria-pressed={play} onClick={() => setPlay(true)}>Play every ball<small>You bowl and bat yourself: pick the delivery or shot, then hit the timing meter. Partners split it: the batting captain bats, the bowling captain bowls.</small></button>
+          <button type="button" className="option" aria-pressed={!play} onClick={() => setPlay(false)}>Captain only<small>Watch the match and make the big calls: toss, bowlers, DRS, Impact Player, last-over mind games.</small></button>
+        </div>
       </section>
 
       <div className="row between">
