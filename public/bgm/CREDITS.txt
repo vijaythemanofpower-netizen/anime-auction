@@ -1,0 +1,28 @@
+Music in this folder is public domain (CC0 1.0), from OpenGameArt.org.
+Files were re-encoded to MP3 and renamed for use in the game.
+
+- metal_rush.mp3: "Boss Battle #9 [Metal]" by nene: https://opengameart.org/content/boss-battle-9-metal
+- symphonic_metal.mp3: "Boss Battle #2 [Symphonic Metal]" by nene: https://opengameart.org/content/boss-battle-2-symphonic-metal
+- heroic_pursuit.mp3: "Determined Pursuit (epic orchestra loop)" by Emma_MA: https://opengameart.org/content/determined-pursuit-epic-orchestra-loop
+- epic_boss.mp3: "Boss Battle Music" (Epic Boss Battle) by Juhani Junkala / SubspaceAudio: https://opengameart.org/content/boss-battle-music
+- battle_a.mp3: "Battle Theme A" by cynicmusic: https://opengameart.org/content/battle-theme-a
+- dark_battle.mp3: "Battle Theme B for RPG" by cynicmusic: https://opengameart.org/content/battle-theme-b-for-rpg
+- tension.mp3: "Battle Theme" by Wolfgang_: https://opengameart.org/content/battle-theme-0
+- rock_battle.mp3: "Boss Battle Theme" by CleytonKauffman: https://opengameart.org/content/boss-battle-theme
+- hyper_drive.mp3: "Awake! (Megawall-10)" by cynicmusic: https://opengameart.org/content/awake-megawall-10
+- fast_fight.mp3: "Fast fight / battle music (looped)" by XCVG: https://opengameart.org/content/fast-fight-battle-music-looped
+
+Added Nov 2 2026 (all CC0 1.0, OpenGameArt.org; licence checked on each page):
+Auction floor:
+- auction_funky_menu.mp3: "Funky Menu Loop" by iamoneabe: https://opengameart.org/content/funky-menu-loop
+- auction_funky_house.mp3: "Funky House" by Of Far Different Nature: https://opengameart.org/content/funky-house
+- auction_item_shop.mp3: "Item Shop" by controllerhead: https://opengameart.org/content/item-shop
+- auction_lasso_lady.ogg: "Lasso Lady (seamless loop)" by congusbongus: https://opengameart.org/content/lasso-lady-seamless-loop
+Fights:
+- anime_determination.mp3: "Determination - Anime Style Music" by HydroGene: https://opengameart.org/content/determination-anime-style-music
+- anime_play_now.mp3: "Anime-esque Intro-Outro Theme" by CleytonKauffman: https://opengameart.org/content/anime-esque-intro-outro-theme
+- fierce_battle.mp3: "fierce battle!" by haruta: https://opengameart.org/content/fierce-battle
+- final_stand.ogg: "Final Stand" by Centurion_of_war: https://opengameart.org/content/final-stand-0
+- charge.ogg: "Charge!" by Centurion_of_war: https://opengameart.org/content/charge
+- die_hard.ogg: "Die Hard Battle" by Centurion_of_war: https://opengameart.org/content/die-hard-battle
+- metal_boss6.mp3: "Boss Battle #6 Metal" (V1) by nene: https://opengameart.org/content/boss-battle-6-metal

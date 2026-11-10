@@ -1,0 +1,35 @@
+/* Leaderboards and player reports (screens/Leaderboards.tsx). */
+.rk-group { display: flex; flex-direction: column; gap: 6px; }
+.rk-pick { display: none; }
+.rk-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.rk-table { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.rk-table li { display: grid; grid-template-columns: 36px minmax(0, 1fr) auto auto; align-items: center; gap: 12px; padding: 8px 4px; border-top: 1px solid var(--line); min-height: 44px; }
+.rk-table li:first-child { border-top: 0; }
+.rk-table li.mine { background: color-mix(in srgb, var(--violet) 12%, transparent); }
+.rk-place { font-family: var(--font-display); font-size: 18px; text-align: center; color: var(--text-dim); }
+.rk-place.p1, .rk-place.p2, .rk-place.p3 { color: var(--gold); }
+.rk-place.p1 { font-size: 22px; }
+.rk-name { background: none; border: 0; padding: 4px 0; min-height: 40px; color: var(--text); font: inherit; font-weight: 700; text-align: left; cursor: pointer; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rk-name:hover { text-decoration: underline; }
+.rk-sub { font-size: 13px; white-space: nowrap; }
+.rk-table b { font-family: var(--font-display); font-weight: 400; font-size: 18px; white-space: nowrap; }
+.rk-tiles { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.rk-tile { display: flex; flex-direction: column; gap: 2px; padding: 12px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); min-width: 0; }
+.rk-tile b { font-family: var(--font-display); font-weight: 400; font-size: 28px; line-height: 1.1; overflow-wrap: anywhere; }
+.rk-tile span { font-size: 13px; }
+.rk-skill { display: flex; flex-direction: column; gap: 4px; }
+.rk-skill .faint { font-size: 13px; }
+.rk-bar { height: 6px; background: var(--surface-3); border-radius: 999px; overflow: hidden; }
+.rk-bar i { display: block; height: 100%; background: var(--violet); transform-origin: left; }
+.rk-facts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px 16px; }
+.rk-fact { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.rk-fact > span { font-size: 13px; }
+.rk-fact b { font-size: 15px; overflow-wrap: anywhere; }
+@media (max-width: 760px) {
+  .rk-group { display: none; }
+  .rk-pick { display: block; width: 100%; }
+  .rk-tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .rk-facts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .rk-table li { grid-template-columns: 28px minmax(0, 1fr) auto; gap: 8px; }
+  .rk-sub { grid-column: 2 / 4; grid-row: 2; margin-top: -8px; }
+}
