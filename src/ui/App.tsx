@@ -7,6 +7,7 @@ import { Auction } from './screens/Auction';
 import { Prep, Reveal } from './screens/Squads';
 import { Match } from './screens/Match';
 import { Champion } from './components/Season';
+import { importPhotos } from '../store/photos';
 import { Bars } from './components/common';
 import { Chips, Portrait, ROLE_NAME, skillRows } from './components/Player';
 import { fmtL } from '../engine/squad';
@@ -28,13 +29,16 @@ function Roster() {
   const [role, setRole] = useState<Role | 'all'>('all');
   const [q, setQ] = useState('');
   const [open, setOpen] = useState<string | null>(null);
+  const [imported, setImported] = useState('');
   const list = useMemo(() => PLAYERS.filter((p) => (role === 'all' || p.role === role) && (!q || `${p.name} ${p.realName}`.toLowerCase().includes(q.toLowerCase()))).sort((a, b) => b.tier - a.tier || a.name.localeCompare(b.name)), [role, q]);
   const c = open ? PLAYER_MAP[open] : null;
   return (
     <div className="col">
       <div><span className="label">{PLAYERS.length} players · the 2026 season pool</span><h1>The players</h1>
-        <p className="dim">Names are playful name-alikes unless you turn on real names in Settings. Ratings are the game's own estimates. No photos are included: use "Set photo" to add your own; it stays in this browser.</p></div>
+        <p className="dim">Names are playful name-alikes unless you turn on real names in Settings. Ratings are the game's own estimates. No photos are included: use "Set photo" on a player, or "Import a photo folder" with files named after players (e.g. "Virat Kohli.jpg"). Photos stay in this browser.</p></div>
+      {imported && <p className="dim" role="status">{imported}</p>}
       <div className="row">
+        <button className="btn sm" onClick={() => importPhotos(PLAYERS, (n, skip) => setImported(`${n} photo${n === 1 ? '' : 's'} added.${skip.length ? ` No player matched: ${skip.slice(0, 8).join(', ')}${skip.length > 8 ? ' …' : ''}` : ''}`))}>Import a photo folder</button>
         <input type="text" placeholder="Search" aria-label="Search players" value={q} onChange={(e) => setQ(e.target.value)} />
         <select aria-label="Role" value={role} onChange={(e) => setRole(e.target.value as Role | 'all')}>
           <option value="all">All roles</option>

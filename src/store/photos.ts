@@ -83,6 +83,34 @@ export function usePhoto(id: string): string | undefined {
   return urls.get(id);
 }
 
+const norm = (s: string) => s.toLowerCase().replace(/\.[a-z0-9]+$/, '').replace(/[^a-z]/g, '');
+
+/** Match a file name like "Virat Kohli.jpg" or "virat-kohli.png" to a player id (real name, alike name or id). */
+export function matchPhoto(file: string, players: Array<{ id: string; name: string; realName: string }>): string | undefined {
+  const k = norm(file);
+  return players.find((p) => norm(p.realName) === k || norm(p.name) === k || norm(p.id) === k)?.id;
+}
+
+/** Pick a folder (or many files) and save every picture whose name matches a player. */
+export function importPhotos(players: Array<{ id: string; name: string; realName: string }>, done: (matched: number, skipped: string[]) => void) {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = 'image/*';
+  input.multiple = true;
+  input.setAttribute('webkitdirectory', '');
+  input.onchange = async () => {
+    const skipped: string[] = [];
+    let matched = 0;
+    for (const f of Array.from(input.files ?? [])) {
+      if (!f.type.startsWith('image/')) continue;
+      const id = matchPhoto(f.name, players);
+      if (id) { await setPhoto(id, f); matched++; } else skipped.push(f.name);
+    }
+    done(matched, skipped);
+  };
+  input.click();
+}
+
 /** Open the file picker and save the chosen picture for this player. */
 export function pickPhoto(id: string) {
   const input = document.createElement('input');
