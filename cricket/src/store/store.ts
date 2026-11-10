@@ -7,7 +7,7 @@ import { applyRetention, autoLineup, createGame, ctxOf, finishRetention, matchSe
 import { closeIfDue, finishAuction, nominate, npcStep, openNext, placeBid, rtmAnswer, rtmRaise, scout } from '../engine/auction';
 import { autoPlay, playMatch, type Answers, type MatchRecord } from '../engine/match';
 import { deriveSeed, freshSeed } from '../engine/rng';
-import { openRoom, roomCode, sayHello, sendAct, sendState, type Act } from '../online/room';
+import { closeRoom, leaveRoom, openRoom, roomCode, sayHello, sendAct, sendState, type Act } from '../online/room';
 import { makeSeason, nextFixture, record, resultOf } from '../engine/season';
 
 export type Screen = 'home' | 'setup' | 'game' | 'howto' | 'roster';
@@ -17,7 +17,7 @@ const DEFAULT_SETTINGS: Settings = { realNames: false, reducedMotion: false, sou
 
 export interface Online { role: 'off' | 'host' | 'guest'; code: string; me: string | null; error?: string }
 const OFFLINE: Online = { role: 'off', code: '', me: null };
-export interface AppState { screen: Screen; game: GameState | null; settings: Settings; online: Online }
+export interface AppState { screen: Screen; game: GameState | null; settings: Settings; online: Online; toast?: string }
 
 export const PLAYER_MAP: Record<string, Cricketer> = Object.fromEntries(PLAYERS.map((p) => [p.id, p]));
 
@@ -88,10 +88,22 @@ export const store = {
     const c = code.trim().toUpperCase();
     set({ online: { role: 'guest', code: c, me: null }, game: null });
     try {
-      await openRoom(c, { state: (g) => set({ game: g as GameState, screen: 'game' }) });
+      await openRoom(c, { state: (g) => { if (state.online.role === 'guest') set({ game: g as GameState, screen: 'game' }); }, closed: () => { void leaveRoom(); set({ game: null, screen: 'home', online: OFFLINE }); store.toast('The host closed the room.'); } });
       sayHello();
     } catch (e) { set({ online: { ...state.online, error: (e as Error).message } }); }
   },
+  /** Host: end the room for everyone (the game stays on this device). */
+  async closeRoom() { await closeRoom(); set({ online: OFFLINE }); store.toast('Room closed.'); },
+  /** Guest: leave the room and go home. */
+  async leaveRoom() { await leaveRoom(); set({ game: null, screen: 'home', online: OFFLINE }); },
+  /** Delete the saved game for good (closing the room first when hosting). */
+  async abandon() {
+    if (state.online.role === 'host') await closeRoom();
+    if (state.online.role === 'guest') await leaveRoom();
+    try { localStorage.removeItem(KEY); } catch { /* ignore */ }
+    set({ game: null, screen: 'home', online: OFFLINE });
+  },
+  toast(text: string) { set({ toast: text }); setTimeout(() => { if (state.toast === text) set({ toast: undefined }); }, 3200); },
   /** Guest: which player in the room this device is. */
   setMe(id: string) { set({ online: { ...state.online, me: id } }); },
 

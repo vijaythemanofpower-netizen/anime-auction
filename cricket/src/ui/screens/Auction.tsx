@@ -6,6 +6,7 @@ import { ctxOf } from '../../engine/game';
 import { RULES, fmtL, needs, nextBid, counts } from '../../engine/squad';
 import { FORM_LABEL } from '../../engine/types';
 import { Bars, Modal, useNow } from '../components/common';
+import { askConfirm } from '../components/common';
 import { Chips, PlayerLine, Portrait, skillRows } from '../components/Player';
 
 export function Auction({ g }: { g: GameState }) {
@@ -43,7 +44,7 @@ export function Auction({ g }: { g: GameState }) {
         </div>
         <div className="row">
           {!guest && <button className="btn sm" onClick={() => store.hammer()} disabled={!live}>Hammer now</button>}
-          {!guest && <button className="btn sm ghost" onClick={() => { if (confirm('Let the computer bid for everyone and finish the auction now?')) store.simulateRest(); }}>Finish auction automatically</button>}
+          {!guest && <button className="btn sm ghost" onClick={() => { void askConfirm({ title: 'Finish the auction?', body: 'The computer bids for every team, including yours, until the auction ends.', ok: 'Finish it' }).then((y) => { if (y) store.simulateRest(); }); }}>Finish auction automatically</button>}
         </div>
       </div>
 

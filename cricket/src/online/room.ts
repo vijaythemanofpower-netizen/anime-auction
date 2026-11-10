@@ -17,13 +17,14 @@ export function roomCode(): string {
 }
 
 /** Join (or create) the room channel. Resolves once subscribed. */
-export async function openRoom(code: string, on: { state?: (g: unknown) => void; act?: (a: Act) => void; hello?: () => void }): Promise<void> {
+export async function openRoom(code: string, on: { state?: (g: unknown) => void; act?: (a: Act) => void; hello?: () => void; closed?: () => void }): Promise<void> {
   const sb = await supabase();
   if (ch) void sb.removeChannel(ch);
   ch = sb.channel(`cricket-auction-${code}`, { config: { broadcast: { self: false } } });
   if (on.state) ch.on('broadcast', { event: 'state' }, ({ payload }) => on.state!(payload.g));
   if (on.act) ch.on('broadcast', { event: 'act' }, ({ payload }) => on.act!(payload as Act));
   if (on.hello) ch.on('broadcast', { event: 'hello' }, () => on.hello!());
+  if (on.closed) ch.on('broadcast', { event: 'closed' }, () => on.closed!());
   await new Promise<void>((resolve, reject) => {
     ch!.subscribe((status) => {
       if (status === 'SUBSCRIBED') resolve();
@@ -41,3 +42,15 @@ export function sendState(g: unknown) {
 
 export function sendAct(a: Act) { void ch?.send({ type: 'broadcast', event: 'act', payload: a }); }
 export function sayHello() { void ch?.send({ type: 'broadcast', event: 'hello', payload: {} }); }
+
+/** Host: tell guests the room is closed, then leave the channel. */
+export async function closeRoom() {
+  if (ch) await ch.send({ type: 'broadcast', event: 'closed', payload: {} });
+  await leaveRoom();
+}
+/** Leave the channel (guests leaving, or after closing). */
+export async function leaveRoom() {
+  if (timer) { clearTimeout(timer); timer = null; }
+  const c = ch; ch = null;
+  if (c) { const sb = await supabase(); await sb.removeChannel(c); }
+}

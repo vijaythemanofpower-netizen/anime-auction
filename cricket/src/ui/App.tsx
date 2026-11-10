@@ -8,7 +8,7 @@ import { Prep, Retain, Reveal } from './screens/Squads';
 import { Match } from './screens/Match';
 import { Champion } from './components/Season';
 import { importPhotos } from '../store/photos';
-import { Bars } from './components/common';
+import { Bars, DialogHost, askConfirm } from './components/common';
 import { Chips, Portrait, ROLE_NAME, skillRows } from './components/Player';
 import { fmtL } from '../engine/squad';
 import type { Role } from '../engine/types';
@@ -89,35 +89,108 @@ function HowTo() {
   );
 }
 
+const STEPS: Array<{ key: string; label: string }> = [
+  { key: 'retain', label: 'Retain' }, { key: 'auction', label: 'Auction' }, { key: 'reveal', label: 'Squads' },
+  { key: 'prep', label: 'Season' }, { key: 'match', label: 'Match' }, { key: 'done', label: 'Champions' },
+];
+
+/** Where you are in the game: retain -> auction -> squads -> season -> match -> champions. */
+function Steps() {
+  const g = useApp((s) => s.game);
+  const screen = useApp((s) => s.screen);
+  if (!g || screen !== 'game') return null;
+  const steps = STEPS.filter((x) => x.key !== 'retain' || g.config.mode === 'ipl');
+  const at = steps.findIndex((x) => x.key === g.phase);
+  return <nav className="steps" aria-label="Game progress">{steps.map((x, i) => <span key={x.key} className={i === at ? 'now' : i < at ? 'done' : ''} aria-current={i === at ? 'step' : undefined}>{x.label}</span>)}</nav>;
+}
+
+/** The one menu: navigation, settings, the online room and abandoning the game. */
+function Menu({ onClose }: { onClose: () => void }) {
+  const settings = useApp((s) => s.settings);
+  const online = useApp((s) => s.online);
+  const hasGame = useApp((s) => !!s.game);
+  useEffect(() => {
+    const k = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', k);
+    return () => window.removeEventListener('keydown', k);
+  }, [onClose]);
+  const go = (fn: () => void) => () => { fn(); onClose(); };
+  const copy = () => { void navigator.clipboard?.writeText(online.code).then(() => store.toast('Room code copied.')); };
+  return (
+    <div className="sheet-back" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+      <aside className="sheet" role="dialog" aria-modal="true" aria-label="Menu">
+        <div className="row between"><h3>Menu</h3><button className="btn sm ghost" onClick={onClose} aria-label="Close menu">✕</button></div>
+        <nav>
+          <button className="btn ghost" onClick={go(() => store.go('home'))}>🏠 Home</button>
+          {hasGame && <button className="btn ghost" onClick={go(() => store.resume())}>▶ Continue game</button>}
+          {online.role !== 'guest' && <button className="btn ghost" onClick={go(() => store.go('setup'))}>＋ New game</button>}
+          <button className="btn ghost" onClick={go(() => store.go('roster'))}>👥 The players</button>
+          <button className="btn ghost" onClick={go(() => store.go('howto'))}>📖 How to play</button>
+        </nav>
+        <hr />
+        <span className="label">Settings</span>
+        <label className="check"><input type="checkbox" checked={settings.sound} onChange={(e) => store.settings({ sound: e.target.checked })} /><span>Sound</span></label>
+        <label className="check"><input type="checkbox" checked={settings.realNames} onChange={(e) => store.settings({ realNames: e.target.checked })} /><span>Real player names</span></label>
+        <label className="check"><input type="checkbox" checked={settings.reducedMotion} onChange={(e) => store.settings({ reducedMotion: e.target.checked })} /><span>Reduce motion</span></label>
+        {online.role !== 'off' && (
+          <>
+            <hr />
+            <div className="room-card">
+              <span className="label">{online.role === 'host' ? 'Your online room' : 'Online room'}</span>
+              <div className="row between"><span className="room-code">{online.code}</span><button className="btn sm" onClick={copy}>Copy code</button></div>
+              {online.role === 'host' && <p className="dim" style={{ margin: 0, fontSize: 13 }}>Friends open Cricket Auction on their phone or PC, type this code under "Join room" and pick their name.</p>}
+              {online.error && <p style={{ margin: 0, color: 'var(--warn)', fontSize: 13 }}>{online.error}</p>}
+              {online.role === 'host'
+                ? <button className="btn danger" onClick={() => { void askConfirm({ title: 'Close the room?', body: 'Everyone else is sent back to their home screen. Your game stays on this device.', ok: 'Close room', danger: true }).then((y) => { if (y) { void store.closeRoom(); onClose(); } }); }}>Close room</button>
+                : <button className="btn danger" onClick={() => { void store.leaveRoom(); onClose(); }}>Leave room</button>}
+            </div>
+          </>
+        )}
+        {hasGame && online.role !== 'guest' && (
+          <>
+            <hr />
+            <button className="btn danger" onClick={() => { void askConfirm({ title: 'Abandon this game?', body: 'The saved game is deleted for good. This cannot be undone.', ok: 'Abandon game', danger: true }).then((y) => { if (y) { void store.abandon(); onClose(); } }); }}>Abandon game</button>
+          </>
+        )}
+      </aside>
+    </div>
+  );
+}
+
 export function App() {
   const screen = useApp((s) => s.screen);
   const settings = useApp((s) => s.settings);
   const hasGame = useApp((s) => !!s.game);
   const online = useApp((s) => s.online);
+  const toast = useApp((s) => s.toast);
+  const [menu, setMenu] = useState(false);
   useEffect(() => { document.documentElement.dataset.reducedMotion = String(settings.reducedMotion); }, [settings.reducedMotion]);
   return (
     <div className="app">
       <header className="topbar">
         <button className="brand" onClick={() => store.go('home')} aria-label="Cricket Auction home">
-          <svg width="26" height="26" viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="13" fill="#f05252" /><path d="M7 9 Q16 16 7 23 M25 9 Q16 16 25 23" stroke="#fff" strokeWidth="1.6" fill="none" strokeDasharray="2 2" /></svg>
+          <svg width="28" height="28" viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="13" fill="#ff3d6e" /><path d="M7 9 Q16 16 7 23 M25 9 Q16 16 25 23" stroke="#fff" strokeWidth="1.6" fill="none" strokeDasharray="2 2" /></svg>
           <span className="brand-name">Cricket <em>Auction</em></span>
         </button>
         <a className="btn sm ghost" href={import.meta.env.DEV ? 'http://localhost:5173/' : `${import.meta.env.BASE_URL}../`} aria-label="Switch to Anime Auction">
           ⚔️<span className="hide-sm"> Anime Auction</span>
         </a>
         <span className="spacer" />
-        <label className="check" style={{ alignItems: 'center', fontSize: 13, whiteSpace: 'nowrap' }}><input type="checkbox" checked={settings.realNames} onChange={(e) => store.settings({ realNames: e.target.checked })} />Real<span className="hide-sm">&nbsp;names</span></label>
-        {online.code && <span className="chip" title={online.error ?? 'Online room code'}>{online.error ? '⚠ ' : '🌐 '}Room {online.code}</span>}
-        {hasGame && screen !== 'game' && <button className="btn sm" onClick={() => store.resume()}>Back to game</button>}
-        {screen === 'game' && <button className="btn sm ghost" onClick={() => { if (confirm('Leave this game? It stays saved: use Continue game on the home page.')) store.go('home'); }}>Menu</button>}
+        {online.code && <button className="chip live" onClick={() => setMenu(true)} title="Online room: open the menu">{online.error ? '⚠' : '●'} Room {online.code}</button>}
+        {hasGame && screen !== 'game' && <button className="btn sm primary" onClick={() => store.resume()}>Back to game</button>}
+        <button className="btn sm" onClick={() => setMenu(true)} aria-haspopup="dialog">☰ Menu</button>
       </header>
       <main className="main">
+        <Steps />
         {screen === 'home' && <Home />}
         {screen === 'setup' && <Setup />}
         {screen === 'game' && <GameScreen />}
         {screen === 'roster' && <Roster />}
         {screen === 'howto' && <HowTo />}
       </main>
+      {menu && <Menu onClose={() => setMenu(false)} />}
+      <DialogHost />
+      {toast && <div className="toast" role="status">{toast}</div>}
     </div>
   );
 }

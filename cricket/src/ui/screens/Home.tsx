@@ -42,30 +42,32 @@ function Stadium() {
 export function Home() {
   const game = useApp((s) => s.game);
   return (
-    <div className="col" style={{ gap: 24 }}>
-      <section className="hero">
-        <div className="hero-art"><Stadium /></div>
+    <div className="col" style={{ gap: 28 }}>
+      <section className="home-hero">
+        <div className="hero-art" aria-hidden="true"><Stadium /></div>
         <div className="hero-copy">
-          <span className="label">A party game for friends · 1 to 6 players</span>
+          <span className="kicker label"><i className="dot" /> IPL-style auction · T20 season · 1 to 6 friends</span>
           <h1>Cricket <em>Auction</em></h1>
-          <p className="lede">Bid for the season's stars with a live hammer and a hard purse, build a squad that obeys the rules, then captain it ball by ball through a T20 full of DRS calls, mind games and sledges.</p>
-          <div className="row" style={{ marginTop: 8 }}>
-            <button className="btn primary lg" onClick={() => store.go('setup')}>New game</button>
-            {game && <button className="btn lg" onClick={() => store.resume()}>Continue game</button>}
-            <button className="btn ghost lg" onClick={() => store.go('roster')}>The players</button>
-            <button className="btn ghost lg" onClick={() => store.go('howto')}>How to play</button>
+          <p className="lede">Retain your core, fight for stars with Right to Match, then bat and bowl every ball yourself through a full season and the final.</p>
+          <div className="home-actions">
+            {game ? <button className="btn primary lg" onClick={() => store.resume()}>Continue game</button> : <button className="btn primary lg" onClick={() => store.go('setup')}>New game</button>}
+            {game && <button className="btn lg" onClick={() => store.go('setup')}>New game</button>}
+            <form className="join" onSubmit={(e) => { e.preventDefault(); const c = new FormData(e.currentTarget).get('code'); if (typeof c === 'string' && c.trim().length === 5) void store.joinRoom(c); }}>
+              <input name="code" type="text" placeholder="CODE" aria-label="Room code from a friend" maxLength={5} autoComplete="off" />
+              <button className="btn" type="submit">Join room</button>
+            </form>
           </div>
-          <form className="row" style={{ marginTop: 12 }} onSubmit={(e) => { e.preventDefault(); const c = new FormData(e.currentTarget).get('code'); if (typeof c === 'string' && c.trim().length === 5) void store.joinRoom(c); }}>
-            <input name="code" type="text" placeholder="Room code" aria-label="Room code" maxLength={5} style={{ textTransform: 'uppercase', width: 140 }} />
-            <button className="btn" type="submit">Join a friend's room</button>
-          </form>
+          <div className="row" style={{ gap: 6 }}>
+            <button className="btn ghost" onClick={() => store.go('roster')}>The players</button>
+            <button className="btn ghost" onClick={() => store.go('howto')}>How to play</button>
+          </div>
         </div>
       </section>
-      <div className="feature-strip">
-        <div><b>Live auction</b><span className="dim">Timer, extensions, scout tokens, a mystery lot and a second-chance round for the unsold.</span></div>
-        <div><b>Squad rules</b><span className="dim">Keeper, bowlers, uncapped players, overseas caps. Miss a slot and you pay double.</span></div>
-        <div><b>Captain's calls</b><span className="dim">Toss, bowling changes, DRS, Impact Player and secret yorker-or-slog mind games.</span></div>
-        <div><b>1v4 Boss</b><span className="dim">Four friends share one franchise against a Boss NPC with a 2.5x war chest.</span></div>
+      <div className="features">
+        <div className="panel feature"><b>IPL auction</b><p>Retentions, Right to Match, official bid steps, an accelerated round. ₹120 Cr, 18-25 players.</p></div>
+        <div className="panel feature"><b>Play every ball</b><p>Pick the delivery or shot, then nail the timing meter. Partners split batting and bowling.</p></div>
+        <div className="panel feature"><b>A full season</b><p>League table with net run rate, IPL playoffs, the final, Orange and Purple Caps.</p></div>
+        <div className="panel feature"><b>Play online</b><p>Share a 5-letter room code; friends join from their own phones.</p></div>
       </div>
     </div>
   );
