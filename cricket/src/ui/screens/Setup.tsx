@@ -11,29 +11,37 @@ const COLORS = ['#38bdf8', '#f472b6', '#a3e635', '#fb923c', '#c084fc', '#facc15'
 export function Setup() {
   const settings = useApp((s) => s.settings);
   const [names, setNames] = useState<string[]>(['Player 1']);
-  const [teamMode, setTeamMode] = useState<TeamMode>('solo');
+  const [teamMode, setTeamMode] = useState<TeamMode>('teams');
+  const [teams, setTeams] = useState<number[]>([0]);
   const [mode, setMode] = useState<SquadMode>('ipl');
   const [npcs, setNpcs] = useState(1);
   const [timer, setTimer] = useState(12);
   const [mystery, setMystery] = useState(true);
-  const [partnerSize, setPartnerSize] = useState<2 | 3>(2);
+  const partnerSize = 2;
   const [overs, setOvers] = useState<5 | 10 | 20>(5);
   const [play, setPlay] = useState(true);
   const [online, setOnline] = useState(false);
 
   const n = names.length;
+  const team = (i: number) => teams[i] ?? i;
+  const teamCount = new Set(names.map((_, i) => team(i))).size;
+  const PRESETS: Record<number, Array<[string, number[]]>> = {
+    2: [['1 v 1', [0, 1]], ['Together v computer', [0, 0]]],
+    3: [['1 v 1 v 1', [0, 1, 2]], ['1 v 2', [0, 1, 1]], ['2 v 1', [0, 0, 1]]],
+    4: [['1 v 1 v 1 v 1', [0, 1, 2, 3]], ['2 v 2', [0, 0, 1, 1]], ['1 v 3', [0, 1, 1, 1]], ['3 v 1', [0, 0, 0, 1]]],
+    5: [['Everyone alone', [0, 1, 2, 3, 4]], ['2 v 3', [0, 0, 1, 1, 1]]],
+    6: [['3 v 3', [0, 0, 0, 1, 1, 1]], ['2 v 2 v 2', [0, 0, 1, 1, 2, 2]]],
+  };
   const modes: Array<{ value: TeamMode; label: string; ok: boolean; why: string }> = [
-    { value: 'solo', label: 'Everyone for themselves', ok: true, why: 'Each player owns a franchise; computer teams fill the other seats.' },
-    { value: 'pairs', label: 'Partners', ok: n >= 4 && n % partnerSize === 0, why: `Teams of ${partnerSize} share one purse and one squad, with captain roles split between partners. Needs ${partnerSize * 2}+ players.` },
-    { value: 'handicap', label: 'Handicap 1 v 2/3', ok: n === 3 || n === 4, why: `The first player plays alone against the others with ${HANDICAP.vs2.purse}x purse and +${HANDICAP.vs2.scouts} scouts (1v2) or ${HANDICAP.vs3.purse}x and +${HANDICAP.vs3.scouts} (1v3). Needs 3 or 4 players.` },
+    { value: 'teams', label: 'Teams', ok: true, why: 'Put players on the same team or on their own. Every team gets the same purse, however many players it has; teammates share it and split the roles (one bats, one bowls).' },
     { value: 'boss', label: '1 v 4: the Boss', ok: n >= 2 && n <= 4, why: `All of you share one franchise against a single Boss NPC with a ${HANDICAP.boss.purse}x war chest and +${HANDICAP.boss.scouts} scouts. Made for 4 friends (works with 2-4).` },
   ];
   const current = modes.find((m) => m.value === teamMode)!;
-  const valid = current.ok && names.every((x) => x.trim()) && (teamMode !== 'solo' || n + npcs >= 2);
+  const valid = current.ok && names.every((x) => x.trim());
 
   const start = () => {
     const humans: Human[] = names.map((name, i) => ({ id: `h${i}`, name: name.trim(), color: COLORS[i % COLORS.length] }));
-    store.newGame({ humans, teamMode, partnerSize, npcs: teamMode === 'solo' || teamMode === 'pairs' ? npcs : 0, mode, timer, mystery, realNames: settings.realNames, overs, play });
+    store.newGame({ humans, teamMode, partnerSize, teams: names.map((_, i) => team(i)), npcs: teamMode === 'teams' ? npcs : 0, mode, timer, mystery, realNames: settings.realNames, overs, play });
     if (online) void store.hostRoom();
   };
 
@@ -50,6 +58,7 @@ export function Setup() {
           <div key={i} className="row" style={{ flexWrap: 'nowrap' }}>
             <span aria-hidden="true" style={{ width: 12, height: 12, borderRadius: 3, background: COLORS[i % COLORS.length], flex: 'none' }} />
             <input type="text" className="grow" aria-label={`Player ${i + 1} name`} value={name} maxLength={20} onChange={(e) => setNames(names.map((x, k) => (k === i ? e.target.value : x)))} />
+            {teamMode === 'teams' && n > 1 && <Seg label={`Team for ${name || `player ${i + 1}`}`} value={team(i)} onChange={(t) => setTeams(names.map((_, k) => (k === i ? t : team(k))))} options={names.slice(0, 4).map((_, t) => ({ value: t, label: 'ABCD'[t] }))} />}
             {n > 1 && <button className="btn ghost sm" onClick={() => setNames(names.filter((_, k) => k !== i))} aria-label={`Remove ${name || 'player'}`}>Remove</button>}
           </div>
         ))}
@@ -67,8 +76,11 @@ export function Setup() {
             </button>
           ))}
         </div>
-        {teamMode === 'pairs' && <div className="row"><span className="dim">Partners per team</span><Seg label="Partners per team" value={partnerSize} onChange={setPartnerSize} options={[{ value: 2, label: '2' }, { value: 3, label: '3' }]} /></div>}
-        {(teamMode === 'solo' || teamMode === 'pairs') && (
+        {teamMode === 'teams' && PRESETS[n] && (
+          <div className="row"><span className="dim">Quick split</span>{PRESETS[n].map(([label, t]) => <button key={label} type="button" className="btn sm" aria-pressed={t.every((x, i) => x === team(i))} onClick={() => setTeams(t)}>{label}</button>)}</div>
+        )}
+        {teamMode === 'teams' && <p className="faint" style={{ margin: 0, fontSize: 13 }}>{teamCount} human team{teamCount === 1 ? '' : 's'}{teamCount === 1 ? ' playing together against the computer' : ''}. Every team: the same purse.</p>}
+        {teamMode === 'teams' && (
           <div className="row"><span className="dim">Computer teams</span><Seg label="Computer teams" value={npcs} onChange={setNpcs} options={[0, 1, 2, 3, 4].map((v) => ({ value: v, label: String(v) }))} /></div>
         )}
       </section>

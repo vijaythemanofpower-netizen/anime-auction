@@ -14,7 +14,7 @@ import type { Season } from './season';
  * - handicap: one human alone against a partnership (1v2 or 1v3), with extra purse and scouts.
  * - boss: 1v4 — four friends share one franchise against a single Boss NPC with a war chest.
  */
-export type TeamMode = 'solo' | 'pairs' | 'handicap' | 'boss';
+export type TeamMode = 'solo' | 'teams' | 'pairs' | 'handicap' | 'boss';
 
 export interface Human { id: string; name: string; color: string }
 
@@ -23,6 +23,8 @@ export interface GameConfig {
   teamMode: TeamMode;
   /** pairs: 2 or 3 owners per franchise. */
   partnerSize?: 2 | 3;
+  /** teams mode: team index per human (same order as humans). Every team gets the same purse. */
+  teams?: number[];
   /** Computer franchises added in solo mode. */
   npcs: number;
   mode: SquadMode;
@@ -145,6 +147,13 @@ export function createGame(cfg: GameConfig, all: Cricketer[], now: number): Game
     franchises.push(make(ids, false, 1, 2));
     franchises.push(make([], true, HANDICAP.boss.purse, 2 + HANDICAP.boss.scouts, true));
     assignRoles(ids);
+  } else if (cfg.teamMode === 'teams') {
+    // Any split (1v3, 2v2, 3v1, 1v1v1v1...): one franchise per team, same purse however many players it has.
+    const groups = new Map<number, string[]>();
+    cfg.humans.forEach((h, i) => { const t = cfg.teams?.[i] ?? i; groups.set(t, [...(groups.get(t) ?? []), h.id]); });
+    for (const o of groups.values()) { franchises.push(make(o, false)); assignRoles(o); }
+    for (let i = 0; i < cfg.npcs; i++) franchises.push(make([], true));
+    if (franchises.length < 2) franchises.push(make([], true));
   } else if (cfg.teamMode === 'pairs') {
     const k = cfg.partnerSize ?? 2;
     for (let i = 0; i < ids.length; i += k) { const o = ids.slice(i, i + k); franchises.push(make(o, false)); assignRoles(o); }

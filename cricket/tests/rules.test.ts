@@ -75,3 +75,22 @@ describe('IPL rules', () => {
     }
   });
 });
+
+describe('Teams mode', () => {
+  const humans = ['A', 'B', 'C', 'D'].map((n, i) => ({ id: `h${i}`, name: n, color: '#fff' }));
+  const game = (teams: number[], npcs = 0) => createGame({ humans, teamMode: 'teams', teams, npcs, mode: 'ipl', timer: 10, mystery: false, realNames: false, seed: 5 }, PLAYERS, 0);
+  it('gives every team the same purse whatever the split (1v3, 3v1, 2v2, 1v1v1v1)', () => {
+    for (const split of [[0, 1, 1, 1], [0, 0, 0, 1], [0, 0, 1, 1], [0, 1, 2, 3]]) {
+      const g = game(split);
+      const human = g.franchises.filter((f) => !f.npc);
+      expect(human).toHaveLength(new Set(split).size);
+      expect(new Set(human.map((f) => f.startPurse)).size).toBe(1);
+      expect(human.map((f) => f.owners.length).sort()).toEqual([...split.reduce((m, t) => m.set(t, (m.get(t) ?? 0) + 1), new Map<number, number>()).values()].sort());
+    }
+  });
+  it('everyone on one team plays against a computer side', () => {
+    const g = game([0, 0, 0, 0]);
+    expect(g.franchises.filter((f) => !f.npc)).toHaveLength(1);
+    expect(g.franchises.filter((f) => f.npc).length).toBeGreaterThanOrEqual(1);
+  });
+});

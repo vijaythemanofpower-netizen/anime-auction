@@ -21,7 +21,11 @@ function GameScreen() {
   if (online.role === 'guest' && !online.me) return (
     <div className="col" style={{ maxWidth: 480, margin: '0 auto' }}>
       <h2>Room {online.code}: who are you?</h2>
-      <div className="options">{g.config.humans.slice(1).map((h) => <button key={h.id} className="option" onClick={() => store.setMe(h.id)}>{h.name}</button>)}</div>
+      <div className="options">{g.config.humans.slice(1).map((h) => {
+        const f = g.franchises.find((x) => x.owners.includes(h.id));
+        const mates = (f?.owners ?? []).filter((o) => o !== h.id).map((o) => g.config.humans.find((x) => x.id === o)?.name).filter(Boolean);
+        return <button key={h.id} className="option" onClick={() => store.setMe(h.id)}>{h.name}<small>{f ? `${f.name}${mates.length ? ` · with ${mates.join(' & ')}` : ' · on your own'}` : ''}</small></button>;
+      })}</div>
     </div>
   );
   if (g.phase === 'retain') return <Retain g={g} />;
