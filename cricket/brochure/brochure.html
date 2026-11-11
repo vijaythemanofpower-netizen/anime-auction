@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Cricket Auction · Game brochure</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Saira+Condensed:ital,wght@0,600;0,700;0,800;1,800&display=swap" rel="stylesheet" />
+<style>
+  @page { size: A4; margin: 0; }
+  :root { --bg: #050914; --panel: #111a36; --line: rgba(170, 190, 255, 0.16); --text: #f2f5ff; --dim: #b4bddc; --gold: #ffc83d; --gold2: #ffe08a; --live: #ff3d6e; --teal: #2de2c4; --orange: #ff8a1f; }
+  * { box-sizing: border-box; margin: 0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  html, body { background: var(--bg); }
+  body { color: var(--text); font-family: Inter, 'Segoe UI', sans-serif; font-size: 11pt; line-height: 1.45; }
+  /* One A4 page per .page; nothing breaks across pages. */
+  .page { width: 210mm; height: 297mm; overflow: hidden; position: relative; background: var(--bg); break-after: page; }
+  .page:last-child { break-after: auto; }
+  .pad { padding: 14mm 14mm; }
+  .disp { font-family: 'Saira Condensed', Impact, sans-serif; font-weight: 800; font-style: italic; text-transform: uppercase; letter-spacing: 0.01em; line-height: 0.9; }
+  .kick { font-family: 'Saira Condensed', sans-serif; font-weight: 700; letter-spacing: 0.22em; text-transform: uppercase; font-size: 10pt; color: var(--teal); }
+  h2 { font-size: 40pt; margin: 2mm 0 6mm; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 4mm; }
+  .dim { color: var(--dim); }
+
+  /* Page 1: cover */
+  .cover img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+  .cover::after { content: ''; position: absolute; inset: 0; background: linear-gradient(0deg, var(--bg) 4%, rgba(5, 9, 20, 0.25) 55%, rgba(5, 9, 20, 0.6) 100%); }
+  .cover .seam { position: absolute; z-index: 1; left: 0; right: 0; top: 40%; height: 0.8mm; background: linear-gradient(90deg, transparent, var(--live) 12%, var(--live) 88%, transparent); box-shadow: 0 0 5mm var(--live); opacity: .75; }
+  .cover .copy { position: absolute; z-index: 1; left: 14mm; right: 14mm; bottom: 16mm; }
+  .cover h1 { font-size: 78pt; margin: 4mm 0 6mm; }
+  .cover h1 em { display: block; background: linear-gradient(180deg, var(--gold2), #ffb81f); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .cover p { font-size: 15pt; color: #e9edff; max-width: 165mm; }
+  .tags { display: flex; gap: 2.5mm; margin-top: 6mm; flex-wrap: wrap; }
+  .tag { padding: 1.6mm 3.5mm; border: 1px solid var(--line); border-radius: 99mm; background: rgba(5, 9, 20, 0.7); font-size: 9.5pt; font-weight: 600; }
+  .nums { display: grid; grid-template-columns: repeat(3, 1fr); gap: 3mm; margin-top: 8mm; }
+  .num { padding: 3.5mm; text-align: center; background: rgba(17, 26, 54, 0.85); }
+  .num b { display: block; font-family: 'Saira Condensed', sans-serif; font-weight: 800; font-size: 24pt; line-height: 1; color: var(--gold); }
+  .num span { font-size: 8.5pt; color: var(--dim); }
+
+  /* Page 2: journey */
+  .steps { display: grid; grid-template-columns: 1fr 1fr; gap: 4.5mm; }
+  .step { position: relative; overflow: hidden; }
+  .step img, .step .nobg { width: 100%; height: 36mm; object-fit: cover; display: block; }
+  .step .nobg { display: grid; place-items: center; background: radial-gradient(circle at 50% 40%, rgba(255, 200, 61, 0.25), rgba(5, 9, 20, 0.95)); }
+  .step .body { padding: 3.5mm 4mm 4.5mm; }
+  .step .n { position: absolute; top: 2.5mm; left: 3mm; font-family: 'Saira Condensed', sans-serif; font-weight: 800; font-size: 12pt; background: linear-gradient(180deg, var(--gold2), #ffb81f); color: #1c1300; border-radius: 2mm; padding: 0 2.5mm; }
+  .step h3 { font-size: 21pt; margin-bottom: 1.5mm; }
+  .step p { color: var(--dim); font-size: 9.5pt; }
+  .step b { color: var(--text); }
+
+  /* Page 3: play every ball + modes */
+  .duel { display: grid; grid-template-columns: 1fr 1fr; gap: 6mm; align-items: center; }
+  .duel img { width: 100%; height: 72mm; object-fit: cover; border-radius: 4mm; border: 1px solid var(--line); }
+  .chips { display: flex; gap: 1.5mm; flex-wrap: wrap; margin: 2mm 0; }
+  .chip { padding: 1mm 3mm; border-radius: 99mm; border: 1px solid var(--line); background: #1e2b5a; font-size: 9pt; font-weight: 600; }
+  .chip.on { background: linear-gradient(180deg, var(--gold2), #ffb81f); color: #1c1300; border-color: transparent; }
+  .meter { position: relative; height: 9mm; border-radius: 2.5mm; border: 1px solid var(--line); background: linear-gradient(90deg, rgba(255, 77, 94, .35), rgba(255,255,255,.06) 30%, rgba(255,255,255,.06) 70%, rgba(255, 77, 94, .35)); margin: 2mm 0; overflow: hidden; }
+  .meter i { position: absolute; top: 0; bottom: 0; left: 42%; width: 16%; background: rgba(250, 204, 21, .3); }
+  .meter u { position: absolute; top: 0; bottom: 0; left: 46%; width: 8%; background: rgba(74, 222, 128, .65); }
+  .meter s { position: absolute; top: -1mm; bottom: -1mm; left: 49%; width: 1.4mm; background: #fff; border-radius: 1mm; box-shadow: 0 0 3mm #fff; }
+  .perfect { font-family: 'Saira Condensed', sans-serif; font-weight: 800; font-size: 18pt; color: #4ade80; }
+  ul.list { padding-left: 5mm; color: var(--dim); font-size: 9.5pt; margin-top: 3mm; }
+  ul.list li { margin: 1.2mm 0; }
+  ul.list b { color: var(--text); }
+  .modes { display: grid; grid-template-columns: 1fr 1fr; gap: 3.5mm; }
+  .mode { padding: 4mm; }
+  .mode .vs { font-family: 'Saira Condensed', sans-serif; font-weight: 800; font-size: 15pt; color: var(--orange); }
+  .mode h3 { font-size: 18pt; margin: 0.5mm 0 1.5mm; }
+  .mode p { color: var(--dim); font-size: 9.5pt; }
+  .note { margin-top: 4mm; padding: 3.5mm 4.5mm; border-radius: 3mm; border: 1px solid rgba(45, 226, 196, .45); background: rgba(45, 226, 196, .08); font-size: 10pt; }
+
+  /* Page 4: season, extras, call to action */
+  .season { display: grid; grid-template-columns: 1fr 1fr; gap: 6mm; align-items: center; }
+  .season img { width: 100%; height: 64mm; object-fit: cover; border-radius: 4mm; border: 1px solid var(--line); }
+  .bracket { display: grid; gap: 2mm; margin-top: 3mm; }
+  .bracket div { display: flex; justify-content: space-between; padding: 2.4mm 3.5mm; font-weight: 600; font-size: 10pt; }
+  .bracket span { color: var(--dim); font-weight: 500; font-size: 9pt; }
+  .bracket .final { border-color: var(--gold); box-shadow: 0 0 0 1px rgba(255, 200, 61, .5); }
+  .extras { display: grid; grid-template-columns: 1fr 1fr; gap: 3.5mm; }
+  .extra { padding: 4mm; }
+  .extra b { display: block; font-family: 'Saira Condensed', sans-serif; font-weight: 800; font-style: italic; text-transform: uppercase; font-size: 14pt; color: var(--gold2); margin-bottom: 1mm; }
+  .extra p { font-size: 9.5pt; color: var(--dim); }
+  .cta { margin-top: 7mm; padding: 8mm 9mm; border-radius: 5mm; position: relative; overflow: hidden; border: 1px solid rgba(255, 200, 61, .55); }
+  .cta img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+  .cta::before { content: ''; position: absolute; inset: 0; z-index: 1; background: linear-gradient(120deg, rgba(5, 9, 20, .82), rgba(5, 9, 20, .55)); }
+  .cta > div { position: relative; z-index: 2; }
+  .cta h2 { font-size: 30pt; margin: 1.5mm 0 3mm; }
+  .cta .url { font-family: 'Saira Condensed', sans-serif; font-weight: 700; font-size: 14pt; color: var(--gold); }
+  .foot { position: absolute; left: 14mm; right: 14mm; bottom: 7mm; font-size: 7.5pt; color: #7480a6; }
+</style>
+</head>
+<body>
+
+<!-- 1 · Cover -->
+<div class="page cover">
+  <img src="img/0.jpg" alt="" />
+  <div class="seam"></div>
+  <div class="copy">
+    <div class="kick" style="color: var(--live); letter-spacing: .5em">Auction · Season · Glory</div>
+    <h1 class="disp">Cricket <em>Auction</em></h1>
+    <p>Run your own T20 franchise. Retain your core, out-bid your friends for real players, then <b>bat and bowl every ball yourself</b> all the way to the final.</p>
+    <div class="tags"><span class="tag">1 to 6 players</span><span class="tag">Same screen or online</span><span class="tag">Free in the browser</span><span class="tag">Phone &amp; PC</span></div>
+    <div class="nums">
+      <div class="num card"><b>315</b><span>real players, 2026 season</span></div>
+      <div class="num card"><b>₹120 Cr</b><span>purse for every team</span></div>
+      <div class="num card"><b>18–25</b><span>players per squad</span></div>
+      <div class="num card"><b>6</b><span>retentions or RTM cards</span></div>
+      <div class="num card"><b>8</b><span>overseas max (4 in the XI)</span></div>
+      <div class="num card"><b>5·10·20</b><span>overs per side</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- 2 · The journey -->
+<div class="page pad">
+  <div class="kick">How a game goes</div>
+  <h2 class="disp">From the hammer to the trophy</h2>
+  <div class="steps">
+    <div class="step card"><span class="n">01</span><img src="img/2.jpg" alt="" /><div class="body"><h3 class="disp">Retain</h3><p>Keep up to <b>6</b> of last season's players at the real IPL costs (₹18 / 14 / 11 / 18 / 14 Cr; uncapped ₹4 Cr). Every slot you skip becomes a <b>Right to Match</b> card.</p></div></div>
+    <div class="step card"><span class="n">02</span><img src="img/3.jpg" alt="" /><div class="body"><h3 class="disp">Bid</h3><p>Live hammer, official base prices and bid steps, computer rivals. Lose a favourite? Call <b>RTM</b>: the buyer gets one final raise, then you can match it. Unsold players can return in the <b>accelerated round</b>.</p></div></div>
+    <div class="step card"><span class="n">03</span><div class="nobg"><div class="disp" style="font-size: 44pt; color: var(--gold)">Your XI</div></div><div class="body"><h3 class="disp">Build</h3><p>Hidden form is revealed. Pick your XI, batting order, captain, keeper, game plan and an Impact Player. Squad rules keep every team balanced.</p></div></div>
+    <div class="step card"><span class="n">04</span><img src="img/4.jpg" alt="" /><div class="body"><h3 class="disp">Play</h3><p>Bat and bowl <b>every ball</b>: choose the shot or delivery, then stop the timing meter in the green. Toss, DRS, bowling changes and mind games are yours too.</p></div></div>
+    <div class="step card"><span class="n">05</span><img src="img/1.jpg" alt="" /><div class="body"><h3 class="disp">Season</h3><p>A full league with points table and <b>net run rate</b>, then IPL-style playoffs: Qualifier 1, Eliminator, Qualifier 2 and the Final.</p></div></div>
+    <div class="step card"><span class="n">06</span><img src="img/5.jpg" alt="" /><div class="body"><h3 class="disp">Glory</h3><p>Lift the trophy, and see who takes the <b>Orange Cap</b> (most runs) and the <b>Purple Cap</b> (most wickets).</p></div></div>
+  </div>
+</div>
+
+<!-- 3 · Gameplay and modes -->
+<div class="page pad">
+  <div class="kick">The heart of the game</div>
+  <h2 class="disp">Every ball is yours</h2>
+  <div class="duel">
+    <img src="img/4.jpg" alt="" />
+    <div>
+      <p class="dim">Batting: pick a shot.</p>
+      <div class="chips"><span class="chip">Defend</span><span class="chip">Nudge</span><span class="chip on">Drive</span><span class="chip">Slog</span><span class="chip">Ramp</span></div>
+      <p class="dim">Then stop the marker in the green zone.</p>
+      <div class="meter"><i></i><u></u><s></s></div>
+      <div class="perfect">PERFECT!</div>
+      <ul class="list">
+        <li><b>Bowling</b> works the same way: yorker, bouncer, slower ball or wide line, then aim it.</li>
+        <li>Faster bowlers make the meter faster; better batters get a bigger sweet spot.</li>
+        <li>Results come from real T20-based ratings, the pitch, the weather and your timing.</li>
+        <li>In a hurry? <b>Auto this over</b> or <b>auto innings</b>.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="kick" style="margin-top: 9mm">Play together</div>
+  <h2 class="disp">Any team, same money</h2>
+  <div class="modes">
+    <div class="mode card"><div class="vs">1 v 1 v 1 v 1</div><h3 class="disp">Free for all</h3><p>Everyone runs their own franchise; computer teams fill empty seats.</p></div>
+    <div class="mode card"><div class="vs">2 v 2</div><h3 class="disp">Partners</h3><p>Two friends share one franchise, one purse and one squad.</p></div>
+    <div class="mode card"><div class="vs">1 v 3 · 3 v 1</div><h3 class="disp">Lone wolf</h3><p>Take on a whole team of friends alone, with exactly the same purse.</p></div>
+    <div class="mode card"><div class="vs">Friends v Boss</div><h3 class="disp">The Boss</h3><p>Up to four friends together against one computer Boss with a huge war chest.</p></div>
+  </div>
+  <div class="note"><b>Equal purse:</b> every team gets the same money, however many players it has. Teammates split the jobs: one bats, one bowls. <b>Online:</b> the host shares a 5-letter room code; friends join from their own phones and pick their seat and team.</div>
+</div>
+
+<!-- 4 · Season, extras, call to action -->
+<div class="page pad">
+  <div class="season">
+    <div>
+      <div class="kick">The season</div>
+      <h2 class="disp">League, playoffs, final</h2>
+      <p class="dim">Every team plays every other. The top four go through:</p>
+      <div class="bracket">
+        <div class="card">Qualifier 1 <span>1st v 2nd · winner to the Final</span></div>
+        <div class="card">Eliminator <span>3rd v 4th · loser is out</span></div>
+        <div class="card">Qualifier 2 <span>loser Q1 v winner Eliminator</span></div>
+        <div class="card final">The Final <span>for the trophy</span></div>
+      </div>
+    </div>
+    <img src="img/5.jpg" alt="" />
+  </div>
+  <div class="kick" style="margin-top: 9mm">And more</div>
+  <h2 class="disp">Built like the real thing</h2>
+  <div class="extras">
+    <div class="extra card"><b>Real players</b><p>315 players from the 2026 squads plus notable unsold names, rated from their real T20 records.</p></div>
+    <div class="extra card"><b>Real photos</b><p>Freely licensed photos for the stars, with credits. Add your own photo for anyone.</p></div>
+    <div class="extra card"><b>Live commentary</b><p>Hundreds of commentary lines, crowd roars, bat cracks and stumps flying.</p></div>
+    <div class="extra card"><b>Captain's calls</b><p>Toss, DRS with umpire's call, bowling changes, Impact Player and secret mind games.</p></div>
+  </div>
+  <div class="cta">
+    <img src="img/1.jpg" alt="" />
+    <div>
+      <div class="kick" style="color: var(--gold2)">Your move</div>
+      <h2 class="disp">Gather the squad. Open the bidding.</h2>
+      <div class="url">vijaythemanofpower-netizen.github.io/anime-auction/cricket</div>
+    </div>
+  </div>
+  <div class="foot">Player names appear as playful name-alikes by default (real names optional). Ratings are the game's own estimates. Illustrations drawn for the game with invented players. Not affiliated with any league or franchise.</div>
+</div>
+
+</body>
+</html>
