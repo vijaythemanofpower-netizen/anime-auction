@@ -6,3 +6,4 @@ dist
 handoff-logs
 .tasks/*.log
 tools/.tmp/
+/media/
