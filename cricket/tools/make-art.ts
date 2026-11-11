@@ -11,15 +11,15 @@ const COMFY = process.env.COMFY_URL ?? 'http://127.0.0.1:8188';
 const OUT = path.resolve('public/art');
 const W = 1344, H = 768, HW = 2560, HH = 1464;
 const STYLE = 'cinematic sports poster art, dramatic digital painting, rich colors, volumetric floodlight beams, high detail, sharp focus';
-const NEG = '(text, letters, words, numbers, writing on clothes, logo:1.4), baseball, baseball bat, baseball cap, baseball uniform, american football, soccer, robot, armor, text, logo, watermark, letters, blurry, deformed, extra limbs, bad hands';
+const NEG = '(text, letters, words, numbers, writing on clothes, logo:1.4), (holding a helmet, helmet in hand, two helmets:1.4), baseball, baseball bat, baseball cap, baseball uniform, american football, soccer, robot, armor, text, logo, watermark, letters, blurry, deformed, extra limbs, bad hands';
 
 /** The film's beats, in order (index = file name). Invented players only. */
 export const SCENES = [
-  'Aerial view of a huge oval cricket stadium at night, bright green outfield with a light brown cricket pitch in the centre, tall floodlight towers blazing, packed stands, city skyline behind, dramatic clouds, no people in close-up',
+  'Aerial view of a huge oval cricket stadium at night, all six tall floodlight towers around the rim blazing with bright white light, every stand lit up and packed, bright green outfield with a light brown pitch in the centre, glowing city skyline behind, dramatic clouds',
   'View from the top of the stands across a floodlit cricket ground at night, dark night sky, rows of fans seen from behind as dark silhouettes in the foreground, glowing phone lights, the bright green oval field and light brown pitch far below, floodlight towers with lens flare, no goal posts',
   'Backlit silhouettes of a cricket team in a tight huddle on the field at night, the blazing floodlights directly behind them so the players are dark shapes with orange rim light, heads bowed together, no visible faces, no visible writing, haze and light rays',
   'A grand auction stage in a dark hall seen from the back of the room: silhouettes of many people seated at round tables in the foreground, a bright stage far away with a podium and a giant glowing screen, dramatic spotlights and haze',
-  'Silhouette of one cricket batsman in bright orange cricket jerseys with black sleeves and black trousers and a helmet after hitting a six, seen from behind at the crease, bat held high in follow-through, stumps beside him, the ball a tiny speck flying towards blazing floodlights, huge stadium crowd, rim light, haze',
+  'Backlit silhouette of one cricket batsman seen from behind at the crease, helmet on his head, his right arm holding the cricket bat straight up high above his head like a trophy, left hand empty, the blazing floodlights and a huge cheering crowd ahead of him, orange rim light, haze and light rays, stumps beside him',
   'Backlit silhouettes of a cricket team celebrating on the field at night, players jumping with arms raised, one single golden trophy held high in the centre glowing against the light, the blazing floodlights and fireworks behind them so the players are dark shapes with orange rim light, gold confetti, haze, no visible faces, no visible writing',
 ];
 

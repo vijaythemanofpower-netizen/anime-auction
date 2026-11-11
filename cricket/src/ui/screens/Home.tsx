@@ -1,5 +1,43 @@
-import { useMemo } from 'react';
-import { store, useApp } from '../../store/store';
+import { useEffect, useMemo, useState } from 'react';
+import { displayName, store, useApp } from '../../store/store';
+import { PLAYERS } from '../../engine/data/players';
+import { PHOTOS } from '../../engine/data/photos';
+import { FRANCHISE_NAMES } from '../../engine/game';
+import { fmtL, nextBid } from '../../engine/squad';
+import { hashString } from '../../engine/rng';
+
+const ROLE: Record<string, string> = { opener: 'Opener', middle: 'Batter', finisher: 'Finisher', keeper: 'Wicketkeeper', allrounder: 'All-rounder', pace: 'Fast bowler', spin: 'Spinner' };
+
+/** A demo lot: a real star (free photo) comes up, bids climb in the official steps, SOLD, next. */
+function LiveLot() {
+  const stars = useMemo(() => PLAYERS.filter((p) => p.tier >= 4 && PHOTOS[p.id]).sort((a, b) => b.tier - a.tier), []);
+  const [k, setK] = useState(0);
+  const [price, setPrice] = useState(0);
+  const [sold, setSold] = useState(false);
+  const c = stars[k % stars.length];
+  const target = c.basePrice * (4 + (Math.abs(hashString(c.id)) % 7));
+  useEffect(() => {
+    const t = setTimeout(() => {
+      if (sold) { setSold(false); setPrice(0); setK(k + 1); return; }
+      const next = nextBid(price, c.basePrice);
+      if (next > target) setSold(true); else setPrice(next);
+    }, sold ? 1800 : price ? 240 : 900);
+    return () => clearTimeout(t);
+  }, [k, price, sold, c, target]);
+  if (!c) return null;
+  const team = FRANCHISE_NAMES[k % FRANCHISE_NAMES.length].name;
+  return (
+    <div className="lot-demo" aria-live="off">
+      <img src={PHOTOS[c.id].src} alt="" referrerPolicy="no-referrer" />
+      <div>
+        <div className="who">{displayName(c)}</div>
+        <div className="meta">{ROLE[c.role]} · {c.country} · base {fmtL(c.basePrice)}</div>
+        <div className="bid"><small>{sold ? 'Sold for' : price ? 'Current bid' : 'Base price'}</small>{fmtL(price || c.basePrice)}</div>
+      </div>
+      {sold && <div className="stamp">SOLD<small>{team}</small></div>}
+    </div>
+  );
+}
 import { HomeFilm, type Beat } from './HomeFilm';
 
 function JoinRoom() {
@@ -22,7 +60,7 @@ export function Home() {
     { at: 2, art: 2, word: 'Retain', place: 'low-left', kicker: '01 / Before the auction',
       body: <p>Keep up to <b>6</b> of last season's stars at the real IPL costs. Every slot you skip becomes a <b>Right to Match</b> card.</p> },
     { at: 3, art: 3, word: 'Bid', place: 'low-right', kicker: '02 / The auction',
-      body: <p><b>₹120 Cr</b> purse, the live hammer, official bid steps. Lose a favourite? Call RTM and steal him back.</p> },
+      body: <><p><b>₹120 Cr</b> purse, the live hammer, official bid steps. Lose a favourite? Call RTM and steal him back.</p><LiveLot /></> },
     { at: 4, art: 4, word: 'Play', place: 'low-left', kicker: '03 / Match day',
       body: <p>You bowl and you bat: pick the yorker or the slog, then nail the timing meter. Friends split the roles.</p> },
     { at: 5, art: 5, word: 'Win', place: 'low-right', kicker: '04 / The season',
