@@ -297,12 +297,16 @@ input[type='text'], input[type='number'], select {
 :root[data-reduced-motion='true'] *, :root[data-reduced-motion='true'] *::before { animation-duration: 1ms !important; transition-duration: 1ms !important; }
 @media (prefers-reduced-motion: reduce) { * { animation-duration: 1ms !important; transition-duration: 1ms !important; } }
 
-/* ---------- Play mode: timing / accuracy meter */
-.modal.play { max-width: 560px; }
-.meter { position: relative; height: 46px; border-radius: 12px; background: linear-gradient(90deg, rgba(240,82,82,.35), rgba(255,255,255,.06) 30%, rgba(255,255,255,.06) 70%, rgba(240,82,82,.35)); border: 1px solid rgba(255,255,255,.18); cursor: pointer; touch-action: manipulation; overflow: hidden; --x: 0; }
-.meter .zone, .meter .sweet { position: absolute; top: 0; bottom: 0; left: calc((var(--zone-at) - var(--zone)) * 100%); width: calc(var(--zone) * 200%); background: rgba(250, 204, 21, .28); }
-.meter .sweet { left: calc((var(--zone-at) - var(--zone) / 2) * 100%); width: calc(var(--zone) * 100%); background: rgba(74, 222, 128, .55); box-shadow: 0 0 18px rgba(74,222,128,.5); }
-.meter .marker { position: absolute; top: -4px; bottom: -4px; width: 6px; margin-left: -3px; left: calc(var(--x) * 100%); background: #fff; border-radius: 3px; box-shadow: 0 0 10px #fff; }
+/* ---------- Play mode: the drawn ground */
+.modal.play { max-width: 680px; }
+.ground-wrap { position: relative; border-radius: 14px; overflow: hidden; border: 1px solid rgba(255,255,255,.16); box-shadow: 0 18px 40px rgba(0,0,0,.45); }
+.ground { display: block; width: 100%; aspect-ratio: 16 / 10; touch-action: manipulation; }
+.ground-chip { position: absolute; top: 10px; left: 10px; padding: 4px 10px; border-radius: 999px; background: rgba(5,9,20,.72); border: 1px solid rgba(255,61,110,.7); font: 700 13px/1.2 'Saira Condensed', sans-serif; letter-spacing: .06em; text-transform: uppercase; }
+.ground-word { position: absolute; left: 0; right: 0; top: 34%; text-shadow: 0 3px 14px rgba(0,0,0,.8); pointer-events: none; }
+.shots { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
+.option.shot { padding: 14px 4px; text-align: center; font-weight: 700; touch-action: manipulation; }
+.option.shot kbd { display: block; font: 600 11px/1 Inter, sans-serif; opacity: .55; margin-bottom: 4px; }
+.option.shot:disabled { opacity: .45; }
 .meter-result { text-align: center; font-size: 30px; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; animation: pop .35s ease-out; }
 .meter-result.q0 { color: #f05252; } .meter-result.q1 { color: #fbbf24; } .meter-result.q2 { color: #a3e635; } .meter-result.q3 { color: #4ade80; text-shadow: 0 0 20px rgba(74,222,128,.7); }
 @keyframes pop { from { transform: scale(.6); opacity: 0; } to { transform: scale(1); opacity: 1; } }

@@ -63,6 +63,10 @@ export interface PlayMeta {
   zone: number;
   batter: string;
   bowler: string;
+  /** Batting only: the ball on its way (the batter sees it out of the hand) and how well it was bowled (0-3). */
+  ball?: string;
+  acc?: number;
+  spin?: boolean;
 }
 
 export interface Decision {
@@ -1003,19 +1007,19 @@ class Sim {
     const both = this.human(inn.team) && this.human(fieldTeam);
     const bowlD: Decision = {
       id: `${base}-bowl`, kind: 'bowlBall', team: fieldTeam, secret: both,
-      prompt: `${situation}${bowler.name} to ${batter.name} (${batter.bats === 'L' ? 'left' : 'right'}-hander, ${inn.bat.get(batter.id)?.runs ?? 0} off ${inn.bat.get(batter.id)?.balls ?? 0}). Pick the delivery, then hit the mark.`,
+      prompt: `${situation}${bowler.name} to ${batter.name} (${batter.bats === 'L' ? 'left' : 'right'}-hander, ${inn.bat.get(batter.id)?.runs ?? 0} off ${inn.bat.get(batter.id)?.balls ?? 0}). Pick the delivery, then land it on the spot.`,
       options: Object.entries(DELIVERY_LABEL).map(([id, l]) => ({ id, label: spin ? l.spin : l.pace, hint: l.hint })),
       def: 'auto', meta: { speed: 0.8, zone: clamp(0.1 + ((bowler.bowling?.control ?? 30) - 30) / 300, 0.08, 0.3), batter: batter.id, bowler: bowler.id },
     };
     const batD: Decision = {
       id: `${base}-bat`, kind: 'batBall', team: inn.team, secret: both,
-      prompt: `${situation}${batter.name} faces ${bowler.name} (${bowlTypeLabel(bowler)}). Pick your shot, then time it.`,
+      prompt: `${situation}${batter.name} faces ${bowler.name} (${bowlTypeLabel(bowler)}). Watch the ball and play your shot as it arrives.`,
       options: Object.entries(SHOT_LABEL).map(([id, l]) => ({ id, label: l.label, hint: l.hint })),
-      def: 'auto', meta: { speed, zone: clamp(0.1 + (batR - 50) / 260, 0.08, 0.3), batter: batter.id, bowler: bowler.id },
+      def: 'auto', meta: { speed, zone: clamp(0.1 + (batR - 50) / 260, 0.08, 0.3), batter: batter.id, bowler: bowler.id, spin },
     };
     // Meter result from skill, for CPU sides and "auto".
     const meter = (r: Rng, skill: number) => r.weighted([0, 1, 2, 3], [Math.max(3, 22 - (skill - 50) / 2.5), 30, 40, Math.max(4, 8 + (skill - 50) / 2.5)]);
-    const [b, t] = this.ask([bowlD, batD], (d, r) => {
+    const cpu = (d: Decision, r: Rng) => {
       if (d.kind === 'bowlBall') {
         const death = bowler.bowling?.death ?? 40;
         const ph = this.phase(inn, over);
@@ -1025,9 +1029,12 @@ class Sim {
       const a = this.aggression(inn, batter, over);
       const pick = r.weighted(['defend', 'nudge', 'drive', 'slog', 'ramp'], a > 0.8 ? [3, 12, 30, 45, 10] : a > 0.2 ? [8, 25, 40, 20, 7] : a < -0.3 ? [35, 40, 20, 4, 1] : [15, 35, 35, 12, 3]);
       return `${pick}@${meter(r, batR)}`;
-    });
-    const [bw, ac] = b.split('@'); const [bt, tm] = t.split('@');
+    };
     const num = (x: string | undefined) => { const n = Number(x); return Number.isInteger(n) && n >= 0 && n <= 3 ? n : 1; };
+    // The ball is bowled first: the batter sees it coming and plays it.
+    const [bw, ac] = this.ask([bowlD], cpu)[0].split('@');
+    batD.meta = { ...batD.meta!, ball: bw, acc: num(ac) };
+    const [bt, tm] = this.ask([batD], cpu)[0].split('@');
     if (this.human(fieldTeam)) this.rec.calls[fieldTeam][1]++;
     if (this.human(inn.team)) this.rec.calls[inn.team][1]++;
     return { bowl: bw, bat: bt, acc: num(ac), tim: num(tm) };

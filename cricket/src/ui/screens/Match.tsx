@@ -6,6 +6,7 @@ import { DELIVERY_LABEL, SHOT_LABEL, oversText } from '../../engine/match';
 import { Seg, useNow } from '../components/common';
 import { Portrait } from '../components/Player';
 import { sfx } from '../sfx';
+import { GH, GW, aimQ, drawScene, timingQ, type Scene } from '../ground';
 
 const CALL_SECONDS = 10;
 const pname = (id: string) => displayName(PLAYER_MAP[id]);
@@ -131,62 +132,145 @@ function playerFor(g: GameState, team: 0 | 1, kind: 'batBall' | 'bowlBall'): str
   return g.config.humans.find((h) => h.id === owner)?.name ?? f.name;
 }
 
+/** Where each delivery pitches (z from the batter, 0..1) and how high it reaches the bat. */
+const BALL_PATH: Record<string, { zb: number; ha: number }> = { length: { zb: 0.32, ha: 30 }, yorker: { zb: 0.07, ha: 5 }, bouncer: { zb: 0.56, ha: 88 }, slower: { zb: 0.3, ha: 26 }, wide: { zb: 0.32, ha: 30 } };
+/** Where the ball goes off the bat (leg side is negative x for a right-hander seen from behind). */
+const SHOT_END: Record<string, { x: number; z: number; h: number }> = { defend: { x: 14, z: 0.22, h: 0 }, nudge: { x: -330, z: 0.3, h: 0 }, drive: { x: 70, z: 2.4, h: 16 }, slog: { x: -280, z: 1.7, h: 270 }, ramp: { x: -50, z: -0.25, h: 340 } };
+/** Bowling: the spot to hit for each delivery, seen from the bowler's end. */
+const BOWL_SPOT: Record<string, { z: number; x: number }> = { length: { z: 0.68, x: 4 }, yorker: { z: 0.9, x: 2 }, bouncer: { z: 0.46, x: 0 }, slower: { z: 0.68, x: 4 }, wide: { z: 0.68, x: -52 } };
+const RUN_MS = 1300;
+
 /**
- * Play mode: pick a delivery or shot, then stop the marker in the green zone.
+ * Play mode, as a small cricket game on a drawn ground.
+ * Batting: the bowler runs in, you see where the ball will land, and you play a shot as it reaches the bat.
+ * Bowling: pick a delivery, then release when the wandering sight sits on the spot.
+ * A better batter gets a wider timing window; a more accurate bowler gets a slower sight.
  * The answer sent to the engine is "<pick>@<0-3>" (missed .. perfect), or "auto".
  */
 function PlayBall({ g, d, onAnswer, passFirst, onAuto }: { g: GameState; d: Decision; onAnswer: (opt: string) => void; passFirst: boolean; onAuto: (mode: 'over' | 'innings') => void }) {
   const [shown, setShown] = useState(!passFirst);
   const [pick, setPick] = useState<string | null>(null);
-  const [result, setResult] = useState<number | null>(null);
+  const [result, setResult] = useState<{ q: number; word: string } | null>(null);
+  const [live, setLive] = useState(false);
   const [openedAt, setOpenedAt] = useState(() => (passFirst ? 0 : Date.now()));
   const now = useNow(200);
   const answered = useRef(false);
-  const pos = useRef(0);
-  const bar = useRef<HTMLDivElement>(null);
+  const cv = useRef<HTMLCanvasElement>(null);
+  const act = useRef<(shot?: string) => void>(() => {});
   const meta = d.meta!;
   const batting = d.kind === 'batBall';
   const who = playerFor(g, d.team, d.kind as 'batBall' | 'bowlBall');
-  // Where the sweet spot sits on the bar, fixed for this ball.
-  const [zoneAt] = useState(() => 0.25 + Math.random() * 0.5);
   const send = (a: string) => { if (!answered.current) { answered.current = true; onAnswer(a); } };
   const left = openedAt ? Math.max(0, CALL_SECONDS + 2 - (now - openedAt) / 1000) : CALL_SECONDS;
-  useEffect(() => { if (shown && left <= 0 && result === null) send('auto'); });
+  useEffect(() => { if (shown && !batting && left <= 0 && result === null) send('auto'); });
 
-  // The moving marker (bounces end to end; faster bowlers make it faster).
+  const fid = d.team === 0 ? g.match!.home : g.match!.away;
+  const f = g.franchises.find((x) => x.id === fid)!;
+  const opp = g.franchises.find((x) => x.id === (d.team === 0 ? g.match!.away : g.match!.home))!;
+  const ballName = meta.ball ? (meta.spin ? DELIVERY_LABEL[meta.ball]?.spin : DELIVERY_LABEL[meta.ball]?.pace) : undefined;
+
   useEffect(() => {
-    if (!pick || result !== null) return;
-    let raf = 0; const t0 = performance.now();
-    const step = (t: number) => {
-      const cycle = ((t - t0) / 1000) * 0.55 * meta.speed;
-      pos.current = 1 - Math.abs((cycle % 2) - 1);
-      if (bar.current) bar.current.style.setProperty('--x', String(pos.current));
-      raf = requestAnimationFrame(step);
+    const canvas = cv.current;
+    if (!canvas || !shown || (!batting && !pick)) return;
+    const ctx = canvas.getContext('2d')!;
+    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    canvas.width = GW * dpr; canvas.height = GH * dpr; ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    const m = PLAYER_MAP[meta.batter]?.bats === 'L' ? -1 : 1;
+    const timers: ReturnType<typeof setTimeout>[] = [];
+    const finish = (answer: string, q: number, word: string, delay: number) => {
+      setResult({ q, word });
+      if (store.get().settings.sound) sfx(q >= 2 ? 'crack' : 'tap');
+      timers.push(setTimeout(() => send(answer), delay));
     };
-    raf = requestAnimationFrame(step);
-    return () => cancelAnimationFrame(raf);
-  }, [pick, result, meta.speed]);
+    const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
+    const t0 = performance.now();
+    let t = 0;
+    let step: () => void;
+    const sn: Scene = batting
+      ? { near: { x: -62 * m, z: -0.02, color: f.color, kind: 'batter', back: true, t: 0, left: m < 0 }, far: { x: -16, z: 1.5, color: opp.color, kind: 'bowler', back: false, t: 0 }, trail: [], marks: [], time: 0 }
+      : { near: { x: -70, z: -0.24, color: f.color, kind: 'bowler', back: true, t: 0 }, far: { x: 40 * m, z: 0.97, color: opp.color, kind: 'batter', back: false, t: 0, left: m < 0 }, trail: [], marks: [], time: 0 };
 
-  const stop = () => {
-    if (!pick || result !== null) return;
-    const off = Math.abs(pos.current - zoneAt);
-    const q = off <= meta.zone / 6 ? 3 : off <= meta.zone / 2 ? 2 : off <= meta.zone ? 1 : 0;
-    setResult(q);
-    if (store.get().settings.sound) sfx(q >= 2 ? 'crack' : 'tap');
-    setTimeout(() => send(`${pick}@${q}`), 650);
-  };
+    if (batting) {
+      const ball = meta.ball && BALL_PATH[meta.ball] ? meta.ball : 'length';
+      const { zb, ha } = BALL_PATH[ball];
+      const T = Math.max(750, Math.min(1700, 1250 / meta.speed)) * (ball === 'slower' ? 1.35 : 1);
+      // A loose ball drifts off its line; which way is fixed for this ball.
+      const drift = (d.id.length % 2 ? 1 : -1) * (3 - (meta.acc ?? 2)) * 9;
+      const x1 = (ball === 'wide' ? 56 : 5) * m + drift;
+      const at = (u: number) => {
+        const z = 1 - u;
+        return { x: lerp(-16, x1, u), z, h: z > zb ? 64 * (1 - ((1 - z) / (1 - zb)) ** 2) : ha * ((zb - z) / zb) };
+      };
+      let hit: { t: number; shot: string; q: number; from: { x: number; z: number; h: number } } | null = null;
+      let over = false;
+      act.current = (shot) => {
+        if (!shot || hit || over || t < RUN_MS) return;
+        const dt = t - (RUN_MS + T);
+        const q = timingQ(dt, meta.zone);
+        hit = { t, shot, q, from: at((t - RUN_MS) / T) };
+        over = true;
+        finish(`${shot}@${q}`, q, q === 0 ? (dt < 0 ? 'too early' : 'too late') : q === 1 ? (dt < 0 ? 'early' : 'late') : TIM_WORD[q], 800);
+      };
+      step = () => {
+        const run = Math.min(1, t / RUN_MS);
+        sn.far.t = run; sn.far.z = 1.5 - run * 0.48;
+        if (t < RUN_MS) return;
+        setLive(true);
+        const u = (t - RUN_MS) / T;
+        sn.marks = hit ? [] : [{ x: lerp(-16, x1, 1 - zb), z: zb, kind: 'bounce' }];
+        if (hit && hit.q > 0) {
+          const v = Math.min(1, (t - hit.t) / 650), e = 1 - (1 - v) ** 2, end = SHOT_END[hit.shot] ?? SHOT_END.drive, k = hit.q === 1 ? 0.45 : 1;
+          sn.ball = { x: lerp(hit.from.x, end.x * m * k, e), z: lerp(hit.from.z, hit.from.z + (end.z - hit.from.z) * k, e), h: lerp(hit.from.h, end.h * k, Math.sin((v * Math.PI) / 2)) };
+        } else sn.ball = at(Math.min(u, 1.3));
+        if (hit) sn.near.t = Math.min(1, (t - hit.t) / 200);
+        // Nobody swung: the ball is left alone.
+        if (!over && u > 1.28) { over = true; finish('defend@1', 1, 'left alone', 500); }
+      };
+    } else {
+      const spot = BOWL_SPOT[pick!] ?? BOWL_SPOT.length;
+      const tx = spot.x * m, A = 0.15, B = 46;
+      const w = (Math.PI * 2 * (0.45 + (0.3 - meta.zone) * 2.6)) / 1000;
+      let lock: { t: number; x: number; z: number } | null = null;
+      const aim = () => ({ x: tx + B * Math.sin(1.63 * w * t + 1), z: spot.z + A * Math.sin(w * t) });
+      act.current = () => {
+        if (lock) return;
+        const a = aim();
+        lock = { t, ...a };
+        const q = aimQ(Math.hypot((a.z - spot.z) / A, (a.x - tx) / B));
+        finish(`${pick}@${q}`, q, ACC_WORD[q], 1250);
+      };
+      step = () => {
+        if (!lock) { sn.marks = [{ x: tx, z: spot.z, kind: 'target' }, { ...aim(), kind: 'aim' }]; return; }
+        const run = Math.min(1, (t - lock.t) / 450);
+        sn.near.t = run; sn.near.z = -0.24 + run * 0.2;
+        sn.marks = [{ x: tx, z: spot.z, kind: 'target' }, { x: lock.x, z: lock.z, kind: 'bounce' }];
+        if (run < 1) return;
+        const u = Math.min(1.05, (t - lock.t - 450) / 600), z = u, zb = lock.z;
+        sn.ball = { x: lerp(-52, lock.x, Math.min(1.4, z / zb)), z, h: z < zb ? 70 * (1 - (z / zb) ** 2) : 34 * ((z - zb) / (1 - zb)) };
+        sn.far.t = Math.max(0, Math.min(1, (u - 0.85) / 0.15));
+      };
+    }
+    let raf = 0;
+    const loop = (ts: number) => { raf = requestAnimationFrame(loop); t = ts - t0; sn.time = ts; step(); drawScene(ctx, sn); };
+    raf = requestAnimationFrame(loop);
+    return () => { cancelAnimationFrame(raf); timers.forEach(clearTimeout); };
+    // Runs once per ball (and again when the bowler picks a delivery).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [shown, pick]);
+
   useEffect(() => {
-    const k = (e: KeyboardEvent) => { if (pick && result === null && (e.code === 'Space' || e.code === 'Enter')) { e.preventDefault(); stop(); } };
+    const k = (e: KeyboardEvent) => {
+      if (batting) { const o = d.options[Number(e.key) - 1]; if (o) act.current(o.id); }
+      else if (pick && (e.code === 'Space' || e.code === 'Enter')) { e.preventDefault(); act.current(); }
+    };
     window.addEventListener('keydown', k);
     return () => window.removeEventListener('keydown', k);
   });
 
-  const fid = d.team === 0 ? g.match!.home : g.match!.away;
-  const f = g.franchises.find((x) => x.id === fid)!;
   return (
     <div className="modal-back">
       <div className="modal col call play" role="dialog" aria-modal="true" aria-label={batting ? 'Your shot' : 'Your delivery'} style={{ ['--team' as string]: f.color }}>
-        <div className="row between"><span className="label" style={{ color: 'var(--accent)' }}>{batting ? `🏏 ${who} is batting` : `⚾ ${who} is bowling`}</span><span className="label" style={{ color: f.color }}>{f.name}</span></div>
+        <div className="row between"><span className="label" style={{ color: 'var(--accent)' }}>{batting ? `🏏 ${who} is batting` : `🎯 ${who} is bowling`}</span><span className="label" style={{ color: f.color }}>{f.name}</span></div>
         {!shown ? (
           <>
             <h2>Pass the device</h2>
@@ -197,24 +281,36 @@ function PlayBall({ g, d, onAnswer, passFirst, onAuto }: { g: GameState; d: Deci
           <>
             <div className="row" style={{ gap: 12, flexWrap: 'nowrap' }}>
               <Portrait c={PLAYER_MAP[batting ? meta.batter : meta.bowler]} size="sm" />
-              <h3 style={{ fontSize: 18, margin: 0 }}>{d.prompt}</h3>
+              <h3 style={{ fontSize: 17, margin: 0 }}>{d.prompt}</h3>
             </div>
-            {!pick ? (
+            {!batting && !pick ? (
               <div className="options">
                 {d.options.map((o) => <button key={o.id} className="option" onClick={() => { setPick(o.id); setOpenedAt(Date.now()); }}>{o.label}{o.hint && <small>{o.hint}</small>}</button>)}
               </div>
             ) : (
-              <div className="col" style={{ gap: 10 }}>
-                <div className="meter" ref={bar} style={{ ['--zone-at' as string]: zoneAt, ['--zone' as string]: meta.zone }} onPointerDown={stop}>
-                  <i className="zone" /><i className="sweet" /><b className="marker" />
+              <>
+                <div className="ground-wrap">
+                  <canvas ref={cv} className="ground" aria-label="The pitch" onPointerDown={() => { if (!batting) act.current(); }} />
+                  {batting && live && ballName && <span className="ground-chip">{ballName}</span>}
+                  {result && <div className={`meter-result q${result.q} ground-word`}>{result.word}</div>}
                 </div>
-                {result === null
-                  ? <><button className="btn primary lg" onClick={stop}>{batting ? 'Hit it!' : 'Release!'}</button><small className="faint" style={{ textAlign: 'center' }}>Stop the marker in the green. Tap the bar, the button, Space or Enter.</small></>
-                  : <div className={`meter-result q${result}`}>{(batting ? TIM_WORD : ACC_WORD)[result]}</div>}
-              </div>
+                {batting ? (
+                  <>
+                    <div className="shots">
+                      {d.options.map((o, i) => <button key={o.id} className="option shot" disabled={!live || !!result} onPointerDown={() => act.current(o.id)} onClick={() => act.current(o.id)}><kbd>{i + 1}</kbd>{o.label.split(' ')[0]}</button>)}
+                    </div>
+                    <small className="faint" style={{ textAlign: 'center' }}>The red mark shows where the ball lands. Play your shot just as the ball reaches the bat (tap, or keys 1 to 5).</small>
+                  </>
+                ) : (
+                  <>
+                    <button className="btn primary lg" disabled={!!result} onClick={() => act.current()}>Bowl!</button>
+                    <small className="faint" style={{ textAlign: 'center' }}>Release when the white sight is on the green spot. Tap the pitch, the button, Space or Enter.</small>
+                  </>
+                )}
+              </>
             )}
             <div className="row between" style={{ fontSize: 13 }}>
-              <span className="faint">{Math.ceil(left)} s · runs out: your player's own skill decides</span>
+              <span className="faint">{batting ? 'Better batters get more time to hit' : `${Math.ceil(left)} s · steadier bowlers get a slower sight`}</span>
               <span className="row" style={{ gap: 6 }}>
                 <button className="btn sm ghost" onClick={() => { onAuto('over'); send('auto'); }}>Auto this over</button>
                 <button className="btn sm ghost" onClick={() => { onAuto('innings'); send('auto'); }}>Auto innings</button>

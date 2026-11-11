@@ -137,3 +137,25 @@ describe('play mode', () => {
     expect(a.events.map((e) => e.text)).toEqual(b.events.map((e) => e.text));
   });
 });
+
+describe('play mode as a game', () => {
+  it('shows the batter the ball that was bowled, and gives better batters more time', async () => {
+    const { timingQ } = await import('../src/ui/ground');
+    const g = game(11);
+    const setup: MatchSetup = { ...matchSetup(g, P, g.franchises[0].id, g.franchises[1].id, 99), overs: 5, play: true };
+    const answers: Record<string, string> = {};
+    let rec = playMatch(setup, answers);
+    let seen = 0;
+    for (let i = 0; i < 400 && rec.pending?.length && seen < 6; i++) {
+      for (const d of rec.pending) {
+        if (d.kind === 'batBall') { expect(['length', 'yorker', 'bouncer', 'slower', 'wide']).toContain(d.meta?.ball); expect(d.meta?.acc).toBeGreaterThanOrEqual(0); seen++; }
+        answers[d.id] = d.meta ? 'auto' : d.def;
+      }
+      rec = playMatch(setup, answers);
+    }
+    expect(seen).toBeGreaterThan(0);
+    // 100 ms late: fine for a top batter, a poor one for a tail-ender.
+    expect(timingQ(100, 0.3)).toBeGreaterThan(timingQ(100, 0.08));
+    expect(timingQ(0, 0.08)).toBe(3);
+  });
+});
