@@ -25,9 +25,9 @@ export function Home() {
       body: <p><b>₹120 Cr</b> purse, the live hammer, official bid steps. Lose a favourite? Call RTM and steal him back.</p> },
     { at: 4, art: 4, word: 'Play', place: 'low-left', kicker: '03 / Match day',
       body: <p>You bowl and you bat: pick the yorker or the slog, then nail the timing meter. Friends split the roles.</p> },
-    { at: 5, art: 6, word: 'Win', place: 'low-right', kicker: '04 / The season',
+    { at: 5, art: 5, word: 'Win', place: 'low-right', kicker: '04 / The season',
       body: <p>League table, net run rate, IPL playoffs, the final. Orange and Purple Caps for the best of the lot.</p> },
-    { at: 6, art: 5, word: 'Your move', place: 'final', kicker: '1 to 6 friends · on one screen or online',
+    { at: 6, art: 0, word: 'Your move', place: 'final', kicker: '1 to 6 friends · on one screen or online',
       body: (
         <>
           <div className="home-actions">

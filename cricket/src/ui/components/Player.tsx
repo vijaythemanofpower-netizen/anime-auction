@@ -6,6 +6,7 @@ import { bowlTypeLabel } from '../../engine/match';
 import { fmtL } from '../../engine/squad';
 import { displayName } from '../../store/store';
 import { pickPhoto, usePhoto } from '../../store/photos';
+import { PHOTOS } from '../../engine/data/photos';
 import { hashString } from '../../engine/rng';
 
 /** Two-tone colours per country, used only for the drawn portrait cards. */
@@ -53,12 +54,15 @@ function Art({ c }: { c: Cricketer }) {
 }
 
 export function Portrait({ c, size = 'md', editable = false }: { c: Cricketer; size?: 'sm' | 'md' | 'lg'; editable?: boolean }) {
-  const photo = usePhoto(c.id);
+  // Your own photo first, then a freely licensed real photo (credited on hover and in Photo credits).
+  const mine = usePhoto(c.id);
+  const free = PHOTOS[c.id];
+  const photo = mine ?? free?.src;
   const fs = size === 'lg' ? 44 : size === 'sm' ? 13 : 20;
   return (
-    <div className={`portrait ${size === 'md' ? '' : size}`}>
+    <div className={`portrait ${size === 'md' ? '' : size}`} title={!mine && free ? `Photo: ${free.author}, ${free.license} (Wikimedia Commons)` : undefined}>
       <Art c={c} />
-      {photo ? <img src={photo} alt="" /> : <span className="initials" style={{ fontSize: fs }}>{initials(c.name)}</span>}
+      {photo ? <img src={photo} alt="" loading="lazy" referrerPolicy="no-referrer" /> : <span className="initials" style={{ fontSize: fs }}>{initials(c.name)}</span>}
       {editable && <button type="button" className="photo-btn" onClick={() => pickPhoto(c.id)} aria-label={`Set photo for ${displayName(c)}`}>Set photo</button>}
     </div>
   );

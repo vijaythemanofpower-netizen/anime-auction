@@ -15,13 +15,12 @@ const NEG = '(text, letters, words, numbers, writing on clothes, logo:1.4), base
 
 /** The film's beats, in order (index = file name). Invented players only. */
 export const SCENES = [
-  'Aerial view of a huge oval cricket stadium at night, bright green outfield with a light brown cricket pitch in the centre, tall floodlight towers blazing, packed stands, city skyline behind, dramatic clouds',
-  'Cricket stadium stands at night seen from the boundary rope, blazing floodlights with lens flare, thousands of cheering fans waving flags and phone lights, confetti in the air',
-  'A cricket team standing in a huddle on a green cricket field at night, seen from behind, arms around shoulders, bright orange cricket jerseys with black sleeves and black trousers, plain shirts with no writing, no numbers, no logos, floodlights, stadium crowd blurred behind',
-  'A cricket player auction on a stage: an auctioneer with a gavel at a podium, a giant screen behind him, team owners at tables raising numbered bidding paddles, dramatic spotlights, dark hall',
-  'One single cricket batsman alone, hitting a huge six at night: black helmet with metal face grille, bright orange jersey with black sleeves and black trousers with no writing, white batting pads on both legs, batting gloves, flat wide wooden cricket bat swung high, red cricket ball flying into the night sky, three plain wooden stumps behind him, floodlit stadium, low angle',
-  'One single fast bowler alone in cricket whites at the moment of delivery, bowling arm straight up over his head releasing a red cricket ball, front foot landing on the pitch beside the wooden stumps and bails, dust flying, intense face, floodlit stadium at night',
-  'A cricket team celebrating on the field at night, bright orange cricket jerseys with black sleeves and black trousers, plain shirts with no writing, no numbers, no logos, the captain lifting a large golden trophy over his head, gold confetti and fireworks above the floodlit stadium',
+  'Aerial view of a huge oval cricket stadium at night, bright green outfield with a light brown cricket pitch in the centre, tall floodlight towers blazing, packed stands, city skyline behind, dramatic clouds, no people in close-up',
+  'View from the top of the stands across a floodlit cricket ground at night, dark night sky, rows of fans seen from behind as dark silhouettes in the foreground, glowing phone lights, the bright green oval field and light brown pitch far below, floodlight towers with lens flare, no goal posts',
+  'Backlit silhouettes of a cricket team in a tight huddle on the field at night, the blazing floodlights directly behind them so the players are dark shapes with orange rim light, heads bowed together, no visible faces, no visible writing, haze and light rays',
+  'A grand auction stage in a dark hall seen from the back of the room: silhouettes of many people seated at round tables in the foreground, a bright stage far away with a podium and a giant glowing screen, dramatic spotlights and haze',
+  'Silhouette of one cricket batsman in bright orange cricket jerseys with black sleeves and black trousers and a helmet after hitting a six, seen from behind at the crease, bat held high in follow-through, stumps beside him, the ball a tiny speck flying towards blazing floodlights, huge stadium crowd, rim light, haze',
+  'Backlit silhouettes of a cricket team celebrating on the field at night, players jumping with arms raised, one single golden trophy held high in the centre glowing against the light, the blazing floodlights and fireworks behind them so the players are dark shapes with orange rim light, gold confetti, haze, no visible faces, no visible writing',
 ];
 
 const args = process.argv.slice(2);

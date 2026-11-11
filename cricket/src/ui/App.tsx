@@ -8,6 +8,7 @@ import { Prep, Retain, Reveal } from './screens/Squads';
 import { Match } from './screens/Match';
 import { Champion } from './components/Season';
 import { importPhotos } from '../store/photos';
+import { PHOTOS } from '../engine/data/photos';
 import { Bars, DialogHost, askConfirm } from './components/common';
 import { Chips, Portrait, ROLE_NAME, skillRows } from './components/Player';
 import { fmtL } from '../engine/squad';
@@ -66,6 +67,11 @@ function Roster() {
           </button>
         ))}
       </div>
+      <details className="panel tight">
+        <summary className="label" style={{ cursor: 'pointer' }}>Photo credits ({Object.keys(PHOTOS).length} photos from Wikimedia Commons)</summary>
+        <p className="faint" style={{ fontSize: 13 }}>Real photos are freely licensed images from Wikimedia Commons, shown with their photographers and licences. Players without a free photo show their initials; you can still set your own photo for any player.</p>
+        <ul className="credits">{PLAYERS.filter((p) => PHOTOS[p.id]).map((p) => { const f = PHOTOS[p.id]; return <li key={p.id}>{p.realName}: <a href={f.page} target="_blank" rel="noreferrer">{f.author}</a>, {f.license}</li>; })}</ul>
+      </details>
       {c && (
         <div className="modal-back" onClick={(e) => { if (e.target === e.currentTarget) setOpen(null); }}>
           <div className="modal col" role="dialog" aria-modal="true" aria-label={displayName(c)}>
