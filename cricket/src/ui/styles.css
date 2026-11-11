@@ -391,3 +391,49 @@ input[type='text']:focus, select:focus { outline: none; border-color: var(--acce
 [data-reduced-motion='true'] .sheet, [data-reduced-motion='true'] .btn { animation: none; transition: none; }
 @media (prefers-reduced-motion: reduce) { .sheet { animation: none; } .btn, .option { transition: none; } }
 .btn { white-space: nowrap; }
+
+/* ======================================================================
+   Home film (HomeFilm.tsx): pinned stage scrubbed by scrolling, giant outlined words.
+   ====================================================================== */
+html[data-film] .topbar { position: fixed; left: 0; right: 0; top: 0; background: linear-gradient(180deg, rgba(3, 5, 12, 0.7), transparent); border-bottom: 0; backdrop-filter: none; -webkit-backdrop-filter: none; }
+html[data-film] .main { max-width: none; padding: 0; margin: 0; }
+.cf { position: relative; height: 700vh; height: 700svh; color: #f4f0e8; }
+.cf-stage { position: sticky; top: 0; height: 100vh; height: 100svh; overflow: hidden; background: #03050c; isolation: isolate; }
+.cf-canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.cf-seam { position: absolute; left: 0; right: 0; top: 50%; height: 2px; background: linear-gradient(90deg, transparent, #ff3d6e 15%, #ff3d6e 85%, transparent); box-shadow: 0 0 18px #ff3d6e; opacity: 0.55; z-index: 1; }
+.cf-word { position: absolute; left: 0; right: 0; top: 50%; translate: 0 -50%; z-index: 1; text-align: center; pointer-events: none; will-change: transform, opacity; opacity: 0;
+  font-family: var(--font-display); font-weight: 800; font-style: italic; text-transform: uppercase; line-height: 0.85; letter-spacing: 0.01em;
+  font-size: clamp(90px, 19vw, 300px); color: transparent; -webkit-text-stroke: 2px rgba(244, 240, 232, 0.92); text-shadow: 0 0 40px rgba(255, 200, 61, 0.15); white-space: nowrap; }
+.cf-word.cf-title { font-size: clamp(44px, 9.5vw, 170px); color: #f4f0e8; -webkit-text-stroke: 0; }
+
+.cf-beat { position: absolute; z-index: 2; max-width: min(460px, 88vw); will-change: transform, opacity; }
+.cf-beat:not(.on) { pointer-events: none; }
+.cf-beat::before { content: ''; position: absolute; inset: -56px -96px; z-index: -1; background: radial-gradient(closest-side, rgba(3, 5, 12, 0.7), rgba(3, 5, 12, 0.35) 60%, transparent); pointer-events: none; }
+.cf-kicker { font-family: var(--font-display); font-weight: 700; font-size: 12px; letter-spacing: 0.22em; text-transform: uppercase; color: #2de2c4; margin-bottom: 10px; }
+.cf-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.cf-body p { margin: 0; font-size: 16px; line-height: 1.6; color: rgba(244, 240, 232, 0.9); text-shadow: 0 1px 12px rgba(0, 0, 0, 0.8); }
+.cf-body b { color: #ffd766; }
+.cf-beat.at-hero { left: 50%; bottom: clamp(28px, 9vh, 90px); translate: -50% 0; text-align: center; }
+.cf-beat.at-hero .cf-kicker { color: #ff3d6e; letter-spacing: 0.5em; }
+.cf-beat.at-low-left { left: clamp(20px, 5vw, 96px); bottom: clamp(28px, 9vh, 96px); }
+.cf-beat.at-low-right { right: clamp(20px, 5vw, 96px); bottom: clamp(28px, 9vh, 96px); text-align: right; }
+.cf-beat.at-final { left: clamp(20px, 5vw, 96px); bottom: clamp(24px, 7vh, 72px); max-width: min(680px, 92vw); }
+.cf-links { display: flex; gap: 4px 22px; margin-top: 14px; flex-wrap: wrap; }
+.cf-links button { position: relative; background: none; border: 0; padding: 10px 0; min-height: 40px; font: inherit; font-size: 14px; color: rgba(244, 240, 232, 0.8); cursor: pointer; }
+.cf-links button::after { content: ''; position: absolute; left: 0; right: 0; bottom: 6px; height: 1px; background: currentColor; transform: scaleX(0); transform-origin: left; transition: transform .25s ease-out; }
+.cf-links button:hover { color: #fff; }
+.cf-links button:hover::after { transform: scaleX(1); }
+.cf-scroll { position: absolute; right: clamp(16px, 3vw, 40px); bottom: 24px; z-index: 2; font-family: var(--font-display); font-size: 11px; letter-spacing: 0.3em; text-transform: uppercase; color: rgba(244, 240, 232, 0.6); padding: 8px 12px; border: 1px solid rgba(244, 240, 232, 0.25); }
+@media (max-width: 760px) {
+  .cf { height: 600vh; height: 600svh; }
+  .cf-beat.at-low-right, .cf-beat.at-low-left { left: 20px; right: 20px; bottom: 28px; text-align: left; max-width: none; }
+  .cf-beat.at-final { left: 20px; right: 20px; }
+  .cf-word { -webkit-text-stroke-width: 1.5px; }
+  .cf-scroll { display: none; }
+}
+/* Reduced motion: the beats as stills over a frozen scene. */
+.cf.stills { height: auto; }
+.cf-canvas.fixed { position: fixed; z-index: 0; }
+.cf.stills .cf-still { position: relative; z-index: 1; min-height: 80svh; display: flex; flex-direction: column; justify-content: flex-end; padding: 96px clamp(20px, 5vw, 96px) 48px; max-width: none; translate: none; left: auto; right: auto; bottom: auto; text-align: left; }
+.cf.stills .cf-still::before { display: none; }
+.cf-heading { font-family: var(--font-display); font-weight: 800; font-style: italic; text-transform: uppercase; font-size: clamp(48px, 10vw, 120px); line-height: 0.9; margin: 0 0 12px; color: #f4f0e8; background: none; -webkit-text-fill-color: currentColor; }
