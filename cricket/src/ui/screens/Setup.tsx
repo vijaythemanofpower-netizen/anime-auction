@@ -102,7 +102,7 @@ export function Setup() {
         <h3>Matches</h3>
         <div className="row"><span className="dim">Overs per side</span><Seg label="Overs per side" value={overs} onChange={setOvers} options={[{ value: 5, label: '5 (quick)' }, { value: 10, label: '10' }, { value: 20, label: '20 (full T20)' }]} /></div>
         <div className="options">
-          <button type="button" className="option" aria-pressed={play} onClick={() => setPlay(true)}>Play every ball<small>You bat and bowl on the pitch yourself: time your shot as the ball arrives, land your delivery on the spot. Each player's skill sets how hard that is. Partners split it: the batting captain bats, the bowling captain bowls.</small></button>
+          <button type="button" className="option" aria-pressed={play} onClick={() => setPlay(true)}>Play every ball<small>You bat and bowl on the pitch yourself: time your shot as the ball arrives, land your delivery on the spot. Each player's skill sets how hard that is. Teammates each play their own players: you choose who plays whom when you pick the XI.</small></button>
           <button type="button" className="option" aria-pressed={!play} onClick={() => setPlay(false)}>Captain only<small>Watch the match and make the big calls: toss, bowlers, DRS, Impact Player, last-over mind games.</small></button>
         </div>
       </section>

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { PLAYER_MAP, canAct, displayName, store } from '../../store/store';
-import { autoLineup, lineupProblems, retainable, retentionCost, retentionProblem, ROLE_LABEL, type GameState, type Lineup } from '../../engine/game';
+import { autoLineup, controllerOf, lineupProblems, retainable, retentionCost, retentionProblem, ROLE_LABEL, type GameState, type Lineup } from '../../engine/game';
 import { PLAYERS } from '../../engine/data/players';
 import { RULES, fmtL } from '../../engine/squad';
 import type { Plan } from '../../engine/match';
@@ -89,6 +89,7 @@ export function Prep({ g }: { g: GameState }) {
       <SeasonPanel g={g} />
       {mineH.length > 1 && <div className="seg" role="tablist" aria-label="Franchise">{mineH.map((h) => <button key={h.id} role="tab" aria-pressed={tab === h.id} onClick={() => setTab(h.id)}>{h.name}</button>)}</div>}
 
+      {f.owners.length > 1 && <p className="dim" style={{ fontSize: 14 }}>You share this team. Each of you plays your own players when they bat or bowl: tap the 🎮 name beside a player to take them or hand them over.</p>}
       {f.owners.length > 1 && <p className="dim" style={{ fontSize: 14 }}>Captain roles: {f.owners.map((o) => `${g.config.humans.find((h) => h.id === o)?.name} (${roles(o)})`).join(' · ')}</p>}
 
       <div className="grid2" style={{ alignItems: 'start' }}>
@@ -101,6 +102,7 @@ export function Prep({ g }: { g: GameState }) {
                 <PlayerLine c={PLAYER_MAP[id]} form={g.form[id]} right={<span className="row" style={{ gap: 4, flexWrap: 'nowrap' }}>
                   {l.captain === id && <span className="chip" title="Captain">C</span>}
                   {l.keeper === id && <span className="chip" title="Wicketkeeper">WK</span>}
+                  {f.owners.length > 1 && <button className="chip who" title="Who plays this player on the ground. Tap to change." onClick={() => { const o = f.owners; set({ play: { ...l.play, [id]: o[(o.indexOf(controllerOf(g, f.id, id)) + 1) % o.length] } }); }}>🎮 {g.config.humans.find((h) => h.id === controllerOf(g, f.id, id))?.name}</button>}
                 </span>} />
                 <span className="row" style={{ gap: 4, flexWrap: 'nowrap' }}>
                   <button className="icon-btn" aria-label={`Move ${displayName(PLAYER_MAP[id])} up`} disabled={i === 0} onClick={() => move(id, -1)}>↑</button>
@@ -121,7 +123,7 @@ export function Prep({ g }: { g: GameState }) {
               <label className="field"><span>Captain</span><select value={l.captain} onChange={(e) => set({ captain: e.target.value })}>{l.xi.map((id) => <option key={id} value={id}>{displayName(PLAYER_MAP[id])}</option>)}</select></label>
               <label className="field"><span>Wicketkeeper</span><select value={l.keeper} onChange={(e) => set({ keeper: e.target.value })}>{l.xi.map((id) => <option key={id} value={id}>{displayName(PLAYER_MAP[id])}</option>)}</select></label>
             </div>
-            <button className="btn sm ghost" style={{ alignSelf: 'flex-start' }} onClick={() => store.setLineup(f.id, { ...autoLineup(f.squad.map((id) => PLAYER_MAP[id]), g.form, r.maxOverseasXI), plan: l.plan })}>Let the coach pick</button>
+            <button className="btn sm ghost" style={{ alignSelf: 'flex-start' }} onClick={() => store.setLineup(f.id, { ...autoLineup(f.squad.map((id) => PLAYER_MAP[id]), g.form, r.maxOverseasXI), plan: l.plan, play: l.play })}>Let the coach pick</button>
           </div>
           <div className="panel col" style={{ gap: 8 }}>
             <div className="panel-head" style={{ marginBottom: 0 }}><h3>Bench</h3><span className="faint">Impact Player and substitutes</span></div>

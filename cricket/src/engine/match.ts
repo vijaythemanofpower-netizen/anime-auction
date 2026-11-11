@@ -4,7 +4,7 @@
 // sledges) are requested by returning `pending`; the caller adds an answer and
 // runs the match again from the start (a T20 is ~250 balls, so this is cheap).
 import { Rng, deriveSeed } from './rng';
-import type { Cricketer, Form } from './types';
+import type { BowlSkill, Cricketer, Form } from './types';
 import { canBowl, isPace, isSpin } from './types';
 
 // ------------------------------------------------------------------ types
@@ -53,7 +53,7 @@ export interface MatchSetup {
 
 export type DecisionKind = 'toss' | 'plan' | 'bowler' | 'review' | 'mindBowl' | 'mindBat' | 'sledge' | 'taunt' | 'impact' | 'bowlBall' | 'batBall' | 'nextBat';
 
-export interface Option { id: string; label: string; hint?: string }
+export interface Option { id: string; label: string; hint?: string; /** Play mode: how good this player is at this shot or delivery (0-100). */ skill?: number }
 
 /** Extra info for play-mode balls: how hard the timing/accuracy meter is. */
 export interface PlayMeta {
@@ -67,6 +67,25 @@ export interface PlayMeta {
   ball?: string;
   acc?: number;
   spin?: boolean;
+  /** Skill window per shot or delivery (same scale as `zone`): a slogger times slogs easily, a tail-ender does not. */
+  zones?: Record<string, number>;
+}
+
+const NO_BOWL: BowlSkill = { attack: 20, control: 25, powerplay: 20, death: 20, speed: 110 };
+/** How good this batter is at each shot (0-100), from their own ratings. */
+export function shotSkill(b: Cricketer, spin: boolean, shot: string): number {
+  const s = b.bat, vs = spin ? s.vsSpin : s.vsPace;
+  const v = shot === 'defend' ? s.consistency * 0.6 + vs * 0.4 : shot === 'nudge' ? s.tempo * 0.5 + vs * 0.5 : shot === 'slog' ? s.power * 0.75 + vs * 0.25
+    : shot === 'ramp' ? s.tempo * 0.4 + s.power * 0.2 + vs * 0.4 - 8 : vs * 0.7 + s.consistency * 0.3;
+  return clamp(Math.round(v), 5, 99);
+}
+/** How good this bowler is at each delivery (0-100), from their own ratings. */
+export function ballSkill(b: Cricketer, ball: string): number {
+  const s = b.bowling ?? NO_BOWL;
+  const pace = s.speed ? clamp((s.speed - 118) * 3, 15, 99) : s.attack;
+  const v = ball === 'yorker' ? s.death * 0.7 + s.control * 0.3 : ball === 'bouncer' ? pace * 0.6 + s.attack * 0.4 : ball === 'slower' ? s.attack * 0.5 + s.death * 0.5
+    : ball === 'wide' ? s.control * 0.8 + s.death * 0.2 : s.control * 0.7 + s.attack * 0.3;
+  return clamp(Math.round(v), 5, 99);
 }
 
 export interface Decision {
@@ -798,7 +817,13 @@ class Sim {
   }
 
   outcome(inn: Inn, over: number, bat: Cricketer, bowl: Cricketer, mind: Mind | undefined, free: boolean): { runs: number; out?: WicketKind; appeal?: boolean } {
-    const br = this.batRating(bat, bowl, inn); const wr = this.bowlRating(bowl, inn, over);
+    let br = this.batRating(bat, bowl, inn); let wr = this.bowlRating(bowl, inn, over);
+    // Play mode: the shot and the delivery lean on that player's own strengths (a power hitter slogs better than he defends).
+    if (mind?.tim !== undefined) {
+      const spin = isSpin(bowl), bw = bowl.bowling ?? NO_BOWL;
+      br += (shotSkill(bat, spin, mind.bat) - ((spin ? bat.bat.vsSpin : bat.bat.vsPace) * 0.75 + bat.bat.consistency * 0.25)) * 0.6;
+      wr += (ballSkill(bowl, mind.bowl) - (bw.attack * 0.5 + bw.control * 0.5)) * 0.6;
+    }
     const edge = (br - wr) / 25;
     let a = this.aggression(inn, bat, over);
     if (DIAG.on) { DIAG.n++; DIAG.edge += edge; DIAG.agg += a; DIAG.bat += br; DIAG.bowl += wr; }
@@ -1008,14 +1033,14 @@ class Sim {
     const bowlD: Decision = {
       id: `${base}-bowl`, kind: 'bowlBall', team: fieldTeam, secret: both,
       prompt: `${situation}${bowler.name} to ${batter.name} (${batter.bats === 'L' ? 'left' : 'right'}-hander, ${inn.bat.get(batter.id)?.runs ?? 0} off ${inn.bat.get(batter.id)?.balls ?? 0}). Pick the delivery, then land it on the spot.`,
-      options: Object.entries(DELIVERY_LABEL).map(([id, l]) => ({ id, label: spin ? l.spin : l.pace, hint: l.hint })),
-      def: 'auto', meta: { speed: 0.8, zone: clamp(0.1 + ((bowler.bowling?.control ?? 30) - 30) / 300, 0.08, 0.3), batter: batter.id, bowler: bowler.id },
+      options: Object.entries(DELIVERY_LABEL).map(([id, l]) => ({ id, label: spin ? l.spin : l.pace, hint: l.hint, skill: ballSkill(bowler, id) })),
+      def: 'auto', meta: { speed: 0.8, zone: clamp(0.1 + ((bowler.bowling?.control ?? 30) - 30) / 300, 0.08, 0.3), batter: batter.id, bowler: bowler.id, spin, zones: Object.fromEntries(Object.keys(DELIVERY_LABEL).map((id) => [id, clamp(0.1 + (ballSkill(bowler, id) - 30) / 300, 0.06, 0.3)])) },
     };
     const batD: Decision = {
       id: `${base}-bat`, kind: 'batBall', team: inn.team, secret: both,
       prompt: `${situation}${batter.name} faces ${bowler.name} (${bowlTypeLabel(bowler)}). Watch the ball and play your shot as it arrives.`,
-      options: Object.entries(SHOT_LABEL).map(([id, l]) => ({ id, label: l.label, hint: l.hint })),
-      def: 'auto', meta: { speed, zone: clamp(0.1 + (batR - 50) / 260, 0.08, 0.3), batter: batter.id, bowler: bowler.id, spin },
+      options: Object.entries(SHOT_LABEL).map(([id, l]) => ({ id, label: l.label, hint: l.hint, skill: shotSkill(batter, spin, id) })),
+      def: 'auto', meta: { speed, zone: clamp(0.1 + (batR - 50) / 260, 0.08, 0.3), batter: batter.id, bowler: bowler.id, spin, zones: Object.fromEntries(Object.keys(SHOT_LABEL).map((id) => [id, clamp(0.1 + (shotSkill(batter, spin, id) - 50) / 260, 0.06, 0.3)])) },
     };
     // Meter result from skill, for CPU sides and "auto".
     const meter = (r: Rng, skill: number) => r.weighted([0, 1, 2, 3], [Math.max(3, 22 - (skill - 50) / 2.5), 30, 40, Math.max(4, 8 + (skill - 50) / 2.5)]);
@@ -1255,10 +1280,17 @@ class Sim {
   }
 
   push(inn: Inn, over: number, ball: number, bowler: string, e: { runs: number; extra?: 'wide' | 'noball'; extraRuns: number; wicket?: BallEvent['wicket']; dropped?: string; text: string; banners: Banner[]; notes: string[]; mind?: { bowl: string; bat: string }; freeHit?: boolean; weight: number; batterId?: string }) {
-    const scoring = e.runs > 0;
+    const scoring = e.runs > 0, caught = e.wicket?.kind === 'caught';
+    // Where the ball goes (0 = straight back past the bowler, 90 = square on a right-hander's off side): it follows the shot played.
+    const angle = () => {
+      const u = this.txt.next(), m = e.mind?.bat;
+      if (!m) return Math.round(u * 360);
+      const a = m === 'slog' ? -70 + u * 60 : m === 'nudge' ? -110 + u * 60 : m === 'ramp' ? 150 + u * 60 : m === 'defend' ? -30 + u * 60 : -15 + u * 75;
+      return Math.round((this.p[e.batterId ?? inn.striker]?.bats === 'L' ? -a : a) + 360) % 360;
+    };
     this.rec.events.push({
       inn: inn.idx, team: inn.team, target: inn.target, overs: inn.overs, crease: [inn.striker, inn.non], over, ball, bowler, batter: e.batterId ?? inn.striker, runs: e.runs, extra: e.extra, extraRuns: e.extraRuns, wicket: e.wicket, dropped: e.dropped,
-      freeHit: e.freeHit || undefined, angle: scoring ? Math.round(this.txt.next() * 360) : undefined, dist: scoring ? (e.runs >= 4 ? 1 : 0.3 + this.txt.next() * 0.4) : undefined,
+      freeHit: e.freeHit || undefined, angle: scoring || caught ? angle() : undefined, dist: scoring ? (e.runs >= 4 ? 1 : 0.3 + this.txt.next() * 0.4) : caught ? 0.45 + this.txt.next() * 0.45 : undefined,
       text: e.text, banners: e.banners, score: inn.runs, wkts: inn.wkts, momentum: this.momentum, mind: e.mind, notes: e.notes, weight: e.weight,
     });
   }

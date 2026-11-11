@@ -362,6 +362,8 @@ function validLineup(g: GameState, fid: string, l: unknown): l is Lineup {
   const squad = g.franchises.find((f) => f.id === fid)?.squad ?? [];
   const ids = (v: unknown) => Array.isArray(v) && v.every((x) => typeof x === 'string' && squad.includes(x));
   const o = l as Lineup;
+  const owners = g.franchises.find((f) => f.id === fid)?.owners ?? [];
+  if (o?.play !== undefined && !(typeof o.play === 'object' && Object.entries(o.play).every(([k, v]) => squad.includes(k) && owners.includes(v)))) return false;
   return !!o && typeof o === 'object' && ids(o.xi) && o.xi.length <= 11 && ids(o.bench) && ids(o.bowlers)
     && o.xi.includes(o.captain) && o.xi.includes(o.keeper) && ['aggressive', 'balanced', 'defensive', 'allout'].includes(o.plan);
 }

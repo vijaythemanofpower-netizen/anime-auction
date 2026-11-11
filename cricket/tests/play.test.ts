@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { FIXED_NAMES, PLAYERS } from '../src/engine/data/players';
 import { matchPhoto } from '../src/store/photos';
-import { autoLineup, createGame, ctxOf, matchSetup, type GameState } from '../src/engine/game';
-import { playMatch, type MatchRecord, type MatchSetup } from '../src/engine/match';
+import { autoLineup, controllerOf, createGame, ctxOf, matchSetup, type GameState } from '../src/engine/game';
+import { ballSkill, playMatch, shotSkill, type MatchRecord, type MatchSetup } from '../src/engine/match';
 import { finishAuction } from '../src/engine/auction';
 import { simulateAuction } from '../src/store/store';
 import type { Cricketer } from '../src/engine/types';
@@ -157,5 +157,65 @@ describe('play mode as a game', () => {
     // 100 ms late: fine for a top batter, a poor one for a tail-ender.
     expect(timingQ(100, 0.3)).toBeGreaterThan(timingQ(100, 0.08));
     expect(timingQ(0, 0.08)).toBe(3);
+  });
+});
+
+describe('players play to their own ratings', () => {
+  it('rates each shot and delivery from the player, and gives the weaker player a smaller window', () => {
+    const hitter = [...PLAYERS].sort((a, b) => b.bat.power - a.bat.power)[0];
+    const tail = [...PLAYERS].sort((a, b) => a.bat.power - b.bat.power)[0];
+    expect(shotSkill(hitter, false, 'slog')).toBeGreaterThan(shotSkill(tail, false, 'slog') + 25);
+    const death = [...PLAYERS].filter((p) => p.bowling).sort((a, b) => b.bowling!.death - a.bowling!.death)[0];
+    const part = [...PLAYERS].filter((p) => p.bowling).sort((a, b) => a.bowling!.death - b.bowling!.death)[0];
+    expect(ballSkill(death, 'yorker')).toBeGreaterThan(ballSkill(part, 'yorker') + 25);
+
+    const g = game(11);
+    const setup: MatchSetup = { ...matchSetup(g, P, g.franchises[0].id, g.franchises[1].id, 99), overs: 5, play: true };
+    const answers: Record<string, string> = {};
+    let rec = playMatch(setup, answers);
+    let checked = 0;
+    for (let i = 0; i < 300 && rec.pending?.length && checked < 5; i++) {
+      for (const d of rec.pending) {
+        if (d.meta) {
+          const skills = d.options.map((o) => o.skill!);
+          expect(Math.min(...skills)).toBeGreaterThan(0);
+          // The better the player is at an option, the wider its window.
+          const best = d.options.reduce((a, b) => (b.skill! > a.skill! ? b : a)), worst = d.options.reduce((a, b) => (b.skill! < a.skill! ? b : a));
+          expect(d.meta.zones![best.id]).toBeGreaterThanOrEqual(d.meta.zones![worst.id]);
+          checked++;
+        }
+        answers[d.id] = d.meta ? 'auto' : d.def;
+      }
+      rec = playMatch(setup, answers);
+    }
+    expect(checked).toBeGreaterThan(0);
+  });
+
+  it('sends the ball where the shot was aimed', () => {
+    const g = game(12);
+    const setup: MatchSetup = { ...matchSetup(g, P, g.franchises[0].id, g.franchises[1].id, 7), overs: 5, play: true };
+    const rec = playOut(setup, (k) => (k === 'batBall' ? 'drive@3' : 'length@2'));
+    const drives = rec.events.filter((e) => e.mind?.bat === 'drive' && e.runs > 0 && e.angle !== undefined && P[e.batter].bats === 'R');
+    expect(drives.length).toBeGreaterThan(3);
+    // A right-hander's drive goes straight or through the off side, never behind square.
+    for (const e of drives) expect(e.angle! <= 60 || e.angle! >= 345).toBe(true);
+  });
+});
+
+describe('shared teams', () => {
+  it('shares the XI between teammates and lets them claim players', () => {
+    let g = createGame({ humans: [{ id: 'a', name: 'A', color: '#fff' }, { id: 'b', name: 'B', color: '#000' }], teamMode: 'teams', teams: [0, 0], npcs: 1, mode: 'standard', timer: 10, mystery: false, realNames: false, seed: 5 }, PLAYERS, 0);
+    const r = simulateAuction(g, 0);
+    g = { ...g, franchises: finishAuction(ctxOf({ ...g, franchises: r.franchises }, P), r.a, g.poolIds) };
+    const f = g.franchises.find((x) => x.owners.length === 2)!;
+    g.lineups[f.id] = autoLineup(f.squad.map((id) => P[id]), g.form);
+    const xi = g.lineups[f.id].xi;
+    expect(new Set(xi.map((id) => controllerOf(g, f.id, id)))).toEqual(new Set(['a', 'b']));
+    g.lineups[f.id] = { ...g.lineups[f.id], play: { [xi[0]]: 'b', [xi[1]]: 'b' } };
+    expect(controllerOf(g, f.id, xi[0])).toBe('b');
+    expect(controllerOf(g, f.id, xi[1])).toBe('b');
+    // A pick for someone outside the team is ignored.
+    g.lineups[f.id] = { ...g.lineups[f.id], play: { [xi[0]]: 'zz' } };
+    expect(controllerOf(g, f.id, xi[0])).toBe('a');
   });
 });

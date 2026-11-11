@@ -44,7 +44,16 @@ export type Phase = 'retain' | 'auction' | 'reveal' | 'prep' | 'match' | 'done';
 export type CaptainRole = 'bat' | 'bowl' | 'drs' | 'mind';
 export const ROLE_LABEL: Record<CaptainRole, string> = { bat: 'Batting captain', bowl: 'Bowling captain', drs: 'DRS & strategy', mind: 'Mind games & sledging' };
 
-export interface Lineup { xi: string[]; bench: string[]; captain: string; keeper: string; plan: Plan; bowlers: string[] }
+export interface Lineup { xi: string[]; bench: string[]; captain: string; keeper: string; plan: Plan; bowlers: string[]; /** Shared teams, play mode: which teammate (human id) plays each cricketer. */ play?: Record<string, string> }
+
+/** The teammate who plays this cricketer's balls: their own pick, else the XI is shared out in batting order. */
+export function controllerOf(g: GameState, fid: string, pid: string): string {
+  const f = g.franchises.find((x) => x.id === fid)!;
+  const l = g.lineups[fid];
+  const picked = l?.play?.[pid];
+  if (picked && f.owners.includes(picked)) return picked;
+  return f.owners[Math.max(0, (l?.xi ?? f.squad).indexOf(pid)) % f.owners.length] ?? '';
+}
 
 export interface GameState {
   id: string;

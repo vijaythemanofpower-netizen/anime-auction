@@ -1,12 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { PLAYER_MAP, canAct, currentMatch, displayName, store, useApp } from '../../store/store';
-import type { GameState } from '../../engine/game';
+import { controllerOf, type GameState } from '../../engine/game';
 import type { BallEvent, Decision, MatchRecord } from '../../engine/match';
 import { DELIVERY_LABEL, SHOT_LABEL, oversText } from '../../engine/match';
 import { Seg, useNow } from '../components/common';
 import { Portrait } from '../components/Player';
 import { sfx } from '../sfx';
-import { GH, GW, aimQ, drawScene, timingQ, type Scene } from '../ground';
+import { PlayGround } from './PlayGround';
 
 const CALL_SECONDS = 10;
 const pname = (id: string) => displayName(PLAYER_MAP[id]);
@@ -123,204 +123,11 @@ function Call({ g, d, onAnswer, passFirst }: { g: GameState; d: Decision; onAnsw
 const TIM_WORD = ['missed it', 'early', 'well timed', 'PERFECT'];
 const ACC_WORD = ['sprayed', 'loose', 'on the spot', 'PERFECT'];
 
-/** Who on this team plays this ball: the batting captain bats, the bowling captain bowls. */
-function playerFor(g: GameState, team: 0 | 1, kind: 'batBall' | 'bowlBall'): string {
-  const fid = team === 0 ? g.match!.home : g.match!.away;
-  const f = g.franchises.find((x) => x.id === fid)!;
-  const role = kind === 'batBall' ? 'bat' : 'bowl';
-  const owner = f.owners.find((o) => g.roles[o]?.includes(role)) ?? f.owners[0];
-  return g.config.humans.find((h) => h.id === owner)?.name ?? f.name;
-}
-
-/** Where each delivery pitches (z from the batter, 0..1) and how high it reaches the bat. */
-const BALL_PATH: Record<string, { zb: number; ha: number }> = { length: { zb: 0.32, ha: 30 }, yorker: { zb: 0.07, ha: 5 }, bouncer: { zb: 0.56, ha: 88 }, slower: { zb: 0.3, ha: 26 }, wide: { zb: 0.32, ha: 30 } };
-/** Where the ball goes off the bat (leg side is negative x for a right-hander seen from behind). */
-const SHOT_END: Record<string, { x: number; z: number; h: number }> = { defend: { x: 14, z: 0.22, h: 0 }, nudge: { x: -330, z: 0.3, h: 0 }, drive: { x: 70, z: 2.4, h: 16 }, slog: { x: -280, z: 1.7, h: 270 }, ramp: { x: -50, z: -0.25, h: 340 } };
-/** Bowling: the spot to hit for each delivery, seen from the bowler's end. */
-const BOWL_SPOT: Record<string, { z: number; x: number }> = { length: { z: 0.68, x: 4 }, yorker: { z: 0.9, x: 2 }, bouncer: { z: 0.46, x: 0 }, slower: { z: 0.68, x: 4 }, wide: { z: 0.68, x: -52 } };
-const RUN_MS = 1300;
-
-/**
- * Play mode, as a small cricket game on a drawn ground.
- * Batting: the bowler runs in, you see where the ball will land, and you play a shot as it reaches the bat.
- * Bowling: pick a delivery, then release when the wandering sight sits on the spot.
- * A better batter gets a wider timing window; a more accurate bowler gets a slower sight.
- * The answer sent to the engine is "<pick>@<0-3>" (missed .. perfect), or "auto".
- */
-function PlayBall({ g, d, onAnswer, passFirst, onAuto }: { g: GameState; d: Decision; onAnswer: (opt: string) => void; passFirst: boolean; onAuto: (mode: 'over' | 'innings') => void }) {
-  const [shown, setShown] = useState(!passFirst);
-  const [pick, setPick] = useState<string | null>(null);
-  const [result, setResult] = useState<{ q: number; word: string } | null>(null);
-  const [live, setLive] = useState(false);
-  const [openedAt, setOpenedAt] = useState(() => (passFirst ? 0 : Date.now()));
-  const now = useNow(200);
-  const answered = useRef(false);
-  const cv = useRef<HTMLCanvasElement>(null);
-  const act = useRef<(shot?: string) => void>(() => {});
-  const meta = d.meta!;
-  const batting = d.kind === 'batBall';
-  const who = playerFor(g, d.team, d.kind as 'batBall' | 'bowlBall');
-  const send = (a: string) => { if (!answered.current) { answered.current = true; onAnswer(a); } };
-  const left = openedAt ? Math.max(0, CALL_SECONDS + 2 - (now - openedAt) / 1000) : CALL_SECONDS;
-  useEffect(() => { if (shown && !batting && left <= 0 && result === null) send('auto'); });
-
+/** The human who plays this ball: whoever controls the cricketer batting or bowling it. */
+function ownerOf(g: GameState, d: Decision): string {
   const fid = d.team === 0 ? g.match!.home : g.match!.away;
-  const f = g.franchises.find((x) => x.id === fid)!;
-  const opp = g.franchises.find((x) => x.id === (d.team === 0 ? g.match!.away : g.match!.home))!;
-  const ballName = meta.ball ? (meta.spin ? DELIVERY_LABEL[meta.ball]?.spin : DELIVERY_LABEL[meta.ball]?.pace) : undefined;
-
-  useEffect(() => {
-    const canvas = cv.current;
-    if (!canvas || !shown || (!batting && !pick)) return;
-    const ctx = canvas.getContext('2d')!;
-    const dpr = Math.min(2, window.devicePixelRatio || 1);
-    canvas.width = GW * dpr; canvas.height = GH * dpr; ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    const m = PLAYER_MAP[meta.batter]?.bats === 'L' ? -1 : 1;
-    const timers: ReturnType<typeof setTimeout>[] = [];
-    const finish = (answer: string, q: number, word: string, delay: number) => {
-      setResult({ q, word });
-      if (store.get().settings.sound) sfx(q >= 2 ? 'crack' : 'tap');
-      timers.push(setTimeout(() => send(answer), delay));
-    };
-    const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
-    const t0 = performance.now();
-    let t = 0;
-    let step: () => void;
-    const sn: Scene = batting
-      ? { near: { x: -62 * m, z: -0.02, color: f.color, kind: 'batter', back: true, t: 0, left: m < 0 }, far: { x: -16, z: 1.5, color: opp.color, kind: 'bowler', back: false, t: 0 }, trail: [], marks: [], time: 0 }
-      : { near: { x: -70, z: -0.24, color: f.color, kind: 'bowler', back: true, t: 0 }, far: { x: 40 * m, z: 0.97, color: opp.color, kind: 'batter', back: false, t: 0, left: m < 0 }, trail: [], marks: [], time: 0 };
-
-    if (batting) {
-      const ball = meta.ball && BALL_PATH[meta.ball] ? meta.ball : 'length';
-      const { zb, ha } = BALL_PATH[ball];
-      const T = Math.max(750, Math.min(1700, 1250 / meta.speed)) * (ball === 'slower' ? 1.35 : 1);
-      // A loose ball drifts off its line; which way is fixed for this ball.
-      const drift = (d.id.length % 2 ? 1 : -1) * (3 - (meta.acc ?? 2)) * 9;
-      const x1 = (ball === 'wide' ? 56 : 5) * m + drift;
-      const at = (u: number) => {
-        const z = 1 - u;
-        return { x: lerp(-16, x1, u), z, h: z > zb ? 64 * (1 - ((1 - z) / (1 - zb)) ** 2) : ha * ((zb - z) / zb) };
-      };
-      let hit: { t: number; shot: string; q: number; from: { x: number; z: number; h: number } } | null = null;
-      let over = false;
-      act.current = (shot) => {
-        if (!shot || hit || over || t < RUN_MS) return;
-        const dt = t - (RUN_MS + T);
-        const q = timingQ(dt, meta.zone);
-        hit = { t, shot, q, from: at((t - RUN_MS) / T) };
-        over = true;
-        finish(`${shot}@${q}`, q, q === 0 ? (dt < 0 ? 'too early' : 'too late') : q === 1 ? (dt < 0 ? 'early' : 'late') : TIM_WORD[q], 800);
-      };
-      step = () => {
-        const run = Math.min(1, t / RUN_MS);
-        sn.far.t = run; sn.far.z = 1.5 - run * 0.48;
-        if (t < RUN_MS) return;
-        setLive(true);
-        const u = (t - RUN_MS) / T;
-        sn.marks = hit ? [] : [{ x: lerp(-16, x1, 1 - zb), z: zb, kind: 'bounce' }];
-        if (hit && hit.q > 0) {
-          const v = Math.min(1, (t - hit.t) / 650), e = 1 - (1 - v) ** 2, end = SHOT_END[hit.shot] ?? SHOT_END.drive, k = hit.q === 1 ? 0.45 : 1;
-          sn.ball = { x: lerp(hit.from.x, end.x * m * k, e), z: lerp(hit.from.z, hit.from.z + (end.z - hit.from.z) * k, e), h: lerp(hit.from.h, end.h * k, Math.sin((v * Math.PI) / 2)) };
-        } else sn.ball = at(Math.min(u, 1.3));
-        if (hit) sn.near.t = Math.min(1, (t - hit.t) / 200);
-        // Nobody swung: the ball is left alone.
-        if (!over && u > 1.28) { over = true; finish('defend@1', 1, 'left alone', 500); }
-      };
-    } else {
-      const spot = BOWL_SPOT[pick!] ?? BOWL_SPOT.length;
-      const tx = spot.x * m, A = 0.15, B = 46;
-      const w = (Math.PI * 2 * (0.45 + (0.3 - meta.zone) * 2.6)) / 1000;
-      let lock: { t: number; x: number; z: number } | null = null;
-      const aim = () => ({ x: tx + B * Math.sin(1.63 * w * t + 1), z: spot.z + A * Math.sin(w * t) });
-      act.current = () => {
-        if (lock) return;
-        const a = aim();
-        lock = { t, ...a };
-        const q = aimQ(Math.hypot((a.z - spot.z) / A, (a.x - tx) / B));
-        finish(`${pick}@${q}`, q, ACC_WORD[q], 1250);
-      };
-      step = () => {
-        if (!lock) { sn.marks = [{ x: tx, z: spot.z, kind: 'target' }, { ...aim(), kind: 'aim' }]; return; }
-        const run = Math.min(1, (t - lock.t) / 450);
-        sn.near.t = run; sn.near.z = -0.24 + run * 0.2;
-        sn.marks = [{ x: tx, z: spot.z, kind: 'target' }, { x: lock.x, z: lock.z, kind: 'bounce' }];
-        if (run < 1) return;
-        const u = Math.min(1.05, (t - lock.t - 450) / 600), z = u, zb = lock.z;
-        sn.ball = { x: lerp(-52, lock.x, Math.min(1.4, z / zb)), z, h: z < zb ? 70 * (1 - (z / zb) ** 2) : 34 * ((z - zb) / (1 - zb)) };
-        sn.far.t = Math.max(0, Math.min(1, (u - 0.85) / 0.15));
-      };
-    }
-    let raf = 0;
-    const loop = (ts: number) => { raf = requestAnimationFrame(loop); t = ts - t0; sn.time = ts; step(); drawScene(ctx, sn); };
-    raf = requestAnimationFrame(loop);
-    return () => { cancelAnimationFrame(raf); timers.forEach(clearTimeout); };
-    // Runs once per ball (and again when the bowler picks a delivery).
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [shown, pick]);
-
-  useEffect(() => {
-    const k = (e: KeyboardEvent) => {
-      if (batting) { const o = d.options[Number(e.key) - 1]; if (o) act.current(o.id); }
-      else if (pick && (e.code === 'Space' || e.code === 'Enter')) { e.preventDefault(); act.current(); }
-    };
-    window.addEventListener('keydown', k);
-    return () => window.removeEventListener('keydown', k);
-  });
-
-  return (
-    <div className="modal-back">
-      <div className="modal col call play" role="dialog" aria-modal="true" aria-label={batting ? 'Your shot' : 'Your delivery'} style={{ ['--team' as string]: f.color }}>
-        <div className="row between"><span className="label" style={{ color: 'var(--accent)' }}>{batting ? `🏏 ${who} is batting` : `🎯 ${who} is bowling`}</span><span className="label" style={{ color: f.color }}>{f.name}</span></div>
-        {!shown ? (
-          <>
-            <h2>Pass the device</h2>
-            <p className="dim">This pick is secret. Hand over to {who} ({f.name}).</p>
-            <button className="btn primary lg" onClick={() => { setShown(true); setOpenedAt(Date.now()); }}>I'm {who}: show my ball</button>
-          </>
-        ) : (
-          <>
-            <div className="row" style={{ gap: 12, flexWrap: 'nowrap' }}>
-              <Portrait c={PLAYER_MAP[batting ? meta.batter : meta.bowler]} size="sm" />
-              <h3 style={{ fontSize: 17, margin: 0 }}>{d.prompt}</h3>
-            </div>
-            {!batting && !pick ? (
-              <div className="options">
-                {d.options.map((o) => <button key={o.id} className="option" onClick={() => { setPick(o.id); setOpenedAt(Date.now()); }}>{o.label}{o.hint && <small>{o.hint}</small>}</button>)}
-              </div>
-            ) : (
-              <>
-                <div className="ground-wrap">
-                  <canvas ref={cv} className="ground" aria-label="The pitch" onPointerDown={() => { if (!batting) act.current(); }} />
-                  {batting && live && ballName && <span className="ground-chip">{ballName}</span>}
-                  {result && <div className={`meter-result q${result.q} ground-word`}>{result.word}</div>}
-                </div>
-                {batting ? (
-                  <>
-                    <div className="shots">
-                      {d.options.map((o, i) => <button key={o.id} className="option shot" disabled={!live || !!result} onPointerDown={() => act.current(o.id)} onClick={() => act.current(o.id)}><kbd>{i + 1}</kbd>{o.label.split(' ')[0]}</button>)}
-                    </div>
-                    <small className="faint" style={{ textAlign: 'center' }}>The red mark shows where the ball lands. Play your shot just as the ball reaches the bat (tap, or keys 1 to 5).</small>
-                  </>
-                ) : (
-                  <>
-                    <button className="btn primary lg" disabled={!!result} onClick={() => act.current()}>Bowl!</button>
-                    <small className="faint" style={{ textAlign: 'center' }}>Release when the white sight is on the green spot. Tap the pitch, the button, Space or Enter.</small>
-                  </>
-                )}
-              </>
-            )}
-            <div className="row between" style={{ fontSize: 13 }}>
-              <span className="faint">{batting ? 'Better batters get more time to hit' : `${Math.ceil(left)} s · steadier bowlers get a slower sight`}</span>
-              <span className="row" style={{ gap: 6 }}>
-                <button className="btn sm ghost" onClick={() => { onAuto('over'); send('auto'); }}>Auto this over</button>
-                <button className="btn sm ghost" onClick={() => { onAuto('innings'); send('auto'); }}>Auto innings</button>
-              </span>
-            </div>
-          </>
-        )}
-      </div>
-    </div>
-  );
+  const pid = d.kind === 'batBall' ? d.meta?.batter : d.meta?.bowler;
+  return pid ? controllerOf(g, fid, pid) : g.franchises.find((x) => x.id === fid)!.owners[0];
 }
 
 function Scorecard({ rec, g }: { rec: MatchRecord; g: GameState }) {
@@ -372,18 +179,22 @@ export function Match({ g }: { g: GameState }) {
 
   useEffect(() => { sessionStorage.setItem(storageKey, String(idx)); }, [idx, storageKey]);
 
-  // Play the next ball after a beat.
+  // Play mode (you bat and bowl): the live ground shows each ball and moves the match on itself.
+  const playMode = (g.config.play ?? true) && (!home.npc || !away.npc);
+  const showNext = () => {
+    const e = rec.events[idx];
+    if (!e) return;
+    setIdx(idx + 1);
+    if (store.get().settings.sound && e.bowler) sfx(e.wicket ? 'wicket' : e.runs === 6 ? 'six' : e.runs === 4 ? 'four' : e.runs > 0 ? 'crack' : 'dot');
+    if (store.get().settings.sound && !e.bowler && e.banners.some((b) => b === 'superover' || b === 'lastover')) sfx('cheer');
+    if (!playMode && e.banners.some((b) => ['wicket', 'six', 'four', 'fifty', 'hundred', 'hattrick', 'superover', 'lastover'].includes(b))) setBannerE(e);
+  };
+  // Otherwise play the next ball after a beat.
   useEffect(() => {
-    if (idx >= total) return;
-    const t = setTimeout(() => {
-      const e = rec.events[idx];
-      setIdx(idx + 1);
-      if (store.get().settings.sound && e.bowler) sfx(e.wicket ? 'wicket' : e.runs === 6 ? 'six' : e.runs === 4 ? 'four' : e.runs > 0 ? 'crack' : 'dot');
-      if (store.get().settings.sound && !e.bowler && e.banners.some((b) => b === 'superover' || b === 'lastover')) sfx('cheer');
-      if (e.banners.some((b) => ['wicket', 'six', 'four', 'fifty', 'hundred', 'hattrick', 'superover', 'lastover'].includes(b))) setBannerE(e);
-    }, beat(rec.events[idx - 1]) / speed);
+    if (idx >= total || playMode) return;
+    const t = setTimeout(showNext, beat(rec.events[idx - 1]) / speed);
     return () => clearTimeout(t);
-  }, [idx, total, rec, speed]);
+  }, [idx, total, rec, speed, playMode]);
   useEffect(() => { if (!bannerE) return; const t = setTimeout(() => setBannerE(null), 1300); return () => clearTimeout(t); }, [bannerE]);
 
   // Answer pending decisions one at a time; send them together (mind games are revealed at once).
@@ -393,7 +204,7 @@ export function Match({ g }: { g: GameState }) {
     const fid = d.team === 0 ? g.match!.home : g.match!.away;
     if (!canAct(fid)) return false;
     if (online.role === 'off' || (d.kind !== 'batBall' && d.kind !== 'bowlBall')) return true;
-    return playerFor(g, d.team, d.kind) === g.config.humans.find((h) => h.id === online.me)?.name;
+    return ownerOf(g, d) === online.me;
   };
   const nextCall = pending.find((d) => !(d.id in answers) && mine(d));
   const onAnswer = (opt: string) => {
@@ -456,14 +267,19 @@ export function Match({ g }: { g: GameState }) {
   const winner = outcome && outcome.winner !== null ? teams[outcome.winner] : null;
 
   const skip = () => setIdx(total);
+  // The ground's name cards: the players about to face and bowl the next ball.
+  const playCall = pending.find((d) => isPlay(d));
+  const batNow = playCall?.meta?.batter ?? striker;
+  const bowlNow = playCall?.meta?.bowler ?? (last?.bowler || undefined);
+  const bowlStat = bowlNow ? live.bowl.get(bowlNow) : undefined;
+  const bowlFig = bowlStat ? `${oversText(bowlStat.balls)}-${bowlStat.runs}-${bowlStat.wkts}` : '0-0-0';
+  const waitName = playCall && g.config.humans.find((h) => h.id === ownerOf(g, playCall))?.name;
 
   return (
     <div className="col">
       {bannerE && <Banner e={bannerE} />}
-      {nextCall && !autoNow && (isPlay(nextCall)
-        ? <PlayBall key={nextCall.id} g={g} d={nextCall} onAnswer={onAnswer} passFirst={secretPair} onAuto={startAuto} />
-        : <Call key={nextCall.id} g={g} d={nextCall} onAnswer={onAnswer} passFirst={secretPair} />)}
-      {waitingFor && !auto && <div className="auto-pill" role="status">Waiting for the other side's move…</div>}
+      {nextCall && !isPlay(nextCall) && <Call key={nextCall.id} g={g} d={nextCall} onAnswer={onAnswer} passFirst={secretPair} />}
+      {waitingFor && !auto && !playMode && <div className="auto-pill" role="status">Waiting for the other side's move…</div>}
       {auto && <div className="auto-pill" role="status">Auto-playing {auto.inn ? 'this innings' : 'this over'} <button className="btn sm" onClick={() => setAuto(null)}>Take over</button></div>}
 
       <div className="row between">
@@ -477,6 +293,27 @@ export function Match({ g }: { g: GameState }) {
           {!atEnd && <button className="btn sm ghost" onClick={skip}>Skip to next call</button>}
         </div>
       </div>
+
+      {playMode && !finished && (
+        <PlayGround g={g} events={rec.events} idx={idx} advance={showNext} speed={speed}
+          call={nextCall && isPlay(nextCall) && !autoNow ? nextCall : null} onAnswer={onAnswer} onAuto={startAuto}
+          mineTeam={(t) => canAct(t === 0 ? g.match!.home : g.match!.away)}
+          who={playCall ? g.config.humans.find((h) => h.id === ownerOf(g, playCall))?.name ?? '' : ''}
+          status={waitingFor ? `Waiting for ${waitName ?? 'the other side'} to play…` : auto ? 'Auto-playing: your players are using their own skill.' : ''}
+          hud={<>
+            <div className="hud-row">
+              <div className="hud-score" style={{ ['--team' as string]: teams[battingTeam].color }}><b>{teams[battingTeam].short}</b> {last ? `${last.score}/${last.wkts}` : '0/0'} <i>({oversText(live.legal)}/{last?.overs ?? rec.overs})</i></div>
+              <div className="hud-score">{need !== undefined && need > 0 ? <>Need <b>{need}</b> off <b>{ballsLeft}</b></> : <>Run rate <b>{crr.toFixed(1)}</b></>}</div>
+            </div>
+            <div className="hud-row">
+              {batNow ? <div className="hud-card"><Portrait c={PLAYER_MAP[batNow]} size="sm" /><div><b>{pname(batNow)}</b><span>{live.bats.get(batNow)?.runs ?? 0} <i>({live.bats.get(batNow)?.balls ?? 0})</i></span></div></div> : <span />}
+              <div className="this-over" aria-label="This over">
+                {thisOver.map((e, i) => <span key={i} className={`ballchip ${e.wicket ? 'w' : e.runs === 6 ? 'r6' : e.runs === 4 ? 'r4' : e.extra ? 'x' : ''}`}>{e.wicket ? 'W' : e.extra === 'wide' ? 'wd' : e.extra === 'noball' ? 'nb' : e.runs}</span>)}
+              </div>
+              {bowlNow ? <div className="hud-card right"><div><b>{pname(bowlNow)}</b><span>{bowlFig}</span></div><Portrait c={PLAYER_MAP[bowlNow]} size="sm" /></div> : <span />}
+            </div>
+          </>} />
+      )}
 
       <div className="scoreboard" role="status" aria-live="off">
         {[0, 1].map((t) => {
