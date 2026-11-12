@@ -151,7 +151,9 @@ function Invoke-Backup([string]$Name, [string]$Command, [string]$Prompt, [string
     } elseif ($Name -eq 'Gemini') {
       # Edits files in this folder; the only commands it may run are the project's checks.
       Push-Location $Repo
-      try { $out = $Prompt | & $Command -p ' ' --approval-mode auto_edit --skip-trust --allowed-tools 'run_shell_command(npx tsc),run_shell_command(npx vitest),run_shell_command(npm run build),run_shell_command(git status),run_shell_command(git diff)' 2>&1 | & $echo }
+      # The default model is often overloaded or out of free quota; 3.6 Flash answers on the free tier. Override with RELAY_GEMINI_MODEL.
+      $gm = if ($env:RELAY_GEMINI_MODEL) { $env:RELAY_GEMINI_MODEL } else { 'gemini-3.6-flash' }
+      try { $out = $Prompt | & $Command -m $gm -p ' ' --approval-mode auto_edit --skip-trust --allowed-tools 'run_shell_command(npx tsc),run_shell_command(npx vitest),run_shell_command(npm run build),run_shell_command(git status),run_shell_command(git diff)' 2>&1 | & $echo }
       finally { Pop-Location }
     } else {
       # Aider with a free API model, or the local model through Ollama (unlimited, but much weaker). It edits files only.
