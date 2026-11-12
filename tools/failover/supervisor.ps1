@@ -1,9 +1,9 @@
 <#
-  Claude Code -> OpenAI Codex failover supervisor.
+  Claude Code failover supervisor: Claude -> Codex -> Gemini -> local Qwen (Aider + Ollama).
 
   Starts Claude Code in this terminal and watches it. When Claude stops because the
   subscription usage limit is reached (and only then), it hands the unfinished work
-  to Codex automatically, keeps your working tree as it is, logs everything, and
+  to the backups in turn (each takes over when the one before is out of quota or signed out), keeps your working tree as it is, logs everything, and
   afterwards lets you (or a timer) bring Claude back with Codex's work in context.
 
   Detection (either is enough):
@@ -26,6 +26,8 @@ param(
   [string]$Reason = '',
   [string]$ClaudeCommand = 'claude',
   [string]$CodexCommand = 'codex',
+  [string]$GeminiCommand = 'gemini',
+  [string]$LocalCommand = 'aider',
   [string]$TranscriptDir = '',
   [int]$ResumeChoiceSeconds = 60,
   [switch]$NoResume,
@@ -46,7 +48,7 @@ if (-not $Repo) { $Repo = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path 
 $State = Initialize-Failover -Repo $Repo -TranscriptDir $TranscriptDir
 
 if ($FailoverOnly) {
-  $result = Invoke-Failover -State $State -Transcript $Transcript -Reason ($(if ($Reason) { $Reason } else { 'requested' })) -CodexCommand $CodexCommand
+  $result = Invoke-Failover -State $State -Transcript $Transcript -Reason ($(if ($Reason) { $Reason } else { 'requested' })) -CodexCommand $CodexCommand -GeminiCommand $GeminiCommand -LocalCommand $LocalCommand
   if (-not $NoResume) { Invoke-ResumeChoice -State $State -Result $result -ClaudeCommand $ClaudeCommand -Seconds $ResumeChoiceSeconds }
   exit 0
 }
@@ -76,7 +78,7 @@ try {
     Write-Host "[failover] Claude reached its usage limit ($($hit.Detail)). Handing the work to Codex..." -ForegroundColor Yellow
     Start-Sleep -Seconds 2
     Stop-ProcessTree $proc.Id
-    $result = Invoke-Failover -State $State -Transcript $hit.Transcript -Reason $hit.Detail -ResetsAt $hit.ResetsAt -CodexCommand $CodexCommand
+    $result = Invoke-Failover -State $State -Transcript $hit.Transcript -Reason $hit.Detail -ResetsAt $hit.ResetsAt -CodexCommand $CodexCommand -GeminiCommand $GeminiCommand -LocalCommand $LocalCommand
     if ($NoResume) { break }
     $again = Invoke-ResumeChoice -State $State -Result $result -ClaudeCommand $ClaudeCommand -Seconds $ResumeChoiceSeconds -ResetsAt $hit.ResetsAt -Supervised
     if (-not $again) { break }

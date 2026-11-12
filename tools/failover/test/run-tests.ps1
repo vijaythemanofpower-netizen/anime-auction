@@ -56,14 +56,31 @@ if (-not $SkipRealCodex) {
   Check (((Get-Date) - $t0).TotalMinutes -lt 15) 'finished in reasonable time'
 }
 
-# 3. Codex unavailable too: progress saved, recorded, no crash.
+# 3. Every backup unavailable: progress saved, recorded, no crash.
+$outAi = Join-Path $here 'fake-codex-out.ps1'
 $r3 = New-TestRepo 'codexout'
 $env:FAKE_TRANSCRIPT_DIR = Join-Path $r3 '.transcripts'; $env:FAKE_MODE = 'usage'
-& powershell -NoProfile -ExecutionPolicy Bypass -File $sup -Repo $r3 -ClaudeCommand (Join-Path $here 'fake-claude.ps1') -CodexCommand (Join-Path $here 'fake-codex-out.ps1') -TranscriptDir $env:FAKE_TRANSCRIPT_DIR -NoResume | Out-Null
+# A free API key in the repo's .env adds that backup to the chain (Groq has no key here, so it is skipped).
+Set-Content (Join-Path $r3 '.env') 'OPENROUTER_API_KEY=test-key' -Encoding ascii
+& powershell -NoProfile -ExecutionPolicy Bypass -File $sup -Repo $r3 -ClaudeCommand (Join-Path $here 'fake-claude.ps1') -CodexCommand $outAi -GeminiCommand $outAi -LocalCommand $outAi -TranscriptDir $env:FAKE_TRANSCRIPT_DIR -NoResume | Out-Null
 $log3 = Get-Content (Join-Path $r3 'handoff-logs\failover\failover.log') -Raw
-Check ($log3 -match 'failover-end .*codex-unavailable') 'Codex unavailable is detected'
-Check ((Get-Content (Join-Path $r3 'HANDOFF.md') -Raw) -match 'Codex was unavailable too') 'progress note saved in HANDOFF.md'
-Check ((Get-Content (Join-Path $r3 'notes.txt') -Raw) -match 'line two') 'work kept when Codex is unavailable'
+Check ($log3 -match 'failover-end .*all-unavailable') 'every backup unavailable is detected'
+Check (([regex]::Matches($log3, '\| backup \|')).Count -eq 4) 'all four available backups were tried'
+Check ($log3 -match 'backup \| OpenRouter' -and $log3 -notmatch 'backup \| Groq') 'a keyed API backup joins; one without a key is skipped'
+Check ((Get-Content (Join-Path $r3 'HANDOFF.md') -Raw) -match 'Every backup was unavailable') 'progress note saved in HANDOFF.md'
+Check ((Get-Content (Join-Path $r3 'notes.txt') -Raw) -match 'line two') 'work kept when every backup is unavailable'
+
+# 3b. Relay: Codex and Gemini are out of quota, the third backup takes over and finishes the task.
+$r5 = New-TestRepo 'relay'
+$env:FAKE_TRANSCRIPT_DIR = Join-Path $r5 '.transcripts'; $env:FAKE_MODE = 'usage'
+& powershell -NoProfile -ExecutionPolicy Bypass -File $sup -Repo $r5 -ClaudeCommand (Join-Path $here 'fake-claude.ps1') -CodexCommand $outAi -GeminiCommand $outAi -LocalCommand (Join-Path $here 'fake-builder.ps1') -TranscriptDir $env:FAKE_TRANSCRIPT_DIR -NoResume | Out-Null
+$log5 = Get-Content (Join-Path $r5 'handoff-logs\failover\failover.log') -Raw
+Check ($log5 -match 'failover-end .*by Local Qwen \| completed') 'third backup completes after two run out'
+$ct5 = Join-Path $r5 'codex-test.txt'
+Check ((Test-Path $ct5) -and ((Get-Content $ct5 -Raw).Trim() -eq 'codex continued the work')) 'relay finished the task'
+$p5 = Get-ChildItem (Join-Path $r5 'handoff-logs\failover') -Directory | Select-Object -First 1
+Check ((Get-Content (Join-Path $p5.FullName 'localqwen.log') -Raw) -match 'Gemini: unavailable') 'third backup was told the earlier ones stopped'
+Check ((Get-Content (Join-Path $r5 'notes.txt') -Raw) -match 'line two') 'work kept through the relay'
 
 # 4. The StopFailure hook: signal only for the usage limit.
 $r4 = New-TestRepo 'hook'

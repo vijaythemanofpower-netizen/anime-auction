@@ -121,7 +121,57 @@ function Send-Notice([string]$Title, [string]$Text) {
   Hands the work to Codex. Never commits, pushes, resets or discards anything:
   the working tree is backed up to refs/failover/<stamp> first (a git object only; your files are untouched).
 #>
-function Invoke-Failover($State, [string]$Transcript, [string]$Reason, $ResetsAt = $null, [string]$CodexCommand = 'codex') {
+$LimitPattern = '(?i)usage limit|rate limit|quota|exceeded|exhausted|RESOURCE_EXHAUSTED|429|insufficient|not logged in|login required|please log in|not authenticated|GEMINI_API_KEY|unauthori[sz]ed|401|authentication|connection refused|could not connect'
+
+<#
+  Runs one backup AI on the prompt and says how it went: completed, unavailable (limit, quota,
+  sign-in, local model not running) or error. A *.ps1 command is a stand-in used by the tests.
+#>
+function Test-ApiKey([string]$Repo, [string]$Key) {
+  if ([Environment]::GetEnvironmentVariable($Key)) { return $true }
+  $envFile = Join-Path $Repo '.env'
+  return (Test-Path $envFile) -and [bool](Select-String -Path $envFile -Pattern "^\s*$Key\s*=\s*\S" -Quiet)
+}
+
+function Invoke-Backup([string]$Name, [string]$Command, [string]$Prompt, [string]$Run, [string]$Repo, [string]$Model = 'ollama_chat/qwen3:8b') {
+  $slug = ($Name.ToLower() -replace '[^a-z]', '')
+  $log = Join-Path $Run "$slug.log"
+  $last = Join-Path $Run "$slug-last-message.md"
+  Write-Host "[failover] $Name is working (log: $log)..." -ForegroundColor Cyan
+  $exit = 1; $out = @()
+  # Output is shown live and saved as UTF-8 (Tee-Object would write UTF-16 on Windows PowerShell).
+  $echo = { process { $s = "$_"; Write-Host $s; $s } }
+  try {
+    if ($Command -like '*.ps1') {
+      Push-Location $Repo
+      try { $out = $Prompt | & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $Command 2>&1 | & $echo }
+      finally { Pop-Location }
+    } elseif ($Name -eq 'Codex') {
+      $out = $Prompt | & $Command exec -C $Repo -s workspace-write --color never -o $last - 2>&1 | & $echo
+    } elseif ($Name -eq 'Gemini') {
+      # Edits files in this folder; the only commands it may run are the project's checks.
+      Push-Location $Repo
+      try { $out = $Prompt | & $Command -p ' ' --approval-mode auto_edit --skip-trust --allowed-tools 'run_shell_command(npx tsc),run_shell_command(npx vitest),run_shell_command(npm run build),run_shell_command(git status),run_shell_command(git diff)' 2>&1 | & $echo }
+      finally { Pop-Location }
+    } else {
+      # Aider with a free API model, or the local model through Ollama (unlimited, but much weaker). It edits files only.
+      $pf = Join-Path $Run "$slug-prompt.md"
+      Set-Content $pf $Prompt -Encoding utf8
+      $env:OLLAMA_API_BASE = 'http://127.0.0.1:11434'
+      Push-Location $Repo
+      try { $out = & $Command --model $Model --yes-always --no-auto-commits --no-show-model-warnings --no-check-update --no-pretty --message-file $pf 2>&1 | & $echo }
+      finally { Pop-Location }
+    }
+    $exit = $LASTEXITCODE
+  } catch { $out = @("launch failed: $_"); $exit = 127 }
+  $text = ($out -join "`n")
+  Set-Content -Path $log -Value $text -Encoding utf8
+  $report = if (Test-Path $last) { (Get-Content $last -Raw -Encoding UTF8).Trim() } else { (($out | Select-Object -Last 40) -join "`n").Trim() }
+  $outcome = if ($exit -eq 0 -and $report -and $text -notmatch $LimitPattern) { 'completed' } elseif ($text -match $LimitPattern -or $exit -eq 127) { 'unavailable' } else { 'error' }
+  return [pscustomobject]@{ Outcome = $outcome; Exit = $exit; Log = $text; Report = $report }
+}
+
+function Invoke-Failover($State, [string]$Transcript, [string]$Reason, $ResetsAt = $null, [string]$CodexCommand = 'codex', [string]$GeminiCommand = 'gemini', [string]$LocalCommand = 'aider') {
   $stamp = Get-Date -Format 'yyyyMMdd-HHmmss'
   $run = Join-Path $State.Dir $stamp
   New-Item -ItemType Directory -Force $run | Out-Null
@@ -165,29 +215,32 @@ Rules:
 "@
   Set-Content (Join-Path $run 'codex-prompt.md') $prompt -Encoding utf8
 
-  # 3. Run Codex.
-  Write-Host "[failover] Codex is working (log: $run\codex.log)..." -ForegroundColor Cyan
-  $codexLog = Join-Path $run 'codex.log'
-  $exit = 1
-  try {
-    # Output is shown live and saved as UTF-8 (Tee-Object would write UTF-16 on Windows PowerShell).
-    $echo = { process { $s = "$_"; Write-Host $s; $s } }
-    if ($CodexCommand -like '*.ps1') {
-      $out = $prompt | & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $CodexCommand 2>&1 | & $echo
-    } else {
-      $out = $prompt | & $CodexCommand exec -C $repo -s workspace-write --color never -o $last - 2>&1 | & $echo
-    }
-    $exit = $LASTEXITCODE
-    Set-Content -Path $codexLog -Value ($out -join "`n") -Encoding utf8
-  } catch { Add-Content $codexLog "launch failed: $_"; $exit = 127 }
-  $logText = if (Test-Path $codexLog) { Get-Content $codexLog -Raw -Encoding UTF8 } else { '' }
-  $report = if (Test-Path $last) { (Get-Content $last -Raw -Encoding UTF8).Trim() } else { '' }
+  # 3. Run the backups in turn: when one is out of quota, signed out or fails, the next one
+  #    continues from whatever the previous one left in the working tree.
+  # Free API backups run through Aider and join only when their key is set (environment or the repo's .env).
+  # Their free model names change now and then: override with RELAY_OPENROUTER_MODEL / RELAY_GROQ_MODEL.
+  $backups = @(
+    @{ Name = 'Codex'; Command = $CodexCommand },
+    @{ Name = 'Gemini'; Command = $GeminiCommand },
+    @{ Name = 'OpenRouter'; Command = $(if (Test-ApiKey $repo 'OPENROUTER_API_KEY') { $LocalCommand }); Model = $(if ($env:RELAY_OPENROUTER_MODEL) { $env:RELAY_OPENROUTER_MODEL } else { 'openrouter/deepseek/deepseek-chat-v3-0324:free' }) },
+    @{ Name = 'Groq'; Command = $(if (Test-ApiKey $repo 'GROQ_API_KEY') { $LocalCommand }); Model = $(if ($env:RELAY_GROQ_MODEL) { $env:RELAY_GROQ_MODEL } else { 'groq/llama-3.3-70b-versatile' }) },
+    @{ Name = 'Local Qwen'; Command = $LocalCommand; Model = 'ollama_chat/qwen3:8b' }
+  ) | Where-Object { $_.Command }
+  $result = 'all-unavailable'; $by = ''; $report = ''; $exit = 1; $tried = @()
+  $basePrompt = $prompt
+  foreach ($b in $backups) {
+    $r = Invoke-Backup -Name $b.Name -Command $b.Command -Prompt $prompt -Run $run -Repo $repo -Model $b.Model
+    $tried += "$($b.Name): $($r.Outcome)"
+    Write-FailoverLog $State 'backup' "$($b.Name) exit $($r.Exit)" $r.Outcome
+    $exit = $r.Exit
+    if ($r.Outcome -eq 'completed') { $result = 'completed'; $by = $b.Name; $report = $r.Report; break }
+    if ($r.Outcome -eq 'error') { $result = 'error' }
+    $tail = (($r.Log -split "`n") | Select-Object -Last 25) -join "`n"
+    $prompt = $basePrompt + @"
 
-  # 4. Outcome.
-  $result = 'completed'
-  if ($exit -ne 0 -or -not $report) {
-    if ($logText -match '(?i)usage limit|rate limit|quota|exceeded|429|insufficient|not logged in|login required|unauthori[sz]ed|401|authentication') { $result = 'codex-unavailable' }
-    else { $result = 'codex-error' }
+Note: $($tried -join '; '). The previous backup ($($b.Name)) stopped before finishing. Anything it changed is already in the working tree: check git status and git diff, keep it, and finish the job. Its last output:
+$tail
+"@
   }
   $headAfter = (& git -C $repo rev-parse HEAD 2>$null)
   $warn = if ($headAfter -ne $head) { " WARNING: HEAD moved from $head to $headAfter (Codex made a commit)." } else { '' }
@@ -200,13 +253,14 @@ Rules:
 ## Failover $stamp ($result)
 Claude stopped: $Reason$(if ($ResetsAt) { " (Claude's limit resets $ResetsAt)" }).
 Backup of the working tree at hand-over: git ref refs/failover/$stamp$(if (-not $snap) { ' (no uncommitted changes then)' }). Context and logs: handoff-logs/failover/$stamp/.$warn
-$(if ($result -eq 'completed') { "Codex's report:`n`n$report" } elseif ($result -eq 'codex-unavailable') { "Codex was unavailable too (usage limit, quota or sign-in). Nothing was lost: the work is as Claude left it, plus anything Codex wrote before it stopped. Resume with Claude when its limit resets." } else { "Codex stopped with an error (exit $exit); see handoff-logs/failover/$stamp/codex.log. Work so far is kept." })
+Backups tried: $($tried -join '; ').
+$(if ($result -eq 'completed') { "$by finished the work. Its report:`n`n$report" } elseif ($result -eq 'all-unavailable') { "Every backup was unavailable (usage limit, quota or sign-in). Nothing was lost: the work is as Claude left it, plus anything a backup wrote before it stopped. Resume with Claude when its limit resets." } else { "The backups stopped with errors; see the logs in handoff-logs/failover/$stamp/. Work so far is kept." })
 "@
   Add-Content -Path $handoff -Value $section -Encoding utf8
-  Write-FailoverLog $State 'failover-end' "exit $exit$warn" $result
-  $msg = switch ($result) { 'completed' { 'Codex continued the work. See HANDOFF.md.' } 'codex-unavailable' { 'Codex is unavailable too. Progress saved; resume Claude when its limit resets.' } default { 'Codex stopped with an error. Progress saved.' } }
-  Send-Notice "Claude -> Codex failover: $result" $msg
-  return [pscustomobject]@{ Result = $result; Run = $run; Report = $report; Transcript = $Transcript; Stamp = $stamp }
+  Write-FailoverLog $State 'failover-end' "exit $exit$warn$(if ($by) { " by $by" })" $result
+  $msg = switch ($result) { 'completed' { "$by continued the work. See HANDOFF.md." } 'all-unavailable' { 'Every backup AI is unavailable. Progress saved; resume Claude when its limit resets.' } default { 'The backups stopped with errors. Progress saved.' } }
+  Send-Notice "Claude failover: $result" $msg
+  return [pscustomobject]@{ Result = $result; By = $by; Run = $run; Report = $report; Transcript = $Transcript; Stamp = $stamp }
 }
 
 <#
