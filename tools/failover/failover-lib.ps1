@@ -222,8 +222,8 @@ Rules:
   $backups = @(
     @{ Name = 'Codex'; Command = $CodexCommand },
     @{ Name = 'Gemini'; Command = $GeminiCommand },
-    @{ Name = 'OpenRouter'; Command = $(if (Test-ApiKey $repo 'OPENROUTER_API_KEY') { $LocalCommand }); Model = $(if ($env:RELAY_OPENROUTER_MODEL) { $env:RELAY_OPENROUTER_MODEL } else { 'openrouter/deepseek/deepseek-chat-v3-0324:free' }) },
-    @{ Name = 'Groq'; Command = $(if (Test-ApiKey $repo 'GROQ_API_KEY') { $LocalCommand }); Model = $(if ($env:RELAY_GROQ_MODEL) { $env:RELAY_GROQ_MODEL } else { 'groq/llama-3.3-70b-versatile' }) },
+    @{ Name = 'OpenRouter'; Command = $(if (Test-ApiKey $repo 'OPENROUTER_API_KEY') { $LocalCommand }); Model = $(if ($env:RELAY_OPENROUTER_MODEL) { $env:RELAY_OPENROUTER_MODEL } else { 'openrouter/nvidia/nemotron-3-ultra-550b-a55b:free' }) },
+    @{ Name = 'Groq'; Command = $(if (Test-ApiKey $repo 'GROQ_API_KEY') { $LocalCommand }); Model = $(if ($env:RELAY_GROQ_MODEL) { $env:RELAY_GROQ_MODEL } else { 'groq/openai/gpt-oss-120b' }) },
     @{ Name = 'Local Qwen'; Command = $LocalCommand; Model = 'ollama_chat/qwen3:8b' }
   ) | Where-Object { $_.Command }
   $result = 'all-unavailable'; $by = ''; $report = ''; $exit = 1; $tried = @()
